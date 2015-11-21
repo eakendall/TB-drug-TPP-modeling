@@ -178,7 +178,7 @@ dxdt <- function(t, state, params)
   
   
   
-  ########## tally outcomes
+  ########## tally how much each current state contributes to outcomes of interest (then will multiply by state and append to dxdt)
   outcomes <- c("inc", "rrinc", "relapses", "tbdeaths", "rrdeaths", "tbmonths", "dxs", "rDSTs", "nDSTs", "rxmos_s", "rxmos_r", "rxmos_n")
   tally <- array(0,dim=c(length(Tnames)*length(Rnames)*length(Hnames), length(outcomes))); dimnames(tally) <- list(statenames, outcomes)
   
@@ -196,19 +196,11 @@ dxdt <- function(t, state, params)
   
   tally[c(grep("^A", statenames), grep("^Ti", statenames)), "tbdeaths"] <- rep(tbmort, each=(length(c(grep("^A", statenames), grep("^Ti", statenames)))/2))
   
+  tally[c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)), "rrdeaths"] <- rep(tbmort, each=(length(c(grep("^A[.]Rr", statenames), grep("^Ti[.]Rr", statenames)))/2))
   
-  tally[c("C","Lp"),"inc"] <-apply(mat[c("C","Lp"),"Ap",,,,], 1, sum) 
+  
   
 
-  for (jr in Rnames[5:8])
-  tally[c("S","Ln"),"inc"] <-apply(mat[c("S","Ln"),"An",,,,], 1, sum)
-  tally[c("C","Lp"),"inc"] <-apply(mat[c("C","Lp"),"Ap",,,,], 1, sum) 
-  
-                                      state["Ln","ds",]*bigchg["Ln","ds",,"EAn","ds",] +
-                                      state["Ln","dr",]*bigchg["Ln","dr",,"EAn","dr",] + 
-                                      state["Ln","ds",]*bigchg["Ln","ds",,"EAn","dr",] + 
-                                      state["Ln","dr",]*bigchg["Ln","dr",,"EAn","ds",]))
-  
 
   
   
