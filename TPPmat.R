@@ -4,24 +4,25 @@ library('deSolve')
 setup.model <- function()
 {
   regimens <- c("s", "r", "n"); N <- 7; lengths <- c(2,1,1,2,3,3,6)/12
-  Tnames <- c("S", "Ln", "An", "Ti", paste0("T", rep(regimens, times=Tperiods), rep(1:Tperiods, each=length(regimens))), "R", "C", "Lp", "Ap")
+  Tnames <- c("S", "Ln", "An", "Ti", paste0("T", rep(regimens, times=N), rep(1:N, each=length(regimens))), "R", "C", "Lp", "Ap")
   Rnames <- c("R0", "Rc", "Rn", "Rcn", "Rr", "Rrc", "Rrn", "Rrcn") 
   Hnames <- c("Hn", "Hp")
   statenames <- paste0(rep(Tnames, times=length(Rnames)*length(Hnames)), ".", rep(Rnames, each=length(Tnames), times=length(Hnames)), ".", rep(Hnames, each=length(Tnames)*length(Rnames)))
-  setup = list("regimens"=regimens, "Tperiods"=N, "Tperiod.lengths"=lengths, "Tnames"=Tnames, "Rnames"=Rnames, "Hnames"=Hnames)
+  setup = list("regimens"=regimens, "Tperiods"=N, "Tperiod.lengths"=lengths, "Tnames"=Tnames, "Rnames"=Rnames, "Hnames"=Hnames, "statenames"=statenames)
   return(setup)
 }
 
-# define parameters
+
+# define fixed parameters
 ## WILL WANT TO MAKE A SEPARATE FUNCTION FOR THE PARS THAT VARY IN THE NOVEL REGIMEN'S TPP, BUT FOR NOW EVERYTHING IS HERE IN ONE PLACE
-pars <- function(setup)
+setup.pars <- function(setup)
 {
   if (missing(setup)) setup <- setup.model()
   p <- list()
   p$hivrate <- 0.001
   p$reactrate <- c(0.001,0.1); p$rapidprog <- c(0.1,0.5); p$mort <- c(0.03,0.1); p$tbmort <- c(0.2,0.4); 
       names(p$reactrate) <- names(p$rapidprog) <- names(p$mort) <- names(p$tbmort) <- setup$Hnames  #by HIV status, made up numbers for now
-  p$selfcurerate <- 0.2; p$relapserate <- 1; latreduct <- 0.5
+  p$selfcurerate <- 0.2; p$relapserate <- 1; p$latreduct <- 0.5
   p$dxrate <- c(1,2); p$DSTrif <- c(0.1,1); names(p$dxrate) <- names(p$DSTrif) <- c("An","Ap") #by new or previously treated
   p$availability <- 1 # MAY NEED TO MAKE THIS TIME-DEPENDENT FOR SCALE-UP
   p$DSTnew <- c(0,1); names(p$DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status)
@@ -63,6 +64,7 @@ pars <- function(setup)
 # make matrix of non-dynamic state transitions (transitions are from first to second state, and diagonal is used for mortality)
 makemat <- function(pars)
 {
+  if(missing(pars)) { pars <- setup.pars() }
   with(pars, 
   {mat <- array(0, dim=c(8+Tperiods*length(regimens), 8+Tperiods*length(regimens), 8, 8, 2, 2)); dimnames(mat) <- list("1T"=Tnames, "2T"=Tnames, "1R"=Rnames, "2R"=Rnames, "1H"=Hnames, "2H"=Hnames)
   
@@ -145,28 +147,28 @@ makemat <- function(pars)
 
 # dynamic model transitions
 
-dxdt <- function(t, state, params)
+dxdt <- function(t, state, params, do.tally=FALSE)
 {
  with(params, {
-  #if (missing(state)) { state <- c(100000,rep(0,length(statenames)-1)); names(state) <- statenames }
-  statemat <- array(state, dim=c(length(Tnames), length(Rnames), length(Hnames))); dimnames(statemat) <- list(Tnames, Rnames, Hnames)
-  if (length(mat) neq length(state)^2) {stop("Error: Initial-state and transition-matrix size mismatch.")}
+  if (length(mat) != length(state)^2) {stop("Error: Initial-state and transition-matrix size mismatch.")}
   
-    FOI <- apply(statemat[c("An","Ap","Ti"),,], 2, sum) # FOI by strain
+  statemat <- array(state, dim=c(length(Tnames), length(Rnames), length(Hnames))); dimnames(statemat) <- list(Tnames, Rnames, Hnames)
+  FOI <- apply(statemat[c("An","Ap","Ti"),,], 2, sum) # FOI by strain
+  
   # infection
-  if (sum(state[c("S","C"), 2:8,]) >0 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
+  if (sum(statemat[c("S","C"), 2:8, ]) >0 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
   for (jh in Hnames)
   {
-    diag(mat["S","Ln","R0",,jh,jh]) <- diag(mat["S","Ln","R0",,jh,jh]) + FOI*transmissibility*(1-rapidprog[jh])
-    diag(mat["S","An","R0",,jh,jh]) <- diag(mat["S","An","R0",,jh,jh]) + FOI*transmissibility*rapidprog[jh]
-    diag(mat["C","Lp","R0",,jh,jh]) <- diag(mat["C","Lp","R0",,jh,jh]) + FOI*transmissibility*(1-rapidprog[jh])
-    diag(mat["C","Ap","R0",,jh,jh]) <- diag(mat["C","Ap","R0",,jh,jh]) + FOI*transmissibility*rapidprog[jh]
+    mat["S","Ln","R0",,jh,jh] <- mat["S","Ln","R0",,jh,jh] + FOI*transmissibility*(1-rapidprog[jh])
+    mat["S","An","R0",,jh,jh] <- mat["S","An","R0",,jh,jh] + FOI*transmissibility*rapidprog[jh]
+    mat["C","Lp","R0",,jh,jh] <- mat["C","Lp","R0",,jh,jh] + FOI*transmissibility*(1-rapidprog[jh])
+    mat["C","Ap","R0",,jh,jh] <- mat["C","Ap","R0",,jh,jh] + FOI*transmissibility*rapidprog[jh]
   
     # superinfection
     for (jr in Rnames) 
     {
-      diag(mat["Ln","Ln",,"jr",jh,jh]) <- diag(mat["Ln","Ln",,"jr",jh,jh]) + FOI*transmissibility[jr]*(1-rapidprog[jh]*latreduct)*transmissibility[jr]/(transmissibility + transmissibility[jr])
-      diag(mat["Ln","An",,"jr",jh,jh]) <- diag(mat["Ln","An",,"jr",jh,jh]) + FOI*transmissibility[jr]*rapidprog[jh]*latreduct
+      mat["Ln","Ln",,jr,jh,jh] <- mat["Ln","Ln",,jr,jh,jh] + FOI*transmissibility[jr]*(1-rapidprog[jh]*latreduct)*transmissibility[jr]/(transmissibility + transmissibility[jr])
+      mat["Ln","An",,jr,jh,jh] <- mat["Ln","An",,jr,jh,jh] + FOI*transmissibility[jr]*rapidprog[jh]*latreduct
     }
   }
 
@@ -178,32 +180,49 @@ dxdt <- function(t, state, params)
   
   
   
-  ########## tally how much each current state contributes to outcomes of interest (then will multiply by state and append to dxdt)
-  outcomes <- c("inc", "rrinc", "relapses", "tbdeaths", "rrdeaths", "tbmonths", "dxs", "rDSTs", "nDSTs", "rxmos_s", "rxmos_r", "rxmos_n")
+  ########## tally how much each current state contributes to outcomes of interest (then will multiply by state and append to output)
+  
+  outcomes <- c("prev", "inc", "rrinc", "relapses", "tbdeaths", "rrdeaths", "dxs", "rDSTs", "nDSTs", "rxtime_s", "rxtime_r", "rxtime_n")
   tally <- array(0,dim=c(length(Tnames)*length(Rnames)*length(Hnames), length(outcomes))); dimnames(tally) <- list(statenames, outcomes)
   
-  tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"inc"] <- 
+  if (do.tally==TRUE)
+  {
+    tally[c(grep("^A", statenames), grep("^T", statenames)), "prev"] <- rep(1, length(c(grep("^A", statenames), grep("^T", statenames))))
+    
+    tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"inc"] <- 
     apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A",statenames)], 1, sum)
   
 
-  tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"rrinc"] <- 
-    apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A.[.]Rr",statenames)], 1, sum)
-  tally[grep("^A.[.]R[0cn]",statenames),"rrinc"] <-  # from active directly to relapse (when treatment starts) happens ony when resistance is acquired, so is a good place to count new rif resistance
-    apply(squaremat[grep("^A.[.]R[0cn]",statenames),  grep("^R.Rr",statenames)], 1, sum)
+    tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"rrinc"] <- 
+      apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A.[.]Rr",statenames)], 1, sum)
+    tally[grep("^A.[.]R[0cn]",statenames),"rrinc"] <-  # from active directly to relapse (when treatment starts) happens ony when resistance is acquired, so is a good place to count new rif resistance
+      apply(squaremat[grep("^A.[.]R[0cn]",statenames),  grep("^R.Rr",statenames)], 1, sum)
+    
+    tally[grep("^R",statenames),"relapses"] <- 
+      apply(squaremat[grep("^R",statenames),  grep("^A",statenames)], 1, sum)
+    
+    tally[c(grep("^A", statenames), grep("^Ti", statenames)), "tbdeaths"] <- rep(tbmort, each=(length(c(grep("^A", statenames), grep("^Ti", statenames)))/2))
+    
+    tally[c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)), "rrdeaths"] <- rep(tbmort, each=(length(c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)))/2))
+    
+    tally[grep("^A", statenames),"dxs"] <- apply( squaremat[ grep("^A", statenames), c(grep("^T", statenames), grep("^R", statenames)) ], 1, sum)
+    
+    tally[grep("^A", statenames),"rDSTs"] <- 
+      apply( squaremat[ grep("^A", statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * DSTrif, 1, sum) #alternates between An and Ap, so alternate DST coverage
+             
+    tally[grep("^A.[.]R[0cn]",statenames),"nDSTs"] <- # if not rif R
+      apply( squaremat[ grep("^A.[.]R[0cn]",statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * 
+               targetpop[1] * availability * max(DSTnew) * rep(eligibility, each=length(grep("^A.[.]R[0cn]",statenames))/2) , 1, sum )
+    tally[grep("^A.[.]Rr",statenames),"nDSTs"] <- # if rif R 
+      apply( squaremat[ grep("^A.[.]Rr",statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * 
+               ( (1-DSTrif)*targetpop[1] + DSTrif*targetpop[2] ) * availability * max(DSTnew) * rep(eligibility, each=length(grep("^A.[.]Rr",statenames))/2) , 1, sum )
+    
+    tally[grep("^Ts", statenames), "rxtime_s"] <- rep(1, length(grep("^Ts", statenames))) #doesn't include ineffective (Ti) months
+    tally[grep("^Tr", statenames), "rxtime_r"] <- rep(1, length(grep("^Tr", statenames))) #doesn't include ineffective (Ti) months
+    tally[grep("^Tn", statenames), "rxtime_n"] <- rep(1, length(grep("^Tn", statenames))) #doesn't include ineffective (Ti) months
+  }
   
-  tally[grep("^R",statenames),"relapses"] <- 
-    apply(squaremat[grep("^R",statenames),  grep("^A",statenames)], 1, sum)
-  
-  tally[c(grep("^A", statenames), grep("^Ti", statenames)), "tbdeaths"] <- rep(tbmort, each=(length(c(grep("^A", statenames), grep("^Ti", statenames)))/2))
-  
-  tally[c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)), "rrdeaths"] <- rep(tbmort, each=(length(c(grep("^A[.]Rr", statenames), grep("^Ti[.]Rr", statenames)))/2))
-  
-  
-  
-
-
-  
-  
+  tallied <- t(tally) %*% state ; names(tallied) <- outcomes 
   
   ## combine state vector and change matrix to get dxdt
   dxdt <- numeric(length(state))
@@ -214,43 +233,23 @@ dxdt <- function(t, state, params)
   dxdt[1] <- dxdt[1] + sum(deaths)  
   
   
-  
-  return(list(dxdt))
+  # return dxdt to ode, and also return tally for tracking purposes
+  return(list(dxdt, tallied))
  })
 }
 
 
-# addend counting boxes to states and to squaremat
-# add to transition matrix, e.g. for incidence, any mvt from s/c or l to a will also be a mvt from a "nothing box" to new incidence
 
-# also count relapses separately
+#for debugging:
+#dxdt(1, state, params, do.tally=FALSE)
 
-
-# events to tally -- not yet implemented.
-#   Incident TB = inc
-#   Incident MDR TB ==rrinc
-#   TB deaths = deaths
-#   MDR TB deaths = rrdeaths
-#   Months with active TB = tbmonths
-#   TB diagnoses made/ treatment courses started = dxs
-#   Rifampin DSTs performed  = rDSTs
-#   Novel regimen DSTs performed = nDSTs
-#   Months on each treatment regimen (Ts, Tr, Tn) = rxmos_s...
-
-if (tally==1) 
-{
-  
-
-  rrincidence + dxdt["An"
-                     tbdeaths <- 0
-                     rxtime <- c(0,0,0)
-                     riftests <- 0
-                     newtests <- 0
-}
+#advance forward a bit:
+state <- ode(state, seq(0,10,by=0.1), dxdt, params)[101,2:465]
 
 
+runtoequilib(init, pars, ...)
 
-run.model(dxdt, init, pars, ...)
+addmdr( )
 
 
 params <- pars(); params$mat <- make.mat(params)
