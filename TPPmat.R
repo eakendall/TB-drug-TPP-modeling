@@ -10,30 +10,31 @@ set.values <- function()
   selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.5
   hivrate <- 0.001
   reactrate <- c(0.001,0.1); rapidprog <- c(0.1,0.5); mort <- c(0.03,0.1); tbmort <- c(0.2,0.4); #by HIV status, made up numbers for now
-  beta <- 8; transmissibility <- c(1,0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8)
-
+  beta <- 8; transmissibility <- 0.8
+  
   months_s <- 6; months_r <- 18
   fail_s <- c(0.02,0.5); fail_r <- 0.12 # assumes second line outcomes are independent of resistance (and first line outcomes are independent of companion drug resistance)
   acqres_s <- 0.005; 
   relapse_s <- 0.04; relapse_r <- 0.12; mdrrelapse_s <- 0.6 #mdr relapse is of the 50% of rif resistance that doesn't fail outright
   dxrate <- c(0.5,1); DSTrif <- c(0.1,1); names(dxrate) <- names(DSTrif) <- c("An","Ap") 
+  ltfurate_s <- 0.01; ltfurate_r <- 0.01
+  relapse246 <- c(7.5, 3, 1); names(relapse246) <- c("2mo","4mo","6mo") #extra relapse added by thirds of course completed (will interpolate between these) -- multiplicative by regimen efficacy
   
-  months_n <- 4
-  DSTnew <- c(0,1); names(DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status)
-  eligibility <- c(1,0.9)  #by HIV status
   targetpop <- c(1,1); names(targetpop) <- c("DS", "MDR") #will change for MDR=(0,1), DS=(1,0), or panTB=(1,1)
+  DSTnew <- c(0,1); names(DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status)
+  months_n <- 4
+  eligibility <- c(1,0.9)  #by HIV status
   availability <- 1 # MAY NEED TO MAKE THIS TIME-DEPENDENT FOR SCALE-UP !!
-  
-  fail_n <- c(fail_s[1] + c(0, 0.08, 0.5), 1) #for res to (-, c, n), cn
+  ltfurate_n <- 0.01
+  extrafail_n <- c(0, 0.08, 0.5) #for res to (-, c, n)
   acqres_n <- t(array(c( 0, 0.1, 0.05, 0.005, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                          0, 0, 0.4, 0.04, 
                          0, 0, 0, 0.1, 
                          0, 0, 0, 0), dim=c(4,4)))
   relapse_n <- 0.02; resrelapse_n <- c(relapse_n+0.06, 0.6, 1 ) #risk of relapse (absolute, not additional) with novel regimen if resistance to c, n, and cn !!
   
-  ltfurate <- c(0.01, 0.01, 0.01); # by regimen
-  relapse246 <- c(0.3, 0.12, 0); names(relapse246) <- c("2mo","4mo","6mo") #extra relapse added by thirds of course completed (will interpolate between these) !! make multiplicative by regimen efficacy
   })
+  
   return(values)
 }
 
@@ -70,17 +71,18 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       
       names(reactrate) <- names(rapidprog) <- names(mort) <- names(tbmort) <- Hnames  
       
-      transmissibility <- transmissibility[1:length(Rnames)]; names(transmissibility) <- Rnames #need to decide details of fitness costs and sampling
+      transmissibility <- c(1,rep(transmissibility, length(Rnames)-1)); names(transmissibility) <- Rnames #need to decide details of fitness costs and sampling
       
       # then adjust for whether regimens are in use (i.e.if not using FL, no diagnosis and treatment; if not using SL, no rif diagnosis (and therefore no second-line treatment); 
       # and if not using novel regimen (which can be used in absence of novel DST in the model), availability of novel regimen is 0.
       if (DRera==FALSE) acqres_s <- 0; if (treatSL==FALSE) DSTrif <- c(0,0); if (treatnovel==FALSE) availability <- 0 
       
       names(eligibility) <- Hnames
-      names(ltfurate) <- regimens
+      ltfurate <- c(ltfurate_s, ltfurate_r, ltfurate_n); names(ltfurate) <- regimens
       
       #translate above parameters into outcome arrays (shouldn't need to edit this part unless model structure changes):
       fail_s <- c(rep(fail_s[1], max(1,4*treatnovel)), rep(fail_s[2], DRera*max(1,4*treatnovel)))
+      fail_n <- c(fail_s[1] + extrafail_n, 1) #for res to (-, c, n), cn
       failmat <- array(rbind(fail_s, fail_r, fail_n)[,1:length(Rnames)], dim=c(3,length(Rnames))); dimnames(failmat) <- list(regimens, Rnames) 
       
       acqresmat <- array(0,dim=c(length(Rnames),length(Rnames),length(regimens))); dimnames(acqresmat)=list(Rnames, Rnames, regimens) # from old resistance (down) to new resistance (across), by regimen 
@@ -172,8 +174,10 @@ makemat <- function(pars)
             fraction_completed <- (sum(Tperiod.lengths[1:period-1])+1/2*Tperiod.lengths[period])/durations
             relapse <- array(0, dim=c(length(Rnames),3)); dimnames(relapse) <- list(Rnames, regimens)
             relapse[,fraction_completed < 1/3] <- 1 
-            relapse[,fraction_completed >= 1/3 & fraction_completed < 2/3] <- t(t(relapse_resistance + relapse246[2]) + (relapse246[1]-relapse246[2])*(2/3-fraction_completed))[, fraction_completed >= 1/3 & fraction_completed < 2/3]
-            relapse[,fraction_completed >= 2/3 & fraction_completed < 1] <- t(t(relapse_resistance + relapse246[3]) + (relapse246[3]-relapse246[3])*(1-fraction_completed))[, fraction_completed >= 2/3 & fraction_completed < 1]
+            relapse[,fraction_completed >= 1/3 & fraction_completed < 2/3] <- 
+              t(t(relapse_resistance) * (relapse246[2] + (relapse246[1]-relapse246[2])*(2/3-fraction_completed)))[, fraction_completed >= 1/3 & fraction_completed < 2/3]
+            relapse[,fraction_completed >= 2/3 & fraction_completed < 1] <- 
+              t(t(relapse_resistance) * (relapse246[3]) + (relapse246[3]-relapse246[3])*(1-fraction_completed))[, fraction_completed >= 2/3 & fraction_completed < 1]
             relapse[,fraction_completed >= 1] <- relapse_resistance[, fraction_completed >= 1]
             relapse[relapse>1] <- 1 #if sum exceeds 100%, set to 100% relapse
             return(relapse) 
@@ -259,7 +263,7 @@ dxdt <- function(t, state, fullpars, do.tally=FALSE)
   
     tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"rrinc"] <- 
       apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A.[.]Rr",statenames)], 1, sum)
-    tally[grep("^A.[.]R[0cn]",statenames),"rrinc"] <-  # from active directly to relapse (when treatment starts) happens ony when resistance is acquired, so is a good place to count new rif resistance
+    tally[grep("^A.[.]R[0cn]",statenames),"rrinc"] <-  # from active directly to relapse (when treatment starts) happens ony when resistance is acquired, so is a good place to count new rif resistance (but will produce small nonzero incidence at time zero)
       apply(squaremat[grep("^A.[.]R[0cn]",statenames),  grep("^R.Rr",statenames)], 1, sum)
     
     tally[grep("^R",statenames),"relapses"] <- 
@@ -315,9 +319,9 @@ advance <- function(state, t0, dxdt, addedt=1, reportsteps=1, fullpars)
 
   
 # run to equilibrium without drugs; will need to adjust Rnames and resistance-related parameters, and remake mat
-equilib <- function(state, func=dxdt)
+equilib <- function(state, func=dxdt, pars, tol=0.1)
 {
-  pars <- create.pars(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
+  if(missing(pars)) pars <- create.pars(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
   
   if(missing(state)) { state <- with(pars$fullpars,  c(90000, 9900, 100, rep(0,length(statenames)-3))); names(state) <- pars$fullpars$statenames }
   
@@ -326,9 +330,9 @@ equilib <- function(state, func=dxdt)
   log <- c(0, state, rep(0, ncol(statex)-1-length(state))); names(log) <- colnames(statex)
   log <- rbind(log, statex[2,])
   
-  while (max (statex[2,-1]-statex[1,-1])>0.1)
+  while (max (statex[2,-1]-statex[1,-1])>tol)
   {
-    statex <- advance(state=statex[2,2:(length(state)+1)], t0=totaltime, t=10, func, pars$fullpars)
+    statex <- advance(state=statex[2,2:(length(state)+1)], t0=totaltime, addedt=10, func, fullpars=pars$fullpars)
     totaltime <- totaltime + 10
     log <- rbind(log, statex[2,])
   }
@@ -353,7 +357,7 @@ addmdr<- function(eqb, acqres=0.005, DSTrif = c(0,0), rtrans=0.7, addedt=10)
   oldstate <- with(eqb,log[nrow(log),2:(length(oldstatenames)+1)])
   
   oldvalues <- eqb$pars$values
-  newvalues <- oldvalues; newvalues$acqres_s <- acqres; newvalues$DSTrif <- DSTrif; newvalues$transmissibility <- c(1,rep(rtrans,7))
+  newvalues <- oldvalues; newvalues$acqres_s <- acqres; newvalues$DSTrif <- DSTrif; newvalues$transmissibility <- rtrans
   
   if (sum(DSTrif)>0) treatSL <- TRUE else treatSL <- FALSE
   newpars <- create.pars(values=newvalues, DRera=TRUE, treatSL=treatSL, treatnovel=FALSE)
@@ -372,9 +376,3 @@ addmdr<- function(eqb, acqres=0.005, DSTrif = c(0,0), rtrans=0.7, addedt=10)
   return(list("mdrode"=mdrode, "pars"=newpars))
 }
 
-
-addnovel <- function(odeout, pars)
-{
-  
-  
-}
