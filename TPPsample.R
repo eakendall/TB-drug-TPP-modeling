@@ -43,8 +43,8 @@ sample.values <- function(values, whichparset="ds", LHS, isim)
 
 
 
-Nsims_ds <- 200
-Nsims_dr <- 200
+Nsims_ds <- 1
+Nsims_dr <- 1
 
 Nsamplepars_ds <- nrow(samplepars("ds"))
 Nsamplepars_dr <- nrow(samplepars("dr"))
@@ -53,11 +53,12 @@ dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
 
 values <- set.values()
+tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 
 header <- c("ids","idr", 
             names(unlist(values[samplepars("ds")[,1]])), "beta", "hivrate", 
             names(unlist(values[samplepars("dr")[,1]])), 
-            drsetup$statenames, "tallynames") # tally names not yet defined, can pull from equilib colnames after time and dsstatenames
+            drsetup$statenames, tallynames) # tally names not yet defined, can pull from equilib colnames after time and dsstatenames
 write(header, sep = ",", file="TPPcalibration.csv", ncolumns=length(header))
 
 LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); save(LHS, file="LHS200_20151202.Rdata")
@@ -131,40 +132,68 @@ for (isim in 1:Nsims_ds)
     results <- rbind(results, c(isim, isimdr, 
                                 unlist(newpars$values[samplepars("ds")[,1]]), newpars$values$beta, newpars$values$hivrate, 
                                 unlist(newpars$values[samplepars("dr")[,1]]), 
-                                mdrend))
-    print(paste0("Finished isimdr=", isimdr))
+                                mdrend[2,2:ncol(mdrend)]))
+    print(paste0("Finished isimds=", isim, ", isimdr=", isimdr))
   }
 
   write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file="TPPcalibration.csv")
 }
+save(values, file="genericvalues_20151208")
 
-
-
-
-
-
-
-
-
-
-
-#  introduce novel regimen with range of TPP parameters
-addnovel <- function(odeout, pars, )
+screenmdrout <- function(mdrout_filename="TPPcalibration.csv", minratio, maxratio)
 {
-  state <- odeout[nrow(odeout), 2:(1+length(pars$fullpars$statenames))]
-  newvalues <- pars$values
-  newvalues <- 
-    # targetpop <- c(1,1); names(targetpop) <- c("DS", "MDR") #will change for MDR=(0,1), DS=(1,0), or panTB=(1,1)
-    # DSTnew <- c(0,1); names(DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status)
-    # months_n <- 4
-    # eligibility <- c(1,0.9)  #by HIV status
-    # availability <- 1 # MAY NEED TO MAKE THIS TIME-DEPENDENT FOR SCALE-UP !!
-    # ltfurate_n <- 0.01
-    # extrafail_n <- c(0, 0.08, 0.5) #for res to (-, c, n)
-    # acqres_n <- t(array(c( 0, 0.1, 0.05, 0.005, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-    #                        0, 0, 0.4, 0.04, 
-    #                        0, 0, 0, 0.1, 
-    #                        0, 0, 0, 0), dim=c(4,4)))
-  # relapse_n <- 0.02; resrelapse_n <- c(relapse_n+0.06, 0.6, 1 ) #risk of relapse (absolute, not additional) with novel regimen if resistance to c, n, and cn !!
-  
+  mdrout <- read.csv(file = mdrout_filename, header = TRUE)
+  screened <- mdrout[mdrout[,"rrinc"]/mdrout[,"inc"] > minratio & mdrout[,"rrinc"]/mdrout[,"inc"] < maxratio]  
+  return(screened)
 }
+
+evaltrp(values, drsetup, screenmdrout(minratio=0.001, maxratio= 0.2))
+
+
+evaltrp <- function(genericvalues, drsetup, mdrout_filename="TPPcalibration.csv", ids, idr, trpvalues)
+{
+  mdrout <- read.csv(file = mdrout_filename, header = TRUE)
+  allsampledpars <-rbind(samplepars("ds"), samplepars("dr"))
+  nsampledpars <- 0; for (name in allsampledpars[,1])  nsampledpars <- nsampledpars + length(genericvalues[[name]]) # count individual parameter elements
+  
+  novelsetup <- setup.model(DRera = TRUE, treatSL = TRUE, treatnovel = TRUE)
+  
+  if (missing(ids) | missing (idr)) rows <- 1:nrow(mdrout) else rows <- 1:nrow(mdrout)[mdrout[,"ids"] %in% ids & mdrout[,"idr"] %in% idr]
+  for (i in rows)
+  {
+    iter <- mdrout[i,c("ids", "idr")] #will include this as part of returned output
+    
+    valuevect <- mdrout[i, 2+(1:nsampledpars)] 
+    j <- 0 #initialize at start of valuevect
+    for (name in allsampledpars[,1])
+    {
+      genericvalues[[name]] <- valuevect[i,j+(1:length(genericvalues[[name]]))]
+      j <- j + length(genericvalues[[name]]) # move forward to start of next par vector in sampled values
+    }    
+    
+    state <- mdrout[i, 2+nsampledpars + (1:length(drsetup$statenames))]
+  
+    # now everything is pulled back out from mdrout. Need to set up for including novel regimen. 
+    newstate <- numeric(length(novelsetup$statenames)); names(newstate) <- novelsetup$statenames
+    newstate[drsetup$statenames] <- as.list(state)
+    
+    
+    # sample each TRP for the novel regimen
+    !!
+    
+  
+      
+      
+      ## implement novel regimen with a given TRP
+      # assign companion resistance to specified fractions of 0 and r's
+      s_cr <- nvalues$cres["rifs"]; r_dr <- nvalues$cres["rifr"]; novelstate <- newstate * rep( rep(c(1-s_cr, s_cr, 1-s_cr, s_cr, 1-r_cr, r_cr, 1-r_cr, r_cr), each=length(novelsetup$statenames)/16), 2)
+      
+      pars <- create.pars(setup = novelsetup, values = genericvalues)
+      
+    
+    
+    
+    
+  }
+}
+  

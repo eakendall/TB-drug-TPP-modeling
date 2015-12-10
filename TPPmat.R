@@ -1,7 +1,121 @@
 library('deSolve')
 
 # define fixed parameters; called by create.pars and carried forward in other functions
-## !!  WILL WANT TO MAKE A SEPARATE FUNCTION FOR THE PARS THAT VARY IN THE NOVEL REGIMEN'S TPP, BUT FOR NOW EVERYTHING IS HERE IN ONE PLACE 
+
+# will provide a list of "values" inputs for the function that implements novel regimen: 
+# each labeled by the targetpop, the DST use, the TRP element varied (with "none" as one option), and whether the varied TRP element is minimal or optimal
+samplenovel <- function(values, target="DS", DST="no")
+{
+  if (target == "DS") values$targetpop <- c(1,0) else values$targetpop <- c(0,1)
+  if (DST == "yes") values$DSTnew <- c(1,1) else values$DSTnew <- c(0,0)
+    
+  #set all TPR elements to middle value
+  if (target=="DS") values$relapse_n <- 0.02; if (target=="DR") values$relapse_n <- 0.04
+  if (target=="DS") values$months_n <- 4; if (target=="DR") values$months_n <- 9
+  if (target=="DS") values$cres <- rep(0.03, 2); if (target=="DR") values$cres <-rep(0.1, 2)  #or can make the two vector elements different, if companion resistance is correlated with rif resistance
+  if (target=="DS") barrierbase <- 0.05; if (target=="DR") barrierbase <- 0.008 
+  values$eligibility <- 1 - rep(0.02, 2) # can vary by HIV status !!
+  if (target=="DS") values$ltfu_rate_n <- values$ltfurate_s - 0.015/months_n; if (target=="DR") values$ltfu_rate_n <- values$ltfurate_s - 0.03/months_n  
+      
+  values$acqres_n <- t(array(c( 0, 0.1, barrierbase, 0.1*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+                                0, 0, 0, 8*barrierbase, 
+                                0, 0, 0, 0.1, 
+                                0, 0, 0, 0), dim=c(4,4))); values$acqres_n[acqres_n>1] <- 1
+  values$resrelapse_n <- c(values$relapse_n+0.06, 0.6, 1 )   #risk of relapse (absolute, not additional) with novel regimen if resistance to c, n, and cn !!
+
+  elementnames <- c("effectiveness", "duration", "companion", "barrier", "exclusions", "exclusions_hiv", "tolerability"); levelnames <- c("minimal", "optimal")
+  
+  levels <- as.list(levelnames); names(levels) <- levelnames
+  for (name in levelnames) levels[[name]] <- values
+  TRP <- as.list(elementnames); names(TRP) <- elementnames
+  for (name in elementnames) TRP[[name]] <- levels
+  TRP$none <- values
+  # input minimal and optimal TRP ranges here
+  if (target=="DS")
+  {
+    TRP$effectiveness$minimal$relapse_n <- 0.04
+    TRP$effectiveness$minimal$relapse_n <- 0 
+    
+    TRP$duration$minimal$months_n <- 6
+    TRP$duration$optimal$months_n <- 3
+    
+    TRP$companion$minimal$cres <- rep(0.1,2)
+    TRP$companion$optimal$cres <- rep(0,2)
+    
+    barrierbase <- 0.05; TRP$barrier$minimal$acqres_n <- t(array(c( 0, 0.1, barrierbase, 0.1*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+                                                                        0, 0, 0, 8*barrierbase, 
+                                                                        0, 0, 0, 0.1, 
+                                                                        0, 0, 0, 0), dim=c(4,4))); TRP$barrier$minimal$acqres_n[TRP$barrier$minimal$acqres_n>1] <- 1
+    barrierbase <- 0; TRP$barrier$minimal$acqres_n <- t(array(c( 0, 0.1, barrierbase, 0.1*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+                                                                     0, 0, 0, 0.005, 
+                                                                     0, 0, 0, 0.1, 
+                                                                     0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
+    
+    TRP$exclusions$minimal$eligibility <- 1- rep(0.11, 2)
+    TRP$exclusions$optimal$eligibility <- 1- rep(0, 2)
+    TRP$exclusions_hiv$minimal$eligibility[2] <- 0
+    TRP$exclusions_hiv$optimal$eligibility[2] <- TRP$exclusions_hiv$optimal$eligibility[2] - 0.05
+    
+    TRP$tolerability$minimal$ltfurate_n <- values$ltfurate_s
+    TRP$tolerability$optimal$ltfurate_n <- values$ltfurate_s - 0.03/months_n
+  }
+  
+  if (target=="DR")
+  {
+    TRP$effectiveness$minimal$relapse_n <- 0.04
+    TRP$effectiveness$minimal$relapse_n <- 0 
+    
+    TRP$duration$minimal$months_n <- 6
+    TRP$duration$optimal$months_n <- 3
+    
+    TRP$companion$minimal$cres <- rep(0.1,2)
+    TRP$companion$optimal$cres <- rep(0,2)
+    
+    barrierbase <- 0.05; TRP$barrier$minimal$acqres_n <- t(array(c( 0, 0.1, barrierbase, 0.1*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+                                                                    0, 0, 0, 8*barrierbase, 
+                                                                    0, 0, 0, 0.1, 
+                                                                    0, 0, 0, 0), dim=c(4,4))); TRP$barrier$minimal$acqres_n[TRP$barrier$minimal$acqres_n>1] <- 1
+    barrierbase <- 0; TRP$barrier$minimal$acqres_n <- t(array(c( 0, 0.1, barrierbase, 0.1*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+                                                                 0, 0, 0, 0.005, 
+                                                                 0, 0, 0, 0.1, 
+                                                                 0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
+    
+    TRP$exclusions$minimal$eligibility <- 1- rep(0.11, 2)
+    TRP$exclusions$optimal$eligibility <- 1- rep(0, 2)
+    TRP$exclusions_hiv$minimal$eligibility[2] <- 0
+    TRP$exclusions_hiv$optimal$eligibility[2] <- TRP$exclusions_hiv$optimal$eligibility[2] - 0.05
+    
+    TRP$tolerability$minimal$ltfurate_n <- values$ltfurate_s
+    TRP$tolerability$optimal$ltfurate_n <- values$ltfurate_s - 0.03/months_n
+  }
+  
+  
+  valuesets <- as.list(1:(1 + length(elements)*length(levels))); names(valuesets) <- c("none", paste0(rep(elements, each=length(levels)), ".", levels))
+  valuesets$none <- values
+  for (varied %in% elements) for (whichend %in% levels)
+  {
+    name <- paste0(varied, ".", whichend)
+    if varied=="effectiveness" 
+    {
+      if levels=="minimal" 
+      {
+        if valuesets[[name]]
+    
+    if (varied=="none") trpmin <- values; trpmax <- values
+    
+    valuesets <- append
+    
+    list(... = )
+    
+    
+    
+      
+      
+    }
+  }
+  
+  
+}
 
 set.values <- function()
 {
@@ -14,6 +128,8 @@ set.values <- function()
   
   months_s <- 6; months_r <- 18
   fail_s <- c(0.02,0.5); fail_r <- 0.12 # assumes second line outcomes are independent of resistance (and first line outcomes are independent of companion drug resistance)
+  # !! or, make all fails half relapses, but add an "extra
+  
   acqres_s <- 0.005; 
   relapse_s <- 0.04; relapse_r <- 0.12; mdrrelapse_s <- 0.6 #mdr relapse is of the 50% of rif resistance that doesn't fail outright
   dxrate <- c(0.5,1); DSTrif <- c(0.1,1); names(dxrate) <- names(DSTrif) <- c("An","Ap") 
@@ -21,17 +137,19 @@ set.values <- function()
   relapse246 <- c(7.5, 3, 1); names(relapse246) <- c("2mo","4mo","6mo") #extra relapse added by thirds of course completed (will interpolate between these) -- multiplicative by regimen efficacy
   
   targetpop <- c(1,1); names(targetpop) <- c("DS", "MDR") #will change for MDR=(0,1), DS=(1,0), or panTB=(1,1)
+  cres <- c(0.05,0.1); names(cres) <- c("rifs", "rifr")
   DSTnew <- c(0,1); names(DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status)
   months_n <- 4
   eligibility <- c(1,0.9)  #by HIV status
   availability <- 1 # MAY NEED TO MAKE THIS TIME-DEPENDENT FOR SCALE-UP !!
   ltfurate_n <- 0.01
-  extrafail_n <- c(0, 0.08, 0.5) #for res to (-, c, n)
+  relapse_n <- 0.02 #risk of relapse (absolute, not additional) with novel regimen if no resistance
+  fail_n <- 0.01 # 
+  extrafail_n <- c(0.08, 0.5) #for res to (c, n)
   acqres_n <- t(array(c( 0, 0.1, 0.05, 0.005, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                          0, 0, 0.4, 0.04, 
                          0, 0, 0, 0.1, 
                          0, 0, 0, 0), dim=c(4,4)))
-  relapse_n <- 0.02; resrelapse_n <- c(relapse_n+0.06, 0.6, 1 ) #risk of relapse (absolute, not additional) with novel regimen if resistance to c, n, and cn !!
   
   })
   
