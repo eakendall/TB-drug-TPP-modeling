@@ -5,7 +5,7 @@ library("akima")
 
 
 
-tag <- "20151212test"
+tag <- "20151212test2"
 
 Nsims_ds <- 1
 Nsims_dr <- 1
@@ -51,12 +51,12 @@ for (isim in 1:Nsims_ds)
     {
       dsvalues$beta <- b; dsvalues$hivrate <- h
       pars <- create.pars(dssetup, dsvalues)
-      e <- equilib (func=dxdt, pars=pars, tol=0.1)
+      e <- equilib (pars=pars, tol=0.5)
       state <- e$log[nrow(e$log),2:(1+length(pars$fullpars$statenames))]
       prev <- sum(state[c(grep("^A", pars$fullpars$statenames), grep("^T", pars$fullpars$statenames))])
       coprev <- sum(state[c(grep("^A.+Hp", pars$fullpars$statenames), grep("^T.+Hp", pars$fullpars$statenames))]) / prev
       optimat <- rbind(optimat, c(b,h,prev,coprev))
-      if (b==4 & prev>1000 & stopat4 ==F) { b <- 1; prev <- 0; stopat4 <- T} else b <- b+1
+      if (b==4 & prev>1000 & stopat4 ==F) { b <- 1; prev <- 0; stopat4 <- T} else if (b>20) b <- b+2 else if (prev<10) b <- b+2 else b <- b+1
     }
     h <- h*2
     print(paste0("Trying beta=", b, ", hivrate=", h))

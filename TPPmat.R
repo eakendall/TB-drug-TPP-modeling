@@ -56,8 +56,8 @@ samplenovel <- function(values, target="DS", DST=FALSE)
     TRP$exclusions_hiv$minimal$eligibility[2] <- 0
     TRP$exclusions_hiv$optimal$eligibility[2] <- TRP$exclusions_hiv$optimal$eligibility[2] - 0.05
     
-    TRP$tolerability$minimal$ltfurate_n <- values$ltfurate_s
-    TRP$tolerability$optimal$ltfurate_n <- values$ltfurate_s - 0.03/values$months_n
+    TRP$tolerability$minimal$ltfurate_n <- values$ltfurate_sr
+    TRP$tolerability$optimal$ltfurate_n <- values$ltfurate_sr - 0.03/values$months_n
   }
   
   if (target=="DR")
@@ -84,8 +84,8 @@ samplenovel <- function(values, target="DS", DST=FALSE)
     TRP$exclusions_hiv$minimal$eligibility[2] <- 0
     TRP$exclusions_hiv$optimal$eligibility[2] <- TRP$exclusions_hiv$optimal$eligibility[2] - 0.05
     
-    TRP$tolerability$minimal$ltfurate_n <- values$ltfurate_r
-    TRP$tolerability$optimal$ltfurate_n <- values$ltfurate_r - 0.06/values$months_n
+    TRP$tolerability$minimal$ltfurate_n <- values$ltfurate_sr
+    TRP$tolerability$optimal$ltfurate_n <- values$ltfurate_sr - 0.06/values$months_n
   }
   
 return(TRP)
@@ -98,33 +98,37 @@ set.values <- function()
 {
   values <- list()
   values <- within(values, {
-  selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.5
-  hivrate <- 0.001
-  reactrate <- c(0.001,0.1); rapidprog <- c(0.1,0.5); mort <- c(0.03,0.1); tbmort <- c(0.2,0.4); #by HIV status, made up numbers for now
-  beta <- 8; transmissibility <- 0.8
+    selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.5 #self cure in hiv neg only
+    hivrate <- 0.001; beta <- 8;  #don't matter here; will fit to target coprevalence
+    mort <- c(0.012,0.033);  #by HIV status; 
+    reactrate <- c(0.0015,0.03); rapidprog <- c(0.13,0.5); 
+    transmissibility <- 0.7 #of DR strain(s); will LHS sample
+    tbmort <- c(0.2,1) #by HIV status. LHSampled below for non-HIV. 
   
-  months_s <- 6; months_r <- 18
-  acqres_s <- 0.005; acqres_r <- 0
-  poor_s <- c(0.06, 0.8); poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, (with the below fraction of the poor outcomes being relapses)
-  relapsepoor <- 0.6
-  dxrate <- c(0.5,1); DSTrif <- c(0.1,1); names(dxrate) <- names(DSTrif) <- c("An","Ap") 
-  ltfurate_s <- 0.01; ltfurate_r <- 0.01
-  relapse246 <- c(7.5, 3, 1); names(relapse246) <- c("2mo","4mo","6mo") #extra relapse added by thirds of course completed (will interpolate between these) -- multiplicative by regimen efficacy
-  
-  targetpop <- c(1,1); names(targetpop) <- c("DS", "DR") #will change for DR=(0,1), DS=(1,0), or panTB=(1,1)
-  cres <- c(0.05,0.1); names(cres) <- c("rifs", "rifr")
-  DSTnew <- c(0,1); names(DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status)
-  months_n <- 4
-  eligibility <- c(1,0.9)  #by HIV status
-  availability <- 1 # Current version (editable within dxdt (nvary) scales up to this over 3 years
-  ltfurate_n <- 0.01
-  poor_n <- c(0.03 + c(0, 0.13, 0.5), 1) #for res to (0, c, n, cn), of those who don't acquire resistance
-  acqres_n <- t(array(c( 0, 0.1, 0.05, 0.005, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-                         0, 0, 0.4, 0.04, 
-                         0, 0, 0, 0.1, 
-                         0, 0, 0, 0), dim=c(4,4)))
+    months_s <- 6; months_r <- 18
+    acqres_s <- 0.005; acqres_r <- 0
+    poor_s <- c(0.06, 0.8); poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
+    relapsepoor <- 0.6
+    dxrate <- t(array(c(0.67,0.9, # new and prev treated hiv-
+                      2,2.7), dim=c(2,2))); # hiv+
+    DSTrif <- c(0.1,1); # sampled later in LHS
+    ltfurate_sr <- 0.01; # sampled later
+    relapse246 <- c(7.5, 3, 1);   names(dxrate) <- names(DSTrif) <- colnames(dxrate) <- c("An","Ap"); names(relapse246) <- c("2mo","4mo","6mo") #extra relapse added by thirds of course completed (will interpolate between these) -- multiplicative by regimen efficacy
+    
+    availability <- 1 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
+    targetpop <- c(1,1); names(targetpop) <- c("DS", "DR") #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
+    cres <- c(0.05,0.1); names(cres) <- c("rifs", "rifr") #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
+    DSTnew <- c(0,1); names(DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
+    months_n <- 4 #actually set in samplenovel
+    eligibility <- c(1,0.9)  #by HIV status #actually set in samplenovel
+    ltfurate_n <- ltfurate_sr
+    poor_n <- c(0.03 + c(0, 0.13, 0.5), 1) #for res to (0, c, n, cn), of those who don't acquire resistance #actually set in samplenovel
+    acqres_n <- t(array(c( 0, 0.1, 0.05, 0.005, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment #actually set in samplenovel
+                           0, 0, 0.4, 0.04, 
+                           0, 0, 0, 0.1, 
+                           0, 0, 0, 0), dim=c(4,4)))
   })
-    return(values)
+  return(values)
 }
 
 
@@ -134,12 +138,13 @@ samplepars <- function(whichparset)
 {
   if (whichparset=="ds") samplepars <- t(array(c(
     "reactrate", 1, 0.0005,0.0025,
-    "rapidprog", 1, 0.04,0.18, 
+    "rapidprog", 1, 0.09,0.17, 
     "tbmort",1, 0.1,0.3,
     "poor_s",1, 0.01,0.11,
     "relapse246",2,  1.5, 4.5,
-    "dxrate",1,  0.4,1.6    
-  ), dim=c(4,6) )) else
+    "dxrate",1,  0.3,1,
+    "ltfurate_sr", 1, 0.005, 0.015,
+  ), dim=c(4,7) )) else
     
     if (whichparset=="dr") samplepars <- t(array(c(
       "acqres_s", 1, 0.001, 0.009,
@@ -275,7 +280,7 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
   with(setup, {
     pars <- within(pars, {
       
-      names(reactrate) <- names(rapidprog) <- names(mort) <- names(tbmort) <- Hnames  
+      names(reactrate) <- names(rapidprog) <- names(mort) <- names(tbmort) <-rownames(dxrate) <- Hnames  
       
       transmissibility <- c(1,rep(transmissibility, length(Rnames)-1)); names(transmissibility) <- Rnames #need to decide details of fitness costs and sampling
       
@@ -284,7 +289,7 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       if (DRera==FALSE) acqres_s <- 0; if (treatSL==FALSE) DSTrif <- c(0,0); if (treatnovel==FALSE) availability <- 0 
       
       names(eligibility) <- Hnames
-      ltfurate <- c(ltfurate_s, ltfurate_r, ltfurate_n); names(ltfurate) <- regimens
+      ltfurate <- c(ltfurate_sr, ltfurate_sr, ltfurate_n); names(ltfurate) <- regimens
       
       
       #translate above parameters into outcome arrays (shouldn't need to edit this part unless model structure changes):
@@ -322,15 +327,18 @@ makemat <- function(pars)
     ## HIV infection 
     for (jr in Rnames) for (jt in Tnames) {  mat[jt, jt, jr, jr,"Hn","Hp"] <- mat[jt, jt, jr, jr,"Hn","Hp"] + hivrate }
      
-    # TB reactivation, mortality (background and TB-related, placed as ins on diagonal for now), self cure (all to R0 resistance), and relapse:
-    for (jr in Rnames) for (jh in Hnames) {
-      mat["Ln","An",jr, jr, jh, jh] <- mat["Ln","An",jr, jr, jh, jh] + reactrate[jh]; 
+    # self cure (HIV neg only, and all to R0 resistance), TB reactivation, mortality (background and TB-related, placed as ins on diagonal for now), and relapse:
+    for (jr in Rnames) 
+    {
+      mat["An","S",jr,"R0","H0","H0"] <- mat["An","S",jr,"R0","H0","H0"] + selfcurerate;  # note all cures go back to R0 to simplify later computations
+      for (jt in c("Ap","Ti")) { mat[jt,"C",jr,"R0","H0","H0"] <- mat[jt,"C",jr,"R0","H0","H0"] + selfcurerate } 
+      for (jh in Hnames) {  
+        mat["Ln","An",jr, jr, jh, jh] <- mat["Ln","An",jr, jr, jh, jh] + reactrate[jh]; 
         mat["Lp","Ap",jr, jr, jh, jh] <- mat["Lp","Ap",jr, jr, jh, jh] + reactrate[jh]  #reactivation, at hiv-dependent rate:
-      diag(mat[,,jr,jr,jh,jh]) <- diag(mat[,,jr,jr,jh,jh]) + mort[jh]
-      diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) <- diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) + tbmort[jh]
-      mat["An","S",jr,"R0",jh,jh] <- mat["An","S",jr,"R0",jh,jh] + selfcurerate;  # note all cures go back to R0 to simplify later computations
-        for (jt in c("Ap","Ti")) { mat[jt,"C",jr,"R0",jh,jh] <- mat[jt,"C",jr,"R0",jh,jh] + selfcurerate } 
-      mat["R","Ap",jr,jr,jh,jh] <- mat["R","Ap",jr,jr,jh,jh] + relapserate
+        diag(mat[,,jr,jr,jh,jh]) <- diag(mat[,,jr,jr,jh,jh]) + mort[jh]
+        diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) <- diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) + tbmort[jh]
+        mat["R","Ap",jr,jr,jh,jh] <- mat["R","Ap",jr,jr,jh,jh] + relapserate
+      }
     }
     
 
@@ -393,11 +401,11 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
 {
   DSTrif_t <- numeric(2); availability_t <- numeric(1)
   
-  if (missing(rvary)) { if (2 %in% fullpars$usereg) rvary<-TRUE else rvary<-FALSE }
+  if (missing(rvary)) { if (2 %in% fullpars$usereg) {rvary<-TRUE} else {rvary<-FALSE} }
   if (rvary==TRUE) { if (t <= -5) {DSTrif_t <- 0*fullpars$DSTrif} else if (t <= 0 && t > -5) {DSTrif_t <- (5+t)/5 * fullpars$DSTrif} else if (t > 0) {DSTrif_t <- fullpars$DSTrif}
     } else {DSTrif_t <- fullpars$DSTrif}
   
-  if (missing(nvary)) { if (3 %in% fullpars$usereg) nvary<-TRUE else nvary<-FALSE }
+  if (missing(nvary)) { if (3 %in% fullpars$usereg) {nvary<-TRUE} else {nvary<-FALSE} }
   if (nvary==TRUE) { if (t <= 0) availability_t <- 0 else if (t <= 3 && t > 0) availability_t <- (3-t)/3 * fullpars$availability else if (t > 3) availability_t <- fullpars$availability 
     } else availability_t <- fullpars$availability # 3 here is the scale-up time
   
@@ -409,7 +417,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       } else  { FOI <- apply(statemat[c("An","Ap","Ti"),,], 2, sum) * transmissibility * beta / sum(statemat) }# FOI by strain
     
     # infection
-  #   if (length(Rnames)>1 && sum(statemat[c("S","C"), -1, ]) >0 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
+     if (length(Rnames)>1 && sum(statemat[c("S","C"), -1, ]) >0 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
     for (jh in Hnames)
     {
       mat["S","Ln","R0",,jh,jh] <- mat["S","Ln","R0",,jh,jh] + FOI*(1-rapidprog[jh])
@@ -447,22 +455,22 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         {
           #acquired resistance moves to pending relapse for *new* strain
           mat[it, "R", , , jh, jh]  <- 
-            mat[it, "R", , , jh, jh] + dxrate[it] * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
+            mat[it, "R", , , jh, jh] + dxrate[jh, it] * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
           
           #of those who don't acquire resistance (1-rowSums(acqresmat)), will split between Ti (failmat) and T1 for the selected (startmat) regimen
           if (length(Rnames)>1)
           {
             diag(mat[it, "Ti", , , jh, jh]) <- 
-              diag(mat[it, "Ti", , , jh, jh]) + dxrate[it] * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+              diag(mat[it, "Ti", , , jh, jh]) + dxrate[jh, it] * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
-              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + dxrate[it] * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
+              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + dxrate[jh, it] * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
           } 
           else #if only the standard regimen is an option, diag and rowSums functions cause errors
           {
             mat[it, "Ti", 1,1, jh, jh] <- 
-              mat[it, "Ti", 1,1, jh, jh] + dxrate[it] * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+              mat[it, "Ti", 1,1, jh, jh] + dxrate[jh, it] * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
-              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  dxrate[it] * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
+              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  dxrate[jh, it] * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
           }
         }
       }
@@ -540,28 +548,28 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
 
 #advance forward a bit:
 ## stateplus includes outcomes tracking variables
-advance <- function(state, t0, addedt=1, func=dxdt, rvary, nvary, reportsteps=1, fullpars) 
+advance <- function(state, t0, addedt=1, rvary, nvary, reportsteps=1, fullpars) 
 {
-  o <- ode(state, seq(t0,t0+addedt,by=0.1), func, fullpars, rvary, nvary, do.tally=TRUE)
-  return(o[(10*(addedt-t0)+1 - reportsteps):(10*(addedt-t0)+1),])
+  o <- ode(state, seq(t0,t0+addedt,by=0.1), dxdt, parms=fullpars, rvary=rvary, nvary=nvary, do.tally=TRUE)
+  return(o[(10*(addedt)+1 - reportsteps):(10*(addedt)+1),])
 }
 
   
 # run to equilibrium without drugs; will need to adjust Rnames and resistance-related parameters, and remake mat
-equilib <- function(state, func=dxdt, pars, tol=0.1)
+equilib <- function(state, pars, tol=0.2)
 {
   if(missing(pars)) pars <- create.pars(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
   
   if(missing(state)) { state <- with(pars$fullpars,  c(90000, 9900, 100, rep(0,length(statenames)-3))); names(state) <- pars$fullpars$statenames }
   
-  statex <- ode(state, seq(0,20,by=0.1), func, pars$fullpars, do.tally=TRUE)[200:201,]; totaltime <- 20
+  statex <- ode(state, seq(0,20,by=0.1), func=dxdt, pars$fullpars, do.tally=TRUE)[200:201,]; totaltime <- 20
   
   log <- c(0, state, rep(0, ncol(statex)-1-length(state))); names(log) <- colnames(statex)
   log <- rbind(log, statex[2,])
   
-  while (max (statex[2,-1]-statex[1,-1])>tol)
+  while (max (abs(statex[2,-1]-statex[1,-1]))>tol)
   {
-    statex <- advance(state=statex[2,2:(length(state)+1)], t0=totaltime, addedt=10, func, fullpars=pars$fullpars)
+    statex <- advance(state=statex[2,2:(length(state)+1)], t0=totaltime, addedt=10, rvary=FALSE, nvary=FALSE, fullpars=pars$fullpars)
     totaltime <- totaltime + 10
     log <- rbind(log, statex[2,])
   }
