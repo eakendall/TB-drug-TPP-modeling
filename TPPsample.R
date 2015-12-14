@@ -4,11 +4,10 @@ library("akima")
 
 
 
+tag <- "20151213"
 
-tag <- "20151212test2"
-
-Nsims_ds <- 1
-Nsims_dr <- 1
+Nsims_ds <- 10
+Nsims_dr <- 10
 
 targetepis <- list( "India"=c(195, 0.04, 0.022) )#list("Brazil"=c(52, 0.17, 0.014), "India"=c(195, 0.04, 0.022), "Philippines"=c(417, 0.002, 0.02), "SouthAfrica"=c(696, 0.61, 0.018)) # tb prev, HIV coprev, rrinc/inc
 
@@ -85,7 +84,7 @@ for (isim in 1:Nsims_ds)
     newpars <- create.pars(values=dsvalues, setup=dssetup)
     
     # and get equilibrium state
-    opte <- equilib(func=dxdt, pars=newpars, tol=0.1)
+    opte <- equilib(pars=newpars, tol=0.1)
     dsstatenames <- dssetup$statenames
     estate <- with(opte,log[nrow(log),2:(length(dsstatenames)+1)])
   
@@ -108,8 +107,8 @@ for (isim in 1:Nsims_ds)
       drvalues <- sample.values(values=dsvalues, whichparset="dr", LHS=drLHS, isim=isimdr)
       drpars <- create.pars(setup = drsetup, values = drvalues)
     
-      # add and run to present over 25 years, with linear second line treatment scaleup to (present) max levels from years -5 to 0
-      drend <- ode(drstate, seq(-25,0,by=0.1), dxdt, drpars$fullpars, rvary=T, nvary=F, do.tally=TRUE)[251,]
+      # add and run to present over 25 years, with linear second line treatment scaleup to (present) max levels from years -10 to 0
+      drend <- ode(drstate, seq(-25,0,by=0.1), dxdt, drpars$fullpars, rvary=T, nvary=F, do.tally=TRUE, method=lsodes)[251,]
         
       # will later screen out unacceptable range (or could adjust transmissibility to get targeted RifDR incidence)
   
