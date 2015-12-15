@@ -40,8 +40,8 @@ samplenovel <- function(values, target="DS", DST=FALSE)
     TRP$duration$minimal$months_n <- 6
     TRP$duration$optimal$months_n <- 3
     
-    TRP$companion$minimal$cres <- rep(0.1,2)
-    TRP$companion$optimal$cres <- rep(0,2)
+    TRP$companion$minimal$cres[1:2] <- rep(0.1,2)
+    TRP$companion$optimal$cres[1:2] <- rep(0,2)
     
     barrierbase <- 0.05; TRP$barrier$minimal$acqres_n <- t(array(c( 0, 0.1, barrierbase, 0.1*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                                                                         0, 0, 0, 8*barrierbase, 
@@ -62,14 +62,14 @@ samplenovel <- function(values, target="DS", DST=FALSE)
   
   if (target=="DR")
   {
-    poor_n <- 0.18; TRP$effectiveness$minimal$poor_n <- c(poor_n + c(0, 0.13, 0.5), 1)
-    poor_n <- 0.03; TRP$effectiveness$minimal$poor_n <- c(poor_n + c(0, 0.13, 0.5), 1)
+    poor_n <- 0.18; TRP$effectiveness$minimal$poor_n[1:4] <- c(poor_n + c(0, 0.13, 0.5), 1)
+    poor_n <- 0.03; TRP$effectiveness$minimal$poor_n[1:4] <- c(poor_n + c(0, 0.13, 0.5), 1)
     
     TRP$duration$minimal$months_n <- 18
     TRP$duration$optimal$months_n <- 6
     
-    TRP$companion$minimal$cres <- rep(0.25, 2)
-    TRP$companion$optimal$cres <- rep(0, 2)
+    TRP$companion$minimal$cres[1:2] <- rep(0.25, 2)
+    TRP$companion$optimal$cres[1:2] <- rep(0, 2)
     
     barrierbase <- 0.1; TRP$barrier$minimal$acqres_n <- t(array(c( 0, 0.1, barrierbase, 0.1*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                                                                     0, 0, 0, 8*barrierbase, 
@@ -179,7 +179,7 @@ sample.values <- function(values, whichparset="ds", LHS, isim)
 screendrout <- function(drout_filename=paste0("DRcalibration_",tag,".csv"))
 {
   drout <- read.csv(file = drout_filename, header = TRUE) #saved results from dr sampling runs to time 0
-  screened <- drout[ drout[,"rrinc"]/drout[,"inc"] > 1/3*drout[,"targetdr"] & drout[,"rrinc"]/drout[,"inc"] < 3*drout[,"targetdr"] ]  #within 3fold if rr incident fraction target
+  screened <- drout[ drout[,"rrinc"]/drout[,"inc"] > 1/3*drout[,"targetdr"] & drout[,"rrinc"]/drout[,"inc"] < 3*drout[,"targetdr"], ]  #within 3fold if rr incident fraction target
   return(screened)
 }
 
@@ -225,6 +225,8 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
     for (vary in names(TRP))
     {  for (level in names(TRP[[vary]]))
       {
+        print(paste0("Evaluating TRP variation in ",vary, ", ", level ," level, for target population ", targetpt, " with DST ", DST))
+      
         valueset <- TRP[[vary]][[level]]
         
         # revise state to assign companion resistance to specified fractions of 0 and r's
@@ -234,7 +236,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
         parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
         
         ## implement novel regimen with the given TRP, and record yearly state and stats for ten years
-        outset <- ode(y=unlist(novelstate), times=seq(0, 10, by=0.1), func=dxdt, parms=parset$fullpars, do.tally=TRUE, method=lsodes)
+        outset <- ode(y=unlist(novelstate), times=seq(0, 10, by=0.1), func=dxdt, parms=parset$fullpars, do.tally=TRUE, method=lsodes)[seq(1,101,by=10),]
         
         TRP[[vary]][[level]]$output <- outset
         
@@ -419,7 +421,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       } else  { FOI <- apply(statemat[c("An","Ap","Ti"),,], 2, sum) * transmissibility * beta / sum(statemat) }# FOI by strain
     
     # infection
-      if (length(Rnames)>1 && sum(statemat[c("S","C"), -1, ]) > 0.0001 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
+#      if (length(Rnames)>1 && sum(statemat[c("S","C"), -1, ]) > 0.0001 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
     for (jh in Hnames)
     {
       mat["S","Ln","R0",,jh,jh] <- mat["S","Ln","R0",,jh,jh] + FOI*(1-rapidprog[jh])

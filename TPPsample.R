@@ -118,7 +118,7 @@ for (isim in 1:Nsims_ds)
                                   unlist(newpars$values[unique(samplepars("dr")[,1])]), 
                                   drend[2:length(drend)]))
       print(paste0("Finished isimds=", isim, ", isimdr=", isimdr))
-    }
+    } 
 
     write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file=paste0("DRcalibration_",tag,".csv"))
   }
@@ -130,5 +130,8 @@ for (isim in 1:Nsims_ds)
 novelimpact <- evaltrp(genericvalues = values, drsetup = drsetup, drout=screendrout(), targetpt="DS", DST=FALSE)
 
 
-  
+plotimpact <- function(times=seq(-25,10,by=1), drout, novelimpact)
+{
+  inc <- drout[seq(1,nrow(drout), by=10,""]
+  par(mfrow=c(2,2))  #plot baseline impact of novel regimen
 
