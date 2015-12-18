@@ -28,51 +28,52 @@ samplenovel <- function(mergedvalues, target="DS", DST=TRUE)
   for (name in levelnames) levels[[name]] <- mergedvalues; for (name in exclusionnames) exclusionlevels[[name]] <- mergedvalues
   TRP <- as.list(elementnames); names(TRP) <- elementnames
   for (name in elementnames) TRP[[name]] <- levels; TRP[["exclusions"]] <- exclusionlevels
-  TRP$minimal <- list(); TRP$minimal$minimal <- mergedvalues
+  TRP$all <- list(); TRP$all$minimal <- TRP$all$intermediate <- TRP$all$optimal <- mergedvalues
   # input intermediate and optimal TRP ranges here
   if (target=="DS")
   {
-    TRP$effectiveness$intermediate$poor_n <- 0.03
-    TRP$effectiveness$intermediate$poor_n <- 0
+    TRP$effectiveness$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.03
+    TRP$effectiveness$optimal$poor_n <- TRP$all$optimal$poor_n <- 0
     
-    TRP$duration$intermediate$months_n <- 9
-    TRP$duration$optimal$months_n <- 4
+    TRP$duration$intermediate$months_n <- TRP$all$intermediate$months_n <- 9
+    TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 4
     
-    TRP$companion$intermediate$cres[1:2] <- rep(0.03,2)
-    TRP$companion$optimal$cres[1:2] <- rep(0,2)
+    TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.03,2)
+    TRP$companion$optimal$cres[1:2] <- TRP$all$optimal$cres[1:2] <- rep(0,2)
     
-    barrierbase <- 0.008; TRP$barrier$intermediate$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+    barrierbase <- 0.008; TRP$barrier$intermediate$acqres_n <- TRP$all$intermediate$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                                                                         0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
                                                                         0, 0, 0, mergedvalues$acqres_candn, 
                                                                         0, 0, 0, 0), dim=c(4,4))); TRP$barrier$intermediate$acqres_n[TRP$barrier$intermediate$acqres_n>1] <- 1
-    barrierbase <- 0; TRP$barrier$intermediate$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+    barrierbase <- 0; TRP$barrier$optimal$acqres_n <- TRP$all$optimal$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                                                                      0, 0, 0, mergedvalues$acqres_s, 
                                                                      0, 0, 0, mergedvalues$acqres_candn, 
                                                                      0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
     TRP$exclusions$fewerHIV$eligibility <- 1- rep(0.1, 0.1)
     TRP$exclusions$fewergeneral$eligibility <- 1- rep(0, 1)
-    TRP$exclusions$none$eligibility <- 1- rep(0, 0)
+    TRP$all$intermediate$eligibility <- 1-c(0.05,0.5)
+    TRP$exclusions$none$eligibility <- TRP$all$optimal$eligibility <- 1- rep(0, 0)
     
-    TRP$tolerability$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.015/mergedvalues$months_n
-    TRP$tolerability$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
+    TRP$tolerability$intermediate$ltfurate_n <- TRP$all$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.015/mergedvalues$months_n
+    TRP$tolerability$optimal$ltfurate_n <- TRP$all$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
   }
   
   if (target=="DR")
   {
-    TRP$effectiveness$intermediate$poor_n <- 0.06
-    TRP$effectiveness$intermediate$poor_n <- 0.03
+    TRP$effectiveness$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.06
+    TRP$effectiveness$optimal$poor_n <- TRP$all$optimal$poor_n <- 0.03
     
-    TRP$duration$intermediate$months_n <- 18
-    TRP$duration$optimal$months_n <- 6
+    TRP$duration$intermediate$months_n <-TRP$all$intermediate$months_n <- 18
+    TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 6
     
-    TRP$companion$intermediate$cres[1:2] <- rep(0.1, 2)
-    TRP$companion$optimal$cres[1:2] <- rep(0, 2)
+    TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.1, 2)
+    TRP$companion$optimal$cres[1:2] <- TRP$all$optimal$cres[1:2] <- rep(0, 2)
     
-    barrierbase <- 0.05; TRP$barrier$intermediate$acqres_n <-  t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+    barrierbase <- 0.05; TRP$barrier$intermediate$acqres_n <-  TRP$all$intermediate$acqres_n <-  t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                                                                     0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
                                                                     0, 0, 0, mergedvalues$acqres_candn, 
                                                                     0, 0, 0, 0), dim=c(4,4))); TRP$barrier$intermediate$acqres_n[TRP$barrier$intermediate$acqres_n>1] <- 1
-    barrierbase <- 0.008; TRP$barrier$optimal$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+    barrierbase <- 0.008; TRP$barrier$optimal$acqres_n <- TRP$all$optimal$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                                                                  0, 0, 0, mergedvalues$mergedvalues$acqres_s, 
                                                                  0, 0, 0, mergedvalues$acqres_candn, 
                                                                  0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
@@ -80,10 +81,11 @@ samplenovel <- function(mergedvalues, target="DS", DST=TRUE)
     
     TRP$exclusions$fewerHIV$eligibility <- 1- rep(0.1, 0.1)
     TRP$exclusions$fewergeneral$eligibility <- 1- rep(0, 1)
-    TRP$exclusions$none$eligibility <- 1- rep(0, 0)
+    TRP$all$intermediate <- 1-c(0.05,0.5)
+    TRP$exclusions$none$eligibility <- TRP$all$optimal$eligibility <- 1- rep(0, 0)
     
-    TRP$tolerability$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
-    TRP$tolerability$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.06/mergedvalues$months_n
+    TRP$tolerability$intermediate$ltfurate_n <- TRP$all$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
+    TRP$tolerability$optimal$ltfurate_n <- TRP$all$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.06/mergedvalues$months_n
   }
   
 return(TRP) # a set of edited single-list values for use in create.pars
@@ -572,10 +574,13 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
   # so keep the same ratios of c and not c among new latents after time 0, as were assigned at time zero.
   
   
-  if (length(Rnames)==1)    dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
+  if (length(Rnames)==1)    
+  {
+    dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
+    dxdt[statenames=="Ln.R0.Hn"] <- dxdt[statenames=="Ln.R0.Hn"] + sum(deaths) * (1-exp(-15*sum(FOI)))
+   }
 
-
-  if (t<=0 | length(Rnames)==2)
+  if (length(Rnames)==2 | (t<=0  & length(Rnames)==8))
   {
     dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
     dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn")] + sum(deaths) * 
