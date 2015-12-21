@@ -18,7 +18,7 @@ set.novelvalues <- function()
   selections$ltfu_reduction <- array(c(0, 0.015, 0.03,
                                        0, 0.03, 0.06), dim=c(3,2))
 
-  elementnames <- c("effectiveness", "duration", "companion", "barrier", "exclusions", "tolerability")
+  elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability")
   
   return(list("selections"=selections, "elementnames"=elementnames))
 }
@@ -34,7 +34,7 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
   if (targetpt == "DS") {mergedvalues$targetpop <- c(1,0); whichcol<-1} else {mergedvalues$targetpop <- c(0,1); whichcol<-2 }
   whichrow <- rep(2, length(elementnames)); whichrow[which(elementnames %in% optimals)] <- 3; whichrow[which(elementnames %in% minimals)] <- 1
   
-  mergedvalues$poor_n <- selections$poor_n[whichrow[which(elementnames=="effectiveness")], whichcol]
+  mergedvalues$poor_n <- selections$poor_n[whichrow[which(elementnames=="efficacy")], whichcol]
   mergedvalues$months_n <- selections$months_n[whichrow[which(elementnames=="duration")], whichcol]
   mergedvalues$cres[1:2] <- selections$cres[ , whichrow[which(elementnames=="companion")], whichcol]
   barrierbase <- selections$barrierbase[whichrow[which(elementnames=="barrier")], whichcol];
@@ -128,7 +128,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
 }
 
 
-# elementnames <- c("effectiveness", "duration", "companion", "barrier", "exclusions", "tolerability")
+# elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability")
 # 
 # selections <- list()
 # selections$poor_n <- array(c(0.06, 0.03, 0, 
@@ -177,7 +177,7 @@ samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
                                       0, 0, 0, mergedvalues$acqres_candn, 
                                       0, 0, 0, 0), dim=c(4,4))); mergedvalues$acqres_n[mergedvalues$acqres_n>1] <- 1
   
-  elementnames <- c("effectiveness", "duration", "companion", "barrier", "exclusions", "tolerability"); 
+  elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability"); 
   levelnames <- c("intermediate", "optimal"); exclusionnames <- c("fewerHIV", "fewergeneral", "none")
   
   levels <- as.list(levelnames); names(levels) <- levelnames; exclusionlevels <- as.list(exclusionnames); names(exclusionlevels) <- exclusionnames
@@ -188,8 +188,8 @@ samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
   # input intermediate and optimal TRP ranges here
   if (target=="DS")
   {
-    TRP$effectiveness$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.03
-    TRP$effectiveness$optimal$poor_n <- TRP$all$optimal$poor_n <- 0
+    TRP$efficacy$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.03
+    TRP$efficacy$optimal$poor_n <- TRP$all$optimal$poor_n <- 0
     
     TRP$duration$intermediate$months_n <- TRP$all$intermediate$months_n <- 4
     TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 3
@@ -216,8 +216,8 @@ samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
   
   if (target=="DR")
   {
-    TRP$effectiveness$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.06
-    TRP$effectiveness$optimal$poor_n <- TRP$all$optimal$poor_n <- 0.03
+    TRP$efficacy$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.06
+    TRP$efficacy$optimal$poor_n <- TRP$all$optimal$poor_n <- 0.03
     
     TRP$duration$intermediate$months_n <-TRP$all$intermediate$months_n <- 9
     TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 6
@@ -328,6 +328,12 @@ screendrout <- function(drout_filename=paste0("DRcalibration_",currenttag,".csv"
   return(screened)
 }
 
+
+loadnovel <- function(targetpt, DST, targetepi, tag=currenttag)
+{
+  novelout <- subset(read.csv(paste0("TRPoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
+  return(novelout)
+}
 
 evaltrp_minbase <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST="DSTall", tag=currenttag) # uses merged but not unlisted values
 {
@@ -531,7 +537,7 @@ makemat <- function(pars)
     ## TB diagnosis and treatment initiation happen in dxdt (to allow time-varying treatment availability)
     
     # once on effective treatment, progress through treatment to either relapse or cure (or to active if lost to follow up during first 2 months), including a monthly rate of loss to follow up 
-    # this function determines whether relapse or cure depending on effectiveness of regimen and fraction completed. Assuming losses occur in the middle of each time period on average.
+    # this function determines whether relapse or cure depending on efficacy of regimen and fraction completed. Assuming losses occur in the middle of each time period on average.
     relapsefracs <- function(period) # use relapse %s at 2, 4, and 6 months (defined in pars) for a 6 month regimen, and interpolate linearly 2--4 and 4--6 to get relapse % after any fraction of treatment course
     {
       fraction_completed <- (sum(Tperiod.lengths[1:period-1])+1/2*Tperiod.lengths[period])/durations
@@ -794,3 +800,24 @@ equilib <- function(state, pars, tol=0.2)
   return(list("log"=log, "pars"=pars))
 }
   
+extend_drout <- function(drout, tag=currenttag)
+{
+  write(c("idr",tallynames), sep = ",", file=paste0("DRextend_",currenttag,".csv"), ncol=1+length(tallynames))
+  
+  values <- mergedvalues
+  for (i in 1:nrow(drout))
+  {
+    state <- drout[i,drsetup$statenames]
+    valuevect <- drout[i, 5+(1:length(unlist(values)))] ; names(valuevect) <- names(unlist(values))
+    v <- 0; for (pname in names(values))
+    { values[[pname]] <- unlist(valuevect[v+(1:length(values[[pname]]))]); #names(genericvalues[[pname]]) <- names()
+      v <- v + length(values[[pname]]) # move forward to start of next par vector in sampled values
+    }    
+    fullpars <- create.pars(setup = drsetup, values = values, T, T, F)$fullpars
+    
+    tally10 <- ode(y=unlist(state), times=c(0,10), func=dxdt, parms=fullpars, do.tally=TRUE, method="adams")[2,1+(1:length(tallynames))]
+    
+    write(c(i,tally10), sep=",", file=paste0("DRextend_",currenttag,".csv"), append=TRUE, ncol=1+length(tallynames))
+  }
+  return("drextend complete")  
+}

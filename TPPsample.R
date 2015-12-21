@@ -7,7 +7,7 @@ library("akima")
 library("stringr")
 
 
-currenttag <- "20151218"
+currenttag <- "20151221"
 
 Nsims_ds <- 3
 Nsims_dr <- 3
@@ -28,7 +28,7 @@ Nsamplepars_dr <- length(unlist(values$varied_dr))
 
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 
-elementnames <- names(samplenovel(values)); levelnames <- names(samplenovel(values)[[1]])
+elementnames <- set.novelvalues$elementnames
 
 dsheader <- c("ids",  "targetprev","targetcoprev","targetdr",
               names(unlist(values)), 
@@ -121,7 +121,7 @@ for (isim in 1:Nsims_ds)
   
       # save time-zero state and values
       results <- rbind(results, c(isim, isimdr, unlist(targetepis[tname]), 
-                                  unlist(newpars$values),
+                                  unlist(drvalues),
                                   drend[2:length(drend)]))
       print(paste0("Finished isimds=", isim, ", isimdr=", isimdr))
     } 
@@ -133,35 +133,32 @@ for (isim in 1:Nsims_ds)
 
 
 drout <- screendrout()
+extend_drout(drout)
+dr10 <- cbind(drout, read.csv(paste0("DRextend_",currenttag,".csv"), header=T))
+  
 # limits output to those simulations with DR fraction of incidence in targetepi range
 
 varynovel <- evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DS", DST="DSTall") # can also specify ids and idr to run just a subset of drout
 # generates file of all TRP variations for all sampled simulations, for a given targetdt and dst, for each of potentially multiple targetepis
 
-loadnovel <- function(targetpt, DST, targetepi, tag=currenttag)
-{
-  novelout <- subset(read.csv(paste0("TRPoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
-  return(novelout)
-}
-
 novelsubset <- loadnovel(targetpt="DS", DST="DSTall", targetepi=names(targetepis), tag=currenttag)
-tbdeaths <- novelsubset[,c(1:5, grep("tbdeaths", colnames(novelsubset)))]
+tail(novelsubset[,c(1:5, grep("tbdeaths", colnames(novelsubset)))]) #view
 
 levels <- c("minimal","intermediate","optimal"); elementnames <- names(samplenovel(values))
 traj <- array(0, dim=c(11,3,5)); dimnames(traj) <- list("t"=0:10, "level"=levels, "q"=c(0.025,0.25,0.5,0.075,0.975))
 for (t in 0:10) for (l in levels) traj[t,l,] <- quantile(novelsubset[,novelheader==paste0(outcome, t, l)], c(0.025,0.25,0.5,0.075,0.975))
 
-final_abs <- final_diff <- array(0,dim=c( length(names(TRP))-1 , 2 , 5 )); dimnames(final_abs) <- dimnames(final_diff) <- list("vary"=names(genericTRP), "level"=c("intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975), )
+final_abs <- final_diff <- array(0,dim=c( length(elementnames)-1 , 2 , 5 )); dimnames(final_abs) <- dimnames(final_diff) <- list("vary"=names(genericTRP), "level"=c("minimal", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
 for (vary in elementnames[-length(elementnames)]) 
 {
-  final_abs[vary,1,] <- quantile(novelsubset[ , paste0(vary,".",levelnames[1],".",outcome)], c(0.025,0.25,0.5,0.075,0.975))
-  final_abs[vary,2,] <- quantile(novelsubset[ , paste0(vary,".",levelnames[2],".",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+  final_abs[vary,1,] <- quantile(novelsubset[ , paste0(vary,".minimal.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+  final_abs[vary,2,] <- quantile(novelsubset[ , paste0(vary,".optimal.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
   
 
-  final_diff[vary,1,] <- quantile(novelsubset[ , paste0("all.minimal.",outcome)] - novelsubset[ , paste0(vary,".",levelnames[1],".",outcome)]/
-                                                                           novelsubset[ , paste0("all.minimal.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
-  final_diff[vary,2,] <- quantile(novelsubset[ , paste0("all.minimal.",outcome)] - novelsubset[ , paste0(vary,".",levelnames[2],".",outcome)]/
-                                                                           novelsubset[ , paste0("all.minimal.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+  final_diff[vary,1,] <- quantile(novelsubset[ , paste0("allintermediate10",outcome)] - novelsubset[ , paste0(vary,".",levelnames[1],".",outcome)]/
+                                                                           novelsubset[ , paste0("allintermediate10",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+  final_diff[vary,2,] <- quantile(novelsubset[ , paste0("allintermediate10",outcome)] - novelsubset[ , paste0(vary,".",levelnames[2],".",outcome)]/
+                                                                           novelsubset[ , paste0("allintermediate10",outcome)], c(0.025,0.25,0.5,0.075,0.975))
 }  
 
 
