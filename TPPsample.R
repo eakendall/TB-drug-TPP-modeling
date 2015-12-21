@@ -1,5 +1,6 @@
 source("TPPmat.R")
 
+library("deSolve")
 library("stats") #contains optim()
 library("lhs")
 library("akima")
@@ -15,6 +16,8 @@ targetepis <- list( "India"=c(195, 0.04, 0.022) )#list("Brazil"=c(52, 0.17, 0.01
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
+novelsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
+
 
 values <- set.values()
 mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
@@ -112,7 +115,7 @@ for (isim in 1:Nsims_ds)
       drpars <- create.pars(setup = drsetup, values = drvalues)
     
       # add and run to present over 25 years, with linear second line treatment scaleup to (present) max levels from years -10 to 0
-      drend <- ode(drstate, seq(-25,0,by=0.1), dxdt, drpars$fullpars, rvary=T, nvary=F, do.tally=TRUE, method=lsodes)[251,]
+      drend <- ode(drstate, seq(-25,0,by=0.1), dxdt, drpars$fullpars, rvary=T, nvary=F, do.tally=TRUE, method="adams")[251,]
         
       # will later screen out unacceptable range (or could adjust transmissibility to get targeted RifDR incidence)
   
@@ -132,63 +135,49 @@ for (isim in 1:Nsims_ds)
 drout <- screendrout()
 # limits output to those simulations with DR fraction of incidence in targetepi range
 
-varynovel <- evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DS", DST=TRUE) # can also specify ids and idr to run just a subset of drout
+varynovel <- evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DS", DST="DSTall") # can also specify ids and idr to run just a subset of drout
 # generates file of all TRP variations for all sampled simulations, for a given targetdt and dst, for each of potentially multiple targetepis
 
 loadnovel <- function(targetpt, DST, targetepi, tag=currenttag)
 {
-  novelout <- subset(read.csv(paste0("TRPoutput_", targetpt, DST,"_", tag,".csv")), targetprev==targetepis[[targetepi]][1] ) 
+  novelout <- subset(read.csv(paste0("TRPoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
   return(novelout)
 }
 
-# summarize (median, CIs) outcomes of interest for later graphical display, 
-collateimpact <- function(targetpts=c("DS","DR"), DSTs=c(TRUE, FALSE), epis=names(targetepis), outcomes="tbdeaths", tag=currenttag)
+novelsubset <- loadnovel(targetpt="DS", DST="DSTall", targetepi=names(targetepis), tag=currenttag)
+tbdeaths <- novelsubset[,c(1:5, grep("tbdeaths", colnames(novelsubset)))]
+
+levels <- c("minimal","intermediate","optimal"); elementnames <- names(samplenovel(values))
+traj <- array(0, dim=c(11,3,5)); dimnames(traj) <- list("t"=0:10, "level"=levels, "q"=c(0.025,0.25,0.5,0.075,0.975))
+for (t in 0:10) for (l in levels) traj[t,l,] <- quantile(novelsubset[,novelheader==paste0(outcome, t, l)], c(0.025,0.25,0.5,0.075,0.975))
+
+final_abs <- final_diff <- array(0,dim=c( length(names(TRP))-1 , 2 , 5 )); dimnames(final_abs) <- dimnames(final_diff) <- list("vary"=names(genericTRP), "level"=c("intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975), )
+for (vary in elementnames[-length(elementnames)]) 
 {
-  genericTRP <- samplenovel(mergedvalues) #can read in from file if needed
+  final_abs[vary,1,] <- quantile(novelsubset[ , paste0(vary,".",levelnames[1],".",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+  final_abs[vary,2,] <- quantile(novelsubset[ , paste0(vary,".",levelnames[2],".",outcome)], c(0.025,0.25,0.5,0.075,0.975))
   
-  # for each targetpt, dst, varied.element, level, and targetepi, determine median, IQR, and 95% UR of all trajectories' TB mortality (can add other outcomes later)
-  impact <- as.list(targetpts); names(impact) <- targetpts
-  for (pt in targetpts)
-  {
-    impact[[pt]] <- as.list(DSTs); names(impact[[pt]]) <- DSTs
-    for (DST in DSTs)
-    {
-      impact[[pt]][[DST]] <- as.list(names(targetepis)); names(impact[[pt]][[DST]]) <- names(targetepis)
-      for (epi in names(targetepis))
-      {
-        novelsubset <- loadnovel(pt, DST, epi, tag)
-        for (outcome in outcomes) #just tbdeaths for now
-        {
-          impact[[pt]][[DST]][[epi]][[outcome]] <- as.list(c("traj","final_abs","final_diff")); names(impact[[pt]][[DST]][[epi]][[outcome]]) <- c("traj","final_abs","final_diff")
-          # trajectory with CIs for typical novel TRP
-          impact[[pt]][[DST]][[epi]][[outcome]]$traj <- array(0, dim=c(5,11)); dimnames(traj) <- list("q"=c(0.025,0.25,0.5,0.075,0.975), "t"=0:10)
-          for (t in 0:10) impact[[pt]][[DST]][[epi]][[outcome]]$traj[,t] <- quantile(novelsubset[,paste0(outcome,t)], c(0.025,0.25,0.5,0.075,0.975))
 
-          # final result with CIs for each TRP variation: as an absolute outcome, and as compared to the minimal TRP for the same values
-          impact[[pt]][[DST]][[epi]][[outcome]]$final_abs <- impact[[pt]][[DST]][[epi]][[outcome]]$final_diff <- array(0,dim=c(5,length(elementnames),2))
-          dimnames(impact[[pt]][[DST]][[epi]][[outcome]]$final_abs) <- dimnames(impact[[pt]][[DST]][[epi]][[outcome]]$final_diff) <-                                                                             final_diff) <- 
-            list("q"=c(0.025,0.25,0.5,0.075,0.975), "vary"=names(TRP()), "level"=levelnames)
-          for (vary in elementnames) 
-          {
-            impact[[pt]][[DST]][[epi]][[outcome]]$final_abs[,vary,1] <- quantile(novelsubset[ ,paste0(vary,".",levelnames[1],".",outcome)], c(0.025,0.25,0.5,0.075,0.975))
-            impact[[pt]][[DST]][[epi]][[outcome]]$final_abs[,vary,2] <- quantile(novelsubset[ ,paste0(vary,".",levelnames[2],".",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+  final_diff[vary,1,] <- quantile(novelsubset[ , paste0("all.minimal.",outcome)] - novelsubset[ , paste0(vary,".",levelnames[1],".",outcome)]/
+                                                                           novelsubset[ , paste0("all.minimal.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+  final_diff[vary,2,] <- quantile(novelsubset[ , paste0("all.minimal.",outcome)] - novelsubset[ , paste0(vary,".",levelnames[2],".",outcome)]/
+                                                                           novelsubset[ , paste0("all.minimal.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
+}  
 
-            impact[[pt]][[DST]][[epi]][[outcome]]$final_diff[,vary,1] <- quantile( novelsubset[ ,paste0("none.none.",outcome)] - novelsubset[ ,paste0(vary,".",levelnames[1],".",outcome)]/
-                                               novelsubset[ ,paste0("none.none.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
-            impact[[pt]][[DST]][[epi]][[outcome]]$final_diff[,vary,2] <- quantile( novelsubset[ ,paste0("none.none.",outcome)] - novelsubset[ ,paste0(vary,".",levelnames[2],".",outcome)]/
-                                               novelsubset[ ,paste0("none.none.",outcome)], c(0.025,0.25,0.5,0.075,0.975))
-          }
-        }
-      }
-    }
-  }
-  return(impact)
+
 }
         
 
+plot(0:10, traj[,1,"0.5"])
+points(0:10, traj[,2,"0.5"])
+points(0:10, traj[,3,"0.5"])
+
+
+barplot()
+
 displayimpact <- function(drout, novelimpact)
 {
-  # plot: show basic median and 95% UR output before (e.g. from year -10) and after novel regimen introduction: tb mort, tb incidence, panronsets, and time on rx x3 in same plot)
+  # plot: show basic median and 95% UR output before (e.g. from year -10) and after novel regimen x3 'all' levels: tb mort, tb incidence, panronsets, and time on rx x3 in same plot)
   # barplot: median tbmort for standard (none) TRP and for each minimal/optimal pair, 2x2 for DS/DR and w/wo DST
   # sensitivity analysis: PRCC of typical novel regimen impact (% tb mortality reduction) for each LHS-varied parameter;  
     ## and within targetpt DR / DST TRUE, PRCC for each TPP elements diff in tb mortality from minimal to optimal
