@@ -62,15 +62,18 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
   novelsetup <- setup.model(DRera = TRUE, treatSL = TRUE, treatnovel = TRUE)
   elementnames <- c("all", set.novelvalues()$elementnames)
   
-  novelheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST")
-  novelheader <- append(novelheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), rep(c("allminimal", "allintermediate","alloptimal"), each=11*length(tallynames))))
-  for (i in 2:length(elementnames)) novelheader <- append(novelheader, 
-                                                       paste0( rep(elementnames[i], each=2*length(tallynames) ), ".", 
-                                                               rep( c("minimal","optimal"), each=length(tallynames)), ".",
-                                                               rep(tallynames, times=2)) )
+  longheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", names(unlist(genericvalues)), "vary","level","time",tallynames)
+  
+  wideheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST")
+  wideheader <- append(wideheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), rep(c("allminimal", "allintermediate","alloptimal"), each=11*length(tallynames))))
+  for (i in 2:length(elementnames)) wideheader <- append(wideheader, 
+                                                       paste0( rep(tallynames, times=2), "10",
+                                                              rep(elementnames[i], each=2*length(tallynames) ),
+                                                              rep( c("minimal","optimal"), each=length(tallynames))))
                    
   
-  if(!file.exists(paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"))) { write(novelheader,  file=paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(novelheader)) }
+  if(!file.exists(paste0("TRPlongoutput_", targetpt,DST,"_",tag,".csv"))) { write(longheader,  file=paste0("TRPlongoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(longheader)) }
+  if(!file.exists(paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
 
   for (inew in rows)
   {
@@ -91,9 +94,14 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
     {
       print(paste0("Evaluating TRP variation in ",vary,  ",  Simulation #", inew))
       valueset <- list()
-      valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=vary)
-      if (vary=="all") valueset$i <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST)
-      valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=vary)
+      if (vary=="all")
+      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=elementnames[-1])
+        valueset$i <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST)
+        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=elementnames[-1])
+      } else 
+      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=vary)
+        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=vary)
+      }
       for (level in names(valueset))
       {
         s_cr <- valueset[[level]]$cres[1]; r_cr <- valueset[[level]]$cres[2]
@@ -116,15 +124,26 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
         parset <- create.pars(setup = novelsetup, values = valueset[[level]], T, T, T)
       
         outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
-      
-        if (vary=="all") iresult <- append(iresult, as.vector(t(outset[,tallynames]))) else iresult <- append(iresult, outset[11,tallynames])
+
+        if (vary=="all") 
+        { for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
+                                file=paste0("TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
+          
+          iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
+        
+        } else 
+        {
+          write(c(iter, unlist(valueset[[level]]), vary, level, "10", outset[11,tallynames]), 
+                file=paste0("TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
+        iresult <- append(iresult, outset[11,tallynames])
+        }
       }
     } 
     
-    write(c(iter, iresult), file=paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(novelheader))
+    write(c(iter, iresult), file=paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(wideheader))
     
   }
-  return(novelheader)
+  return(iresult)
 }
 
 
@@ -264,35 +283,36 @@ set.values <- function()
       tbmort <- c(0.2,1) #by HIV status. 
       poor_s_rifs <- 0.06
       nonpoor_s_rifr <- 0.2
-      poor_n_cnr <- c(0.14,0.6)
-      acqres_candn <- 0.1# probably of acquiring c resistance if already n resistant (in same or subsequent treatment course)
-      acqres_nifc <- 8 # increase in probably of acquiring n resistance if already c resistant (in same treatment course)
       relapsepoor <- 0.6
       dxrate <- c(0.6,0.9, # new  hiv- and hiv+, previously treat hiv- and hiv+
-                  2,3)
+                  2, 3)
       ltfurate_sr <- 0.01; 
       relapse24 <- c(7.5, 3)
     })
-    varied_dr <- list(); varied_dr <- within(varied_dr, {
+    varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those vary for novel regimen outside of trp
       acqres_s <- 0.005; 
       poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
       transcost_rif <- 0.3 #redeuction (from 1) in fitness for RifR strain(s)
       DSTrif_n <- 0.3
       noDSTrif_p <- 0.3
+      poor_n_cnr <- c(0.14,0.6)
+      acqres_candn <- 0.1# probably of acquiring c resistance if already n resistant (in same or subsequent treatment course)
+      acqres_nifc <- 8 # increase in probably of acquiring n resistance if already c resistant (in same treatment course)
+      
     })
-    fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen
+    fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen within trp
       months_s <- 6; months_r <- 18
       acqres_r <- 0
       transcost_n <- 0.2
       availability <- 0.75 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
-      targetpop <- c(1,1); names(targetpop) <- c("DS", "DR") #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
-      cres <- c(0.05,0.1); names(cres) <- c("rifs", "rifr") #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
-      DSTnew <- c(0,1); names(DSTnew) <- c("c","n") #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
+      targetpop <- c(1,1) #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
+      cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
+      DSTnew <- c(0,1) #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
       months_n <- 4 #actually set in samplenovel
       eligibility <- c(1,0.9)  #by HIV status #actually set in samplenovel
       ltfurate_n <- varied_ds$ltfurate_sr
       poor_n <- 0.03 #will vary and then add to last 3 values (for baseline resistance c, n, cn) in samplenovel.
-      acqres_n <- array(0, dim=c(4,4)) #will set values in samplenovel
+      acqres_n <- rep(0, times=16) #will set values in samplenovel
     })
   })
   return(values)
@@ -331,8 +351,9 @@ screendrout <- function(drout_filename=paste0("DRcalibration_",currenttag,".csv"
 
 loadnovel <- function(targetpt, DST, targetepi, tag=currenttag)
 {
-  novelout <- subset(read.csv(paste0("TRPoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
-  return(novelout)
+  novelwide <- subset(read.csv(paste0("TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
+  novellong <- subset(read.csv(paste0("TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
+  return(novel=list("wide"=novelwide, "long"=novellong))
 }
 
 evaltrp_minbase <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST="DSTall", tag=currenttag) # uses merged but not unlisted values
@@ -461,7 +482,7 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
   with(setup, {
     pars <- within(pars, {
       
-      dxrate <-  t(array(dxrate, dim=c(2,2))); colnames(dxrate) <- c("An","Ap"); rownames(dxrate) <- Hnames
+      dxrate <-  array(unlist(dxrate), dim=c(2,2)); rownames(dxrate) <- c("An","Ap"); colnames(dxrate) <- Hnames
       
       names(reactrate) <- names(rapidprog) <- names(mort) <- names(tbmort) <- Hnames  
       
@@ -494,7 +515,7 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       acqresmat[grep("^R[0cn]",Rnames), grep("^Rr",Rnames),"s"] <-  acqres_s * diag(max(1, 4*treatnovel))
       acqresmat[,,"r"] <- array(0,dim=c(length(Rnames),length(Rnames))) # currently no acqres with regimen r
       if (treatnovel==TRUE) {acqresmat[1:4,1:4,"n"] <- 
-                               acqresmat[5:8,5:8,"n"] <- acqres_n }
+                               acqresmat[5:8,5:8,"n"] <- array(unlist(acqres_n), dim=c(4,4)) }
       acqresmat[acqresmat>1] <- 1
                         
       
@@ -648,22 +669,22 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         {
           #acquired resistance moves to pending relapse for *new* strain
           mat[it, "R", , , jh, jh]  <- 
-            mat[it, "R", , , jh, jh] + dxrate[jh, it] * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
+            mat[it, "R", , , jh, jh] + dxrate[it, jh] * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
           
           #of those who don't acquire resistance (1-rowSums(acqresmat)), will split between Ti (failmat) and T1 for the selected (startmat) regimen
           if (length(Rnames)>1)
           {
             diag(mat[it, "Ti", , , jh, jh]) <- 
-              diag(mat[it, "Ti", , , jh, jh]) + dxrate[jh, it] * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+              diag(mat[it, "Ti", , , jh, jh]) + dxrate[it,jh] * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
-              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + dxrate[jh, it] * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
+              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + dxrate[it,jh] * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
           } 
           else #if only the standard regimen is an option, diag and rowSums functions cause errors
           {
             mat[it, "Ti", 1,1, jh, jh] <- 
-              mat[it, "Ti", 1,1, jh, jh] + dxrate[jh, it] * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+              mat[it, "Ti", 1,1, jh, jh] + dxrate[it, jh] * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
-              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  dxrate[jh, it] * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
+              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  dxrate[it, jh] * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
           }
         }
       }
@@ -800,24 +821,3 @@ equilib <- function(state, pars, tol=0.2)
   return(list("log"=log, "pars"=pars))
 }
   
-extend_drout <- function(drout, tag=currenttag)
-{
-  write(c("idr",tallynames), sep = ",", file=paste0("DRextend_",currenttag,".csv"), ncol=1+length(tallynames))
-  
-  values <- mergedvalues
-  for (i in 1:nrow(drout))
-  {
-    state <- drout[i,drsetup$statenames]
-    valuevect <- drout[i, 5+(1:length(unlist(values)))] ; names(valuevect) <- names(unlist(values))
-    v <- 0; for (pname in names(values))
-    { values[[pname]] <- unlist(valuevect[v+(1:length(values[[pname]]))]); #names(genericvalues[[pname]]) <- names()
-      v <- v + length(values[[pname]]) # move forward to start of next par vector in sampled values
-    }    
-    fullpars <- create.pars(setup = drsetup, values = values, T, T, F)$fullpars
-    
-    tally10 <- ode(y=unlist(state), times=c(0,10), func=dxdt, parms=fullpars, do.tally=TRUE, method="adams")[2,1+(1:length(tallynames))]
-    
-    write(c(i,tally10), sep=",", file=paste0("DRextend_",currenttag,".csv"), append=TRUE, ncol=1+length(tallynames))
-  }
-  return("drextend complete")  
-}
