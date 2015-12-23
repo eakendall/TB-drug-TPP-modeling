@@ -6,13 +6,15 @@ library("lhs")
 library("akima")
 library("stringr")
 
+taskids<-1:4
+for (taskid in taskids)
 
-currenttag <- "20151222"
+currenttag <- paste0("20151223.",taskid)
 
-Nsims_ds <- 3
-Nsims_dr <- 5
+Nsims_ds <- 500
+Nsims_dr <- 200
 
-targetepis <- list( "India"=c(195, 0.04, 0.022) )#list("Brazil"=c(52, 0.17, 0.014), "India"=c(195, 0.04, 0.022), "Philippines"=c(417, 0.002, 0.02), "SouthAfrica"=c(696, 0.61, 0.018)) # tb prev, HIV coprev, rrinc/inc
+targetepis <- list("Brazil"=c(52, 0.17, 0.014), "India"=c(195, 0.04, 0.022), "Philippines"=c(417, 0.002, 0.02), "SouthAfrica"=c(696, 0.61, 0.018)) # tb prev, HIV coprev, rrinc/inc
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
@@ -45,7 +47,7 @@ drtrajheader <- c("ids","idr", "targetprev","targetcoprev","targetdr",
 if(!file.exists(paste0("DRtraj_", currenttag, ".csv"))) { write(drtrajheader, sep = ",", file=paste0("DRtraj_",currenttag,".csv"), ncolumns=length(drtrajheader)) }
 
 
-LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0("LHS_",currenttag,".RDS"))
+LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0("LHS_",currenttag,taskid,".RDS"))
 
 for (isim in 1:Nsims_ds)
 {
@@ -78,18 +80,13 @@ for (isim in 1:Nsims_ds)
     # find fit and create params for each set (country) of targetepis
     fit <- apply((t(optimat[,c(3,4)])-targetepis[[tname]][1:2])^2/targetepis[[tname]][1:2]^2, 2, sum)
     hs <- (0.0001*2^(0:10))[ 0.0001*2^(0:10) <= max(optimat[,2])]; bs <- min(optimat[,1]):max(optimat[,1])
-#     fitmat <- array(0, dim=c(length(bs),length(hs))); dimnames(fitmat) <- list(bs, hs)
-#     for (ifit in 1:nrow(optimat)) fitmat[as.character(optimat[ifit,1]), as.character(optimat[ifit,2])] <- fit[ifit]
-#     fitmat[fitmat==0] <- max(fitmat)
-#   
-    # image(bs, hs, log(fitmat)) # useful for troubleshooting
   
     largefitmat <- interp(optimat[,1], 100*optimat[,2], z=fit, nx=50, ny=50, extrap=F, duplicate="mean")
     largefitmat$z[is.na(largefitmat$z)] <- 10000
     vindex <- which.min(largefitmat$z); aindex <- c(vindex - nrow(largefitmat$z)*floor(vindex/nrow(largefitmat$z)), ceiling(vindex/nrow(largefitmat$z)))
     
     dsvalues$cal$beta <- largefitmat$x[aindex[1]]; dsvalues$cal$hivrate <- largefitmat$y[aindex[2]]/100
-    print(paste0("Chose beta=", dsvalues$cal$beta, ", hivrate=", dsvalues$cal$hivrate))
+    print(paste0("Chose beta=", dsvalues$cal$beta, ", hivrate=", dsvalues$cal$hivrate, " for sim #",isim))
     
     newpars <- create.pars(values=dsvalues, setup=dssetup)
     
@@ -146,8 +143,7 @@ for (isim in 1:Nsims_ds)
       print(paste0("Finished isimds=", isim, ", isimdr=", isimdr))
     } 
 
-    write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file=paste0("DRcalibration_",currenttag,".csv"))
-  }
+  write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file=paste0("DRcalibration_",currenttag,".csv"))
 }
 
 
@@ -156,6 +152,8 @@ drout <- screendrout()
 
 # limits output to those simulations with DR fraction of incidence in targetepi range
 
-varynovel <- evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DS", DST="DSTall") # can also specify ids and idr to run just a subset of drout
-# generates file of all TRP variations for all sampled simulations, for a given targetdt and dst, for each of potentially multiple targetepis
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DS", DST="DSTall") # can also specify ids and idr to run just a subset of drout
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DR", DST="DSTall", idr=1:10) # can also specify ids and idr to run just a subset of drout
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DS", DST="DSTnone", idr=1:10) # can also specify ids and idr to run just a subset of drout
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt="DR", DST="DSTnone", idr=1:10) # can also specify ids and idr to run just a subset of drout using ids and idr
 

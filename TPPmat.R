@@ -17,11 +17,60 @@ set.novelvalues <- function()
   # !! can add specifics e.g. hiv or pediatric low/med/high as separate selection item
   selections$ltfu_reduction <- array(c(0, 0.015, 0.03,
                                        0, 0.03, 0.06), dim=c(3,2))
-
   elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability")
-  
   return(list("selections"=selections, "elementnames"=elementnames))
 }
+
+
+set.values <- function()
+{
+  values <- list()
+  values <- within(values, {
+    cal <- list(); cal <- within(cal, {
+      hivrate <- 0.01; beta <- 10;  #will fit to target coprevalence
+    })
+    varied_ds <- list(); varied_ds <- within(varied_ds, {
+      selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.5 #self cure in hiv neg only
+      mort <- c(0.012,0.033);  #by HIV status; 
+      reactrate <- c(0.0015,0.03); rapidprog <- c(0.13,0.5); 
+      tbmort <- c(0.2,1) #by HIV status. 
+      poor_s_rifs <- 0.06
+      relapsepoor <- 0.6
+      dxrate <- c(0.6,0.9, # new  hiv- and hiv+, previously treated hiv- and hiv+
+                  2, 3)
+      ltfurate_sr <- 0.01; 
+      relapse24 <- c(7.5, 3)
+    })
+    varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those vary for novel regimen outside of trp
+      acqres_s <- 0.005; 
+      poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
+      nonpoor_s_rifr <- 0.2
+      transcost_rif <- 0.3 #redeuction (from 1) in fitness for RifR strain(s)
+      DSTrif_n <- 0.3
+      noDSTrif_p <- 0.3
+      poor_n_cnr <- c(0.14,0.6)
+      acqres_candn <- 0.1# probably of acquiring c resistance if already n resistant (in same or subsequent treatment course)
+      acqres_nifc <- 8 # increase in probably of acquiring n resistance if already c resistant (in same treatment course)
+      
+    })
+    fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen within trp
+      months_s <- 6; months_r <- 18
+      acqres_r <- 0
+      transcost_n <- 0.2
+      availability <- 0.75 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
+      targetpop <- c(1,1) #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
+      cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
+      DSTnew <- c(0,1) #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
+      months_n <- 4 #actually set in samplenovel
+      eligibility <- c(1,0.9)  #by HIV status #actually set in samplenovel
+      ltfurate_n <- varied_ds$ltfurate_sr
+      poor_n <- 0.03 #will vary and then add to last 3 values (for baseline resistance c, n, cn) in samplenovel.
+      acqres_n <- rep(0, times=16) #will set values in samplenovel
+    })
+  })
+  return(values)
+}
+
 
 #returns a set of values for a specified starting values and trp element combination
 sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, minimals=NA)
@@ -266,58 +315,6 @@ samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
 return(TRP) # a set of edited single-list values for use in create.pars
 }
   
-
-
-
-set.values <- function()
-{
-  values <- list()
-  values <- within(values, {
-    cal <- list(); cal <- within(cal, {
-      hivrate <- 0.01; beta <- 10;  #will fit to target coprevalence
-    })
-    varied_ds <- list(); varied_ds <- within(varied_ds, {
-      selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.5 #self cure in hiv neg only
-      mort <- c(0.012,0.033);  #by HIV status; 
-      reactrate <- c(0.0015,0.03); rapidprog <- c(0.13,0.5); 
-      tbmort <- c(0.2,1) #by HIV status. 
-      poor_s_rifs <- 0.06
-      nonpoor_s_rifr <- 0.2
-      relapsepoor <- 0.6
-      dxrate <- c(0.6,0.9, # new  hiv- and hiv+, previously treat hiv- and hiv+
-                  2, 3)
-      ltfurate_sr <- 0.01; 
-      relapse24 <- c(7.5, 3)
-    })
-    varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those vary for novel regimen outside of trp
-      acqres_s <- 0.005; 
-      poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
-      transcost_rif <- 0.3 #redeuction (from 1) in fitness for RifR strain(s)
-      DSTrif_n <- 0.3
-      noDSTrif_p <- 0.3
-      poor_n_cnr <- c(0.14,0.6)
-      acqres_candn <- 0.1# probably of acquiring c resistance if already n resistant (in same or subsequent treatment course)
-      acqres_nifc <- 8 # increase in probably of acquiring n resistance if already c resistant (in same treatment course)
-      
-    })
-    fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen within trp
-      months_s <- 6; months_r <- 18
-      acqres_r <- 0
-      transcost_n <- 0.2
-      availability <- 0.75 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
-      targetpop <- c(1,1) #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
-      cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
-      DSTnew <- c(0,1) #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
-      months_n <- 4 #actually set in samplenovel
-      eligibility <- c(1,0.9)  #by HIV status #actually set in samplenovel
-      ltfurate_n <- varied_ds$ltfurate_sr
-      poor_n <- 0.03 #will vary and then add to last 3 values (for baseline resistance c, n, cn) in samplenovel.
-      acqres_n <- rep(0, times=16) #will set values in samplenovel
-    })
-  })
-  return(values)
-}
-
 
 
 
