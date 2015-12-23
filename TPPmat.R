@@ -1,3 +1,11 @@
+library("deSolve")
+library("stats") #contains optim()
+library("lhs")
+library("akima")
+library("stringr")
+
+targetepis <- list("Brazil"=c(52, 0.17, 0.014), "India"=c(195, 0.04, 0.022), "Philippines"=c(417, 0.002, 0.02), "SouthAfrica"=c(696, 0.61, 0.018)) # tb prev, HIV coprev, rrinc/inc
+
 # will provide a list of "values" inputs for the function that implements novel regimen: 
 # each labeled by the targetpop, the DST use, the TRP element varied (with "none" as one option), and whether the varied TRP element is minimal, intermediate, or optimal
 
@@ -30,22 +38,23 @@ set.values <- function()
       hivrate <- 0.01; beta <- 10;  #will fit to target coprevalence
     })
     varied_ds <- list(); varied_ds <- within(varied_ds, {
-      selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.5 #self cure in hiv neg only
+      selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.6 #self cure in hiv neg only
       mort <- c(0.012,0.033);  #by HIV status; 
       reactrate <- c(0.0015,0.03); rapidprog <- c(0.13,0.5); 
       tbmort <- c(0.2,1) #by HIV status. 
       poor_s_rifs <- 0.06
-      relapsepoor <- 0.6
+      relapsepoor <- 0.67
       dxrate <- c(0.6,0.9, # new  hiv- and hiv+, previously treated hiv- and hiv+
                   2, 3)
-      ltfurate_sr <- 0.01; 
+      ltfurate_sr <- 0.01 
+      initialloss_s <- 0.15
       relapse24 <- c(7.5, 3)
     })
     varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those vary for novel regimen outside of trp
+      nonpoor_s_rifr <- 0.2
       acqres_s <- 0.005; 
       poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
-      nonpoor_s_rifr <- 0.2
-      transcost_rif <- 0.3 #redeuction (from 1) in fitness for RifR strain(s)
+      transcost_rif <- 0.35 #redeuction (from 1) in fitness for RifR strain(s)
       DSTrif_n <- 0.3
       noDSTrif_p <- 0.3
       poor_n_cnr <- c(0.14,0.6)
@@ -62,10 +71,10 @@ set.values <- function()
       cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
       DSTnew <- c(0,1) #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
       months_n <- 4 #actually set in samplenovel
-      eligibility <- c(1,0.9)  #by HIV status #actually set in samplenovel
+      eligibility <- c(1,1)  #by HIV status #actually set in samplenovel
       ltfurate_n <- varied_ds$ltfurate_sr
-      poor_n <- 0.03 #will vary and then add to last 3 values (for baseline resistance c, n, cn) in samplenovel.
-      acqres_n <- rep(0, times=16) #will set values in samplenovel
+      poor_n <- 0.03 #will set value in samplenovel
+      acqres_n <- rep(0, times=16) #will set values in samplenovel, based in part of varied_dr values above
     })
   })
   return(values)
@@ -490,6 +499,7 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       relapse246 <- append(relapse24, 1)
       poor_s <- c(poor_s_rifs, 1-nonpoor_s_rifr)
       DSTrif <- c(DSTrif_n, 1-noDSTrif_p)
+      initialloss <- rep(initialloss_s, 3)
       
       # then adjust for whether regimens are in use (i.e.if not using FL, no diagnosis and treatment; if not using SL, no rif diagnosis (and therefore no second-line treatment); 
       # and if not using novel regimen (which can be used in absence of novel DST in the model), availability of novel regimen is 0.
@@ -664,24 +674,25 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       {
         for (nreg in usereg)
         {
+          startrate <- (1-initialloss[nreg])*dxrate[it, jh] #initial loss to follow up remains active; this allows it to differ by regimen (or allows us to turn off a regimen e.g. have no alternative to the novel regimen)
           #acquired resistance moves to pending relapse for *new* strain
           mat[it, "R", , , jh, jh]  <- 
-            mat[it, "R", , , jh, jh] + dxrate[it, jh] * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
+            mat[it, "R", , , jh, jh] + startrate * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
           
           #of those who don't acquire resistance (1-rowSums(acqresmat)), will split between Ti (failmat) and T1 for the selected (startmat) regimen
           if (length(Rnames)>1)
           {
             diag(mat[it, "Ti", , , jh, jh]) <- 
-              diag(mat[it, "Ti", , , jh, jh]) + dxrate[it,jh] * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+              diag(mat[it, "Ti", , , jh, jh]) + startrate * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
-              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + dxrate[it,jh] * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
+              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + startrate * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
           } 
           else #if only the standard regimen is an option, diag and rowSums functions cause errors
           {
             mat[it, "Ti", 1,1, jh, jh] <- 
-              mat[it, "Ti", 1,1, jh, jh] + dxrate[it, jh] * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+              mat[it, "Ti", 1,1, jh, jh] + startrate * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
-              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  dxrate[it, jh] * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
+              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  startrate * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
           }
         }
       }

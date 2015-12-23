@@ -1,12 +1,17 @@
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+
+tag <- "20151223"
+Nsims_dr <- 200
+
 source("TPPmat.R")
 
+dsout <- numeric(0)
+nds<-1; while(exists(paste0("DScalibration_",tag,".",nds,".csv")) {dsout <- append(dsout, read.csv(paste0("DScalibration_",tag,".",nds,".csv"), header=TRUE)); nds <- nds+1}
+saveRDS(dsout, paste0("dsout",tag))
 
-taskids<-1:4
-for (taskid in taskids)
-  
-currenttag <- paste0("20151223.",taskid)
-
-Nsims_dr <- 200
+Nsims_ds <- max(dsout[,"ids"])
+ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
 values <- set.values()
@@ -25,8 +30,7 @@ drtrajheader <- c("ids","idr", "targetprev","targetcoprev","targetdr",
                   paste0( rep(-25:10, each=length(tallynames)), rep(tallynames, times=36) ))
 if(!file.exists(paste0("DRtraj_", currenttag, ".csv"))) { write(drtrajheader, sep = ",", file=paste0("DRtraj_",currenttag,".csv"), ncolumns=length(drtrajheader)) }
 
-dsout <- read.csv(paste0("DScalibration_", currenttag, ".csv"), header=T)
-for (isim in 1:Nsims_ds)
+for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
   for (tname in names(targetepis))
   {
     dsrow <- which(dsout$ids==isim & dsout$targetprev==(unlist(targetepis[tname])[1]) )

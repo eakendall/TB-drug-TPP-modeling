@@ -2,7 +2,7 @@ taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 
 tag <- "20151223"
-Nsims_ds <- 4
+Nsims_ds <- 600
 
 
 source("TPPmat.R")
