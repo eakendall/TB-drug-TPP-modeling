@@ -1,18 +1,22 @@
-taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
-ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
 
 tag <- "20151223"
 Nsims_dr <- 200
 
+currenttag <- paste0("India",tag,".",taskid)
+
 source("TPPmat.R")
 
-dsout <- numeric(0)
-nds<-1; while(exists(paste0("DScalibration_",tag,".",nds,".csv")) {dsout <- append(dsout, read.csv(paste0("DScalibration_",tag,".",nds,".csv"), header=TRUE)); nds <- nds+1}
-saveRDS(dsout, paste0("dsout",tag))
+dsout <- data.frame()
+nds<-1; while(file.exists(paste0("DScalibration_",tag,".",nds,".csv"))) {dsout <- rbind(dsout, read.csv(paste0("DScalibration_",tag,".",nds,".csv"), header=TRUE)); nds <- nds+1}
+#dsout <- rbind(dsout, readRDS("DScal_SAf_20151223.Rdata"))
+#saveRDS(dsout, paste0("DScal_out",tag,".Rdata"))
 
 Nsims_ds <- max(dsout[,"ids"])
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
+dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
 values <- set.values()
 mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
@@ -24,19 +28,19 @@ tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 drheader <- c("ids","idr", "targetprev","targetcoprev","targetdr",
               names(unlist(values)), 
               drsetup$statenames, tallynames, paste0(tallynames,"10")) 
-if(!file.exists(paste0("DRcalibration_", currenttag, ".csv"))) { write(drheader, sep = ",", file=paste0("DRcalibration_",currenttag,".csv"), ncolumns=length(drheader)) }
+if(!file.exists(paste0("DRcalibration_", currenttag, ".csv"))) { write(drheader, sep = ",", file=paste0("../scratch/DRcalibration_",currenttag,".csv"), ncolumns=length(drheader)) }
 
 drtrajheader <- c("ids","idr", "targetprev","targetcoprev","targetdr",
                   paste0( rep(-25:10, each=length(tallynames)), rep(tallynames, times=36) ))
-if(!file.exists(paste0("DRtraj_", currenttag, ".csv"))) { write(drtrajheader, sep = ",", file=paste0("DRtraj_",currenttag,".csv"), ncolumns=length(drtrajheader)) }
+if(!file.exists(paste0("DRtraj_", currenttag, ".csv"))) { write(drtrajheader, sep = ",", file=paste0("../scratch/DRtraj_",currenttag,".csv"), ncolumns=length(drtrajheader)) }
 
 for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
   for (tname in names(targetepis))
   {
-    dsrow <- which(dsout$ids==isim & dsout$targetprev==(unlist(targetepis[tname])[1]) )
+    dsrow <- which(dsout$ids==isim & dsout$targetprev==(unlist(targetepis[tname])[1]) )[1]
     estate <- dsout[dsrow , dssetup$statenames]
     drstate <- numeric(length(drsetup$statenames)); names(drstate) <- drsetup$statenames
-    drstate[dsstatenames] <- estate
+    drstate[dssetup$statenames] <- estate
     
     dsvalues <- values
     valuevect <- dsout[dsrow, 4+(1:length(unlist(mergedvalues)))] 
@@ -64,9 +68,9 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
                                   unlist(drvalues),
                                   drend[26,2:ncol(drend)],
                                   drend[36,tallynames]))
-      write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0("DRtraj_",currenttag,".csv"), append=TRUE, sep=".", ncol=5+length(tallynames)*36 )
+      write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0("../scratch/DRtraj_",currenttag,".csv"), append=TRUE, sep=".", ncol=5+length(tallynames)*36 )
       print(paste0("Finished isimds=", isim, ", isimdr=", isimdr))
     } 
     
-    write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file=paste0("DRcalibration_",currenttag,".csv"))
+    write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file=paste0("../scratch/DRcalibration_",currenttag,".csv"))
   }

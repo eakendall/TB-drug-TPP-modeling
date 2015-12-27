@@ -23,7 +23,7 @@ elementnames <- set.novelvalues()$elementnames
 dsheader <- c("ids",  "targetprev","targetcoprev","targetdr",
               names(unlist(values)), 
             dssetup$statenames, tallynames) 
-if(!file.exists(paste0("DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0("DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
+if(!file.exists(paste0("DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0("../scratch/DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
 
 for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
 {
@@ -49,7 +49,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
           b <- b+1
     }
     print(paste0("Tried beta up to ", b, " for hivrate=", h))
-    if (h==0) h <- 0.0001 else h <- h*2
+    if (h==0) h <- 0.00025 else h <- h*2
   }                     
   
   #will treat each  epi (country) separately for the rest of the (DS and DR) calibration  
@@ -74,7 +74,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
     estate <- with(opte,log[nrow(log),2:(length(dsstatenames)+1)])
   
     # save equilibrium state and values
-    write(file=paste0("DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
+    write(file=paste0("../scratch/DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
       sep=",", ncol=length(dsheader), append=TRUE)
     
   }

@@ -15,13 +15,13 @@ set.novelvalues <- function()
   selections$poor_n <- array(c(0.06, 0.03, 0, 
                                0.18, 0.06, 0.03), dim=c(3,2))
   selections$months_n <- array(c(6, 4, 3, 
-                                 18, 9, 6), dim=c(3,2))
+                                 20, 9, 6), dim=c(3,2))
   selections$cres <- array(c(0.1,0.1,  0.03,0.03,  0,0, 
-                             0.25,0.25,  0.1,0.1,  0.03,0.03), dim=c(2,3,2))
+                             0.15,0.15,  0.05,0.05,  0,0), dim=c(2,3,2))
   selections$barrierbase <- array(c(0.05, 0.008, 0,
                                     0.1, 0.05, 0.008), dim=c(3,2))
-  selections$eligibility <- array(c(0.9,0,  0.95,0.5,  1,0.95,
-                                    0.9,0,  0.95,0.5,  1,0.95), dim=c(2,3,2))
+  selections$eligibility <- array(c(0.89,0,  0.95,0.9,  1,1,
+                                    0.89,0,  0.95,0.9,  1,1), dim=c(2,3,2))
   # !! can add specifics e.g. hiv or pediatric low/med/high as separate selection item
   selections$ltfu_reduction <- array(c(0, 0.015, 0.03,
                                        0, 0.03, 0.06), dim=c(3,2))
@@ -52,20 +52,20 @@ set.values <- function()
     })
     varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those vary for novel regimen outside of trp
       nonpoor_s_rifr <- 0.2
-      acqres_s <- 0.005; 
+      acqres_s <- 0.008; 
       poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
-      transcost_rif <- 0.35 #redeuction (from 1) in fitness for RifR strain(s)
+      transcost_rif <- 0.3 #redeuction (from 1) in fitness for RifR strain(s)
       DSTrif_n <- 0.3
       noDSTrif_p <- 0.3
-      poor_n_cnr <- c(0.14,0.6)
+      poor_n_cnr <- c(0.14,0.2)
       acqres_candn <- 0.1# probably of acquiring c resistance if already n resistant (in same or subsequent treatment course)
-      acqres_nifc <- 8 # increase in probably of acquiring n resistance if already c resistant (in same treatment course)
+      acqres_nifc <- 6 # increase in probably of acquiring n resistance if already c resistant (in same treatment course)
       
     })
     fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen within trp
-      months_s <- 6; months_r <- 18
+      months_s <- 6; months_r <- 20
       acqres_r <- 0
-      transcost_n <- 0.2
+      transcost_n <- 0.3
       availability <- 0.75 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
       targetpop <- c(1,1) #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
       cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
@@ -120,18 +120,20 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
   novelsetup <- setup.model(DRera = TRUE, treatSL = TRUE, treatnovel = TRUE)
   elementnames <- c("all", set.novelvalues()$elementnames)
   
-  longheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", names(unlist(genericvalues)), "vary","level","time",tallynames)
+  longheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", names(unlist(genericvalues)), "vary","level","time",
+                  paste0(rep(tallynames, times=2), rep(c("5","10"), each=length(tallynames))) )
   
   wideheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST")
   wideheader <- append(wideheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), rep(c("allminimal", "allintermediate","alloptimal"), each=11*length(tallynames))))
   for (i in 2:length(elementnames)) wideheader <- append(wideheader, 
-                                                       paste0( rep(tallynames, times=2), "10",
-                                                              rep(elementnames[i], each=2*length(tallynames) ),
-                                                              rep( c("minimal","optimal"), each=length(tallynames))))
+                                                       paste0( rep(tallynames, times=4), 
+                                                               rep( rep(c("5","10"), each=length(tallynames)), 2),
+                                                              rep(elementnames[i], each=4*length(tallynames) ),
+                                                              rep( c("minimal","optimal"), each=2*length(tallynames) ) )
                    
   
-  if(!file.exists(paste0("TRPlongoutput_", targetpt,DST,"_",tag,".csv"))) { write(longheader,  file=paste0("TRPlongoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(longheader)) }
-  if(!file.exists(paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
+  if(!file.exists(paste0("TRPlongoutput_", targetpt,DST,"_",tag,".csv"))) { write(longheader,  file=paste0("../scratch/TRPlongoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(longheader)) }
+  if(!file.exists(paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0("../scratch/TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
 
   for (inew in rows)
   {
@@ -185,20 +187,20 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
 
         if (vary=="all") 
         { for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
-                                file=paste0("TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
+                                file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
           
           iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
         
         } else 
         {
-          write(c(iter, unlist(valueset[[level]]), vary, level, "10", outset[11,tallynames]), 
-                file=paste0("TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
-        iresult <- append(iresult, outset[11,tallynames])
+          write(c(iter, unlist(valueset[[level]]), vary, level, "5", outset[6,tallynames], "10", outset[11,tallynames]), 
+                file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
+        iresult <- append(iresult, outset[6,tallynames], outset[11,tallynames])
         }
       }
     } 
     
-    write(c(iter, iresult), file=paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(wideheader))
+    write(c(iter, iresult), file=paste0("../scratch/TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(wideheader))
     
   }
   return(iresult)
@@ -243,8 +245,8 @@ samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
     
   #set all TPR elements to minimal value
   if (target=="DS") {mergedvalues$poor_n <- 0.06} else {mergedvalues$poor_n <- 0.18}
-  if (target=="DS") {mergedvalues$months_n <- 6} else {mergedvalues$months_n <- 18}
-  if (target=="DS") {mergedvalues$cres[1:2] <- rep(0.1, 2)} else {mergedvalues$cres[1:2] <-rep(0.25, 2)}  #or can make the two vector elements different, if companion resistance is correlated with rif resistance
+  if (target=="DS") {mergedvalues$months_n <- 6} else {mergedvalues$months_n <- 20}
+  if (target=="DS") {mergedvalues$cres[1:2] <- rep(0.1, 2)} else {mergedvalues$cres[1:2] <-rep(0.15, 2)}  #or can make the two vector elements different, if companion resistance is correlated with rif resistance
   if (target=="DS") {barrierbase <- 0.05} else {barrierbase <- 0.1} # also vary transmissibility (transcost_n)?
   mergedvalues$eligibility <- 1 - c(0.1, 1) # here (at worst) we exclude all HIV and 10% of others, with improvements to (10,10), (0,100), and (0,0) !!
   mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr
@@ -299,7 +301,7 @@ samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
     TRP$duration$intermediate$months_n <-TRP$all$intermediate$months_n <- 9
     TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 6
     
-    TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.1, 2)
+    TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.05, 2)
     TRP$companion$optimal$cres[1:2] <- TRP$all$optimal$cres[1:2] <- rep(0, 2)
     
     barrierbase <- 0.05; TRP$barrier$intermediate$acqres_n <-  TRP$all$intermediate$acqres_n <-  t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
@@ -383,7 +385,7 @@ evaltrp_minbase <- function(genericvalues, drsetup, drout, ids, idr, targetpt="D
   novelheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", 
                    headings,
                    paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), rep(c("alloptimal", "allintermediate","allminimal"), each=11*length(tallynames))))
-  if(!file.exists(paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"))) { write(novelheader,  file=paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(novelheader)) }
+  if(!file.exists(paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"))) { write(novelheader,  file=paste0("../scratch/TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(novelheader)) }
   
   
   for (inew in rows)
@@ -450,7 +452,7 @@ evaltrp_minbase <- function(genericvalues, drsetup, drout, ids, idr, targetpt="D
       }
     } 
     
-    write(c(iter, iresult), file=paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(novelheader))
+    write(c(iter, iresult), file=paste0("../scratch/TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(novelheader))
     
   }
   return(TRP)
@@ -467,7 +469,7 @@ setup.model <- function(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
     if (treatSL) { Rnames <- c("R0", "Rr"); usereg <- c(1,2) } else 
       if (DRera) { Rnames <- c("R0", "Rr"); usereg <- 1 } else 
       { Rnames <- "R0"; usereg <- 1 }
-  N <- 7; lengths <- c(2,1,1,2,3,3,6)/12
+  N <- 8; lengths <- c(1,1,1,1,2,3,3,8)/12
   Tnames <- c("S", "Ln", "An", "Ti", paste0("T", rep(regimens[usereg], times=N), rep(1:N, each=length(usereg))), "R", "C", "Lp", "Ap")
   
   Hnames <- c("Hn", "Hp")
@@ -513,7 +515,7 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       poormat <- array(rbind(
         c(rep(poor_s_rifs, max(1,4*treatnovel)), rep((1-nonpoor_s_rifr), DRera*max(1,4*treatnovel))),
         poor_r,
-        c(poor_n, poor_n_cnr ,1)), dim=c(3,length(Rnames))); dimnames(poormat) <- list(regimens, Rnames) 
+        c(poor_n + c(0, poor_n_cnr), 1)), dim=c(3,length(Rnames))); dimnames(poormat) <- list(regimens, Rnames) 
       
       failmat <- (1-relapsepoor)*poormat
       relapsemat <- relapsepoor*poormat
@@ -564,11 +566,11 @@ makemat <- function(pars)
 
     ## TB diagnosis and treatment initiation happen in dxdt (to allow time-varying treatment availability)
     
-    # once on effective treatment, progress through treatment to either relapse or cure (or to active if lost to follow up during first 2 months), including a monthly rate of loss to follow up 
+    # once on effective treatment, progress through treatment to either relapse or cure, including a monthly rate of loss to follow up 
     # this function determines whether relapse or cure depending on efficacy of regimen and fraction completed. Assuming losses occur in the middle of each time period on average.
     relapsefracs <- function(period) # use relapse %s at 2, 4, and 6 months (defined in pars) for a 6 month regimen, and interpolate linearly 2--4 and 4--6 to get relapse % after any fraction of treatment course
     {
-      fraction_completed <- (sum(Tperiod.lengths[1:period-1])+1/2*Tperiod.lengths[period])/durations
+      fraction_completed <- (sum(Tperiod.lengths[(1:length(Tperiod.lengths))<period])+1/2*Tperiod.lengths[period])/durations
       relapse <- array(0, dim=c(length(Rnames),3)); dimnames(relapse) <- list(Rnames, regimens)
       relapse[,fraction_completed < 1/3] <- 1 
       relapse[,fraction_completed >= 1/3 & fraction_completed < 2/3] <- 
