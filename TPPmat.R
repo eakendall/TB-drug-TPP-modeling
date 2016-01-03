@@ -96,14 +96,14 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
   mergedvalues$months_n <- selections$months_n[whichrow[which(elementnames=="duration")], whichcol]
   mergedvalues$cres[1:2] <- selections$cres[ , whichrow[which(elementnames=="companion")], whichcol]
   barrierbase <- selections$barrierbase[whichrow[which(elementnames=="barrier")], whichcol];
-    mergedvalues$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-                                       0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
-                                       0, 0, 0, mergedvalues$acqres_candn, 
-                                       0, 0, 0, 0), dim=c(4,4))); if (barrierbase==0) mergedvalues$acqres_n[2,4] <- 0.005; mergedvalues$acqres_n[mergedvalues$acqres_n>1] <- 1
+  mergedvalues$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+                                      0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
+                                      0, 0, 0, mergedvalues$acqres_candn, 
+                                      0, 0, 0, 0), dim=c(4,4))); if (barrierbase==0) mergedvalues$acqres_n[2,4] <- 0.005; mergedvalues$acqres_n[mergedvalues$acqres_n>1] <- 1
   mergedvalues$eligibility[1:2] <- selections$eligibility[ , whichrow[which(elementnames=="exclusions")], whichcol]
   ltfu_reduction <- selections$ltfu_reduction[whichrow[which(elementnames=="tolerability")], whichcol]; 
-    mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr - ltfu_reduction/mergedvalues$months_n
-    
+  mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr - ltfu_reduction/mergedvalues$months_n
+  
   return(mergedvalues) # a set of edited single-list values for use in create.pars
 }
 
@@ -127,15 +127,15 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
   wideheader <- append(wideheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), 
                                           rep(c("allminimal", "allintermediate","alloptimal"), each=11*length(tallynames))))
   for (i in 2:length(elementnames)) wideheader <- append(wideheader, 
-                                                       paste0( rep(tallynames, times=2*11), 
-                                                               rep( rep(0:10, each=length(tallynames)), 2),
-                                                              rep(elementnames[i], each=22*length(tallynames) ),
-                                                              rep( c("minimal","optimal"), each=11*length(tallynames) ) ) )
-                   
+                                                         paste0( rep(tallynames, times=2*11), 
+                                                                 rep( rep(0:10, each=length(tallynames)), 2),
+                                                                 rep(elementnames[i], each=22*length(tallynames) ),
+                                                                 rep( c("minimal","optimal"), each=11*length(tallynames) ) ) )
+  
   
   if(!file.exists(paste0("../scratch/TRPlongoutput_", targetpt,DST,"_",tag,".csv"))) { write(longheader,  file=paste0("../scratch/TRPlongoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(longheader)) }
   if(!file.exists(paste0("../scratch/TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0("../scratch/TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
-
+  
   for (inew in rows)
   {
     iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST)) #will include these labels as part of returned output
@@ -153,7 +153,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
     iresult <- numeric(0) #will become full row of results for this dr row (inew), for all elements and levels
     for (vary in elementnames)
     {
-      print(paste0("Evaluating TRP variation in ",vary,  ",  Simulation #", inew))
+      print(paste0("Evaluating TRP variation in ",vary,  ",  Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
       valueset <- list()
       if (vary=="all")
       { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=elementnames[-1])
@@ -183,21 +183,21 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
         }
         
         parset <- create.pars(setup = novelsetup, values = valueset[[level]], T, T, T)
-      
+        
         outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
-
+        
         if (vary=="all") 
         { 
           for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
                                 file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
           
           iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
-        
+          
         } else 
         {
-                    for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
-                          file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
-                    iresult <- append(iresult, as.vector(t(outset[,tallynames])))
+          for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
+                                file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
+          iresult <- append(iresult, as.vector(t(outset[,tallynames])))
         }
       }
     } 
@@ -329,7 +329,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
 #   
 # return(TRP) # a set of edited single-list values for use in create.pars
 # }
-  
+
 
 
 
@@ -499,8 +499,8 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       names(reactrate) <- names(rapidprog) <- names(mort) <- names(tbmort) <- Hnames  
       
       transmissibility <- rep(1,length(Rnames)); 
-        transmissibility[grep("r", Rnames)] <- transmissibility[grep("r", Rnames)]*(1-transcost_rif);
-        transmissibility[grep("n", Rnames)] <- transmissibility[grep("n", Rnames)]*(1-transcost_n);
+      transmissibility[grep("r", Rnames)] <- transmissibility[grep("r", Rnames)]*(1-transcost_rif);
+      transmissibility[grep("n", Rnames)] <- transmissibility[grep("n", Rnames)]*(1-transcost_n);
       
       relapse246 <- append(relapse24, 1)
       poor_s <- c(poor_s_rifs, 1-nonpoor_s_rifr)
@@ -530,13 +530,13 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       if (treatnovel==TRUE) {acqresmat[1:4,1:4,"n"] <- 
                                acqresmat[5:8,5:8,"n"] <- array(unlist(acqres_n), dim=c(4,4)) }
       acqresmat[acqresmat>1] <- 1
-                        
+      
       
       durations <- c(months_s, months_r, months_n)/12; names(durations) <- regimens #by regimen
-      })
+    })
     pars <- c(pars,setup)
     pars$mat <- makemat(pars=pars)
-  
+    
     return(list("fullpars"=pars, "values"=values))
   })
   
@@ -552,7 +552,7 @@ makemat <- function(pars)
     
     ## HIV infection 
     for (jr in Rnames) for (jt in Tnames) {  mat[jt, jt, jr, jr,"Hn","Hp"] <- mat[jt, jt, jr, jr,"Hn","Hp"] + hivrate }
-     
+    
     # self cure (HIV neg only, and all to R0 resistance), TB reactivation, mortality (background and TB-related, placed as ins on diagonal for now), and relapse:
     for (jr in Rnames) 
     {
@@ -567,7 +567,7 @@ makemat <- function(pars)
       }
     }
     
-
+    
     ## TB diagnosis and treatment initiation happen in dxdt (to allow time-varying treatment availability)
     
     # once on effective treatment, progress through treatment to either relapse or cure, including a monthly rate of loss to follow up 
@@ -586,7 +586,7 @@ makemat <- function(pars)
       return(relapse) 
     }
     
-
+    
     for (jh in 1:length(Hnames))
     {
       if (length(usereg) > 0) for (jr in Rnames) for (reg in regimens[usereg])
@@ -629,29 +629,29 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
   
   if (missing(rvary)) { if (2 %in% fullpars$usereg) {rvary<-TRUE} else {rvary<-FALSE} }
   if (rvary==TRUE) { if (t <= -10) {DSTrif_t <- 0*fullpars$DSTrif} else if (t <= 0 && t > -10) {DSTrif_t <- (10+t)/10 * fullpars$DSTrif} else if (t > 0) {DSTrif_t <- fullpars$DSTrif}
-    } else {DSTrif_t <- fullpars$DSTrif}
+  } else {DSTrif_t <- fullpars$DSTrif}
   
   if (missing(nvary)) { if (3 %in% fullpars$usereg) {nvary<-TRUE} else {nvary<-FALSE} }
   if (nvary==TRUE) { if (t <= 0) availability_t <- 0 else if (t <= 3 && t > 0) availability_t <- (t/3)*fullpars$availability else if (t > 3) availability_t <- fullpars$availability 
-    } else availability_t <- fullpars$availability # 3 here is the scale-up time
+  } else availability_t <- fullpars$availability # 3 here is the scale-up time
   
   with(fullpars, {
     if (length(mat) != length(state)^2) {stop("Error: Initial-state and transition-matrix size mismatch.")}
     
     statemat <- array(unlist(state), dim=c(length(Tnames), length(Rnames), length(Hnames))); dimnames(statemat) <- list(Tnames, Rnames, Hnames)
     if (length(Rnames)==1) { FOI <- sum(statemat[c("An","Ap","Ti"),,]) * transmissibility * beta / sum(statemat) 
-      } else  { FOI <- apply(statemat[c("An","Ap","Ti"),,], 2, sum) * transmissibility * beta / sum(statemat) }# FOI by strain
+    } else  { FOI <- apply(statemat[c("An","Ap","Ti"),,], 2, sum) * transmissibility * beta / sum(statemat) }# FOI by strain
     names(FOI) <- names(transmissibility) <- Rnames
     
     # infection
-#      if (length(Rnames)>1 && sum(statemat[c("S","C"), -1, ]) > 0.0001 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
+    #      if (length(Rnames)>1 && sum(statemat[c("S","C"), -1, ]) > 0.0001 ) { stop("Error: Some susceptibles have drug resistance and won't be included in infection events.") }
     for (jh in Hnames)
     {
       mat["S","Ln","R0",,jh,jh] <- mat["S","Ln","R0",,jh,jh] + FOI*(1-rapidprog[jh])
       mat["S","An","R0",,jh,jh] <- mat["S","An","R0",,jh,jh] + FOI*rapidprog[jh]
       mat["C","Lp","R0",,jh,jh] <- mat["C","Lp","R0",,jh,jh] + FOI*(1-rapidprog[jh])
       mat["C","Ap","R0",,jh,jh] <- mat["C","Ap","R0",,jh,jh] + FOI*rapidprog[jh]
-    
+      
       # superinfection
       for (jr in Rnames) # unlke above, vector now refers to resistance phenotype of *origin*
       {
@@ -659,7 +659,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         mat["Ln","An",,jr,jh,jh] <- mat["Ln","An",,jr,jh,jh] + FOI[jr]*rapidprog[jh]*latreduct
       }
     }
-  
+    
     ## TB diagnosis and treatment initiation
     for (jh in 1:length(Hnames))
     {
@@ -704,7 +704,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       }
     }
     
-  
+    
     ########### transform mat
     newmat <- aperm(mat, c(1,3,5,2,4,6)) # this will translate into a 2d matrix more easily
     squaremat <- array(newmat, dim=c(length(Tnames)*length(Rnames)*length(Hnames), length(Tnames)*length(Rnames)*length(Hnames))) #2d state1 to state2 transmition matrix
@@ -722,16 +722,16 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       
       tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"inc"] <- #doens't include relapses (mostly early), but does include reinfections (mostly late) - i.3. this is a count of new infecitons, whether or not they are recognized as such
         apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A",statenames)], 1, sum)
-    
+      
       tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"rrinc"] <- #also only counts new infections with rr strain
         apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A.[.]Rr",statenames)], 1, sum)
-    
+      
       tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames), grep("^R",statenames)),"rronsets"] <- #this alternative also includes resistance relapses (including resistance acquisitions with relapse)
         apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames),grep("^R",statenames)),  grep("^A.[.]Rr",statenames)], 1, sum)
       
       tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames), grep("^R",statenames)),"panronsets"] <-
-        apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames),grep("^R",statenames)),  grep("^A.[.]R(r|rc|rcn|rn|cn|n)",statenames)], 1, sum)
-
+        apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames),grep("^R",statenames)),  grep("^A.[.]R(rc|rcn|rn)",statenames)], 1, sum)
+      
       tally[grep("^R",statenames),"relapses"] <- 
         apply(squaremat[grep("^R",statenames),  grep("^A",statenames)], 1, sum)
       
@@ -740,12 +740,12 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       tally[c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)), "rrdeaths"] <- rep(tbmort, each=(length(c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)))/2))
       
       tally[c(grep("^A.{1,10}Hp$", statenames), grep("^T.{1,10}Hp$", statenames)), "hivtoo"] <- 1 # will later divide by prev        
-
+      
       tally[grep("^A", statenames),"dxs"] <- apply( squaremat[ grep("^A", statenames), c(grep("^T", statenames), grep("^R", statenames)) ], 1, sum)
       
       tally[grep("^A", statenames),"rDSTs"] <- 
         apply( squaremat[ grep("^A", statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * DSTrif_t, 1, sum) #alternates between An and Ap, so alternate DST coverage
-               
+      
       tally[grep("^A.[.]R[0cn]",statenames),"nDSTs"] <- # if not rif R
         apply( squaremat[ grep("^A.[.]R[0cn]",statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * 
                  targetpop[1] * availability * max(DSTnew) * rep(eligibility, each=length(grep("^A.[.]R[0cn]",statenames))/2) , 1, sum )
@@ -762,45 +762,45 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
     }
     
     tallied <- t(tally) %*% state ; names(tallied) <- outcomes; 
-      coprev <- tallied["hivtoo"]/tallied["prev"]; rrfrac <- tallied["rrinc"]/tallied["inc"]; tallied <- c(tallied, coprev, rrfrac); names(tallied) <- c(outcomes, "coprev", "rrfrac") 
+    coprev <- tallied["hivtoo"]/tallied["prev"]; rrfrac <- tallied["rrinc"]/tallied["inc"]; tallied <- c(tallied, coprev, rrfrac); names(tallied) <- c(outcomes, "coprev", "rrfrac") 
     
     ## combine state vector and change matrix to get dxdt
     dxdt <- numeric(length(state))
     deaths <- state*c(diag(squaremat)); diag(squaremat) <- 0 #store deaths elsewhere
     dxdt <- dxdt + t(squaremat) %*% state - rowSums(squaremat*state) - deaths #ins minus outs minus deaths
-      
-#   births:
-  # assume relatively flat total and dr tb foi over the past 15 years (as this will be true by time 0 apart from <50% overestimating DR exposure), and 
-  # estimate as an exponential the latent TB in 15yos enterting the population. Assume no latent novel drug resistance. 
-  # And companion drug resistance will be appropriately assigned to each fraction at time 0, but after that it will need to continue: 
-  # so keep the same ratios of c and not c among new latents after time 0, as were assigned at time zero.
-  
-  
-  if (length(Rnames)==1)    
-  {
-    dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
-    dxdt[statenames=="Ln.R0.Hn"] <- dxdt[statenames=="Ln.R0.Hn"] + sum(deaths) * (1-exp(-15*sum(FOI)))
-   }
-
-  if (length(Rnames)==2 | (t<=0  & length(Rnames)==8))
-  {
-    dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
-    dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn")] + sum(deaths) * 
-      c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
-  }
-
-  
-  if (t>0 & length(Rnames)==8) 
-  {
-    dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
-    dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
-      c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * c(1-fullpars$cres, fullpars$cres) * (1-exp(-15*sum(FOI)))
-  }
-
+    
+    #   births:
+    # assume relatively flat total and dr tb foi over the past 15 years (as this will be true by time 0 apart from <50% overestimating DR exposure), and 
+    # estimate as an exponential the latent TB in 15yos enterting the population. Assume no latent novel drug resistance. 
+    # And companion drug resistance will be appropriately assigned to each fraction at time 0, but after that it will need to continue: 
+    # so keep the same ratios of c and not c among new latents after time 0, as were assigned at time zero.
+    
+    
+    if (length(Rnames)==1)    
+    {
+      dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
+      dxdt[statenames=="Ln.R0.Hn"] <- dxdt[statenames=="Ln.R0.Hn"] + sum(deaths) * (1-exp(-15*sum(FOI)))
+    }
+    
+    if (length(Rnames)==2 | (t<=0  & length(Rnames)==8))
+    {
+      dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
+      dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn")] + sum(deaths) * 
+        c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
+    }
+    
+    
+    if (t>0 & length(Rnames)==8) 
+    {
+      dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
+      dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
+        c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * c(1-fullpars$cres, fullpars$cres) * (1-exp(-15*sum(FOI)))
+    }
+    
     # return dxdt to ode, and also return tally for tracking purposes
     return(list(dxdt, tallied))
   }
- )
+  )
 }
 
 
@@ -813,7 +813,7 @@ advance <- function(state, t0, addedt=1, rvary, nvary, reportsteps=1, fullpars)
   return(o[(10*(addedt)+1 - reportsteps):(10*(addedt)+1),])
 }
 
-  
+
 # run to equilibrium without drugs; will need to adjust Rnames and resistance-related parameters, and remake mat
 equilib <- function(state, pars, tol=0.2)
 {
@@ -834,4 +834,4 @@ equilib <- function(state, pars, tol=0.2)
   }
   return(list("log"=log, "pars"=pars))
 }
-  
+

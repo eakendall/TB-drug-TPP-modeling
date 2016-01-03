@@ -2,6 +2,7 @@ taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1] #should have same array 
 tname <- commandArgs(trailingOnly=TRUE)[2]
 targetpt <- commandArgs(trailingOnly=TRUE)[3]
 DST <- commandArgs(trailingOnly=TRUE)[4]
+#startrow <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
 
 tag <- "20151227"
 currenttag <- paste0(tname,"_",tag,".",taskid)
@@ -16,10 +17,11 @@ mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], val
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- set.novelvalues()$elementnames
 
-#idr <-  1:3 # use for test runs, or if splitting DR tasks into subtasks here
 
-drout <- screendrout(drout_filename=paste0("fromMARCC/DRcalibration_",currenttag,".csv"), tolerance = 2)
+drout <- screendrout(drout_filename=paste0("../scratch/DRcalibration_",currenttag,".csv"), tolerance=1.5) # limits output to those simulations with DR fraction of incidence in targetepi range
 
-# limits output to those simulations with DR fraction of incidence in targetepi range
+startrow <- max(read.csv(paste0("../scratch/TRPwideoutput_",targetpt,DST,"_",currenttag,".csv"))$inew) +1
 
-evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, idr=idr, targetpt=targetpt, DST=DST, tag=currenttag) # can also specify ids and idr to run just a subset of drout
+idr <-  1:20 # use for test runs, or if splitting DR tasks into subtasks here
+
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout[startrow:nrow(drout), ], idr=idr, targetpt=targetpt, DST=DST, tag=currenttag) # can also specify ids and idr to run just a subset of drout
