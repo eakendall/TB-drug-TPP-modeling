@@ -1,17 +1,16 @@
-taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
-ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+tname <- commandArgs(trailingOnly=TRUE)[3]
 
-tag <- "20151223"
+tag <- "20151227"
 Nsims_dr <- 200
 
-currenttag <- paste0("India",tag,".",taskid)
+currenttag <- paste0(tname,"_",tag,".",taskid)
 
 source("TPPmat.R")
 
 dsout <- data.frame()
 nds<-1; while(file.exists(paste0("DScalibration_",tag,".",nds,".csv"))) {dsout <- rbind(dsout, read.csv(paste0("DScalibration_",tag,".",nds,".csv"), header=TRUE)); nds <- nds+1}
-#dsout <- rbind(dsout, readRDS("DScal_SAf_20151223.Rdata"))
-#saveRDS(dsout, paste0("DScal_out",tag,".Rdata"))
 
 Nsims_ds <- max(dsout[,"ids"])
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
@@ -20,7 +19,7 @@ dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
 values <- set.values()
 mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
-saveRDS(mergedvalues, file=paste0("genericvalues_",currenttag,".RDS"))
+if (taskid==1 )saveRDS(mergedvalues, file=paste0("genericvalues_",currenttag,".RDS"))
 
 Nsamplepars_dr <- length(unlist(values$varied_dr))
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]

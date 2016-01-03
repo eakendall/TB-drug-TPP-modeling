@@ -1,19 +1,34 @@
-currenttag <- "20151222b"
+currenttag <- "SouthAfrica_20151227"
+targetepi <- "SouthAfrica"
+tolerance <- 1.5 #1.5 for India and SouthAfrica, 2 for Brazil and Philippines
+location="fromMARCC/SAf20/"
 
 levels <- c("minimal","intermediate","optimal"); 
-outcome <- c("tbdeaths") #can set up loop over multiple outcomes
 elementnames <- c("all", set.novelvalues()$elementnames)
 
-drout <- screendrout()
 
-novelwide <- list()
-for (targetpt in c("DS","DR")) for (DST in c("DSTall","DSTnone")) for (targetepi in names(targetepis))
+drout <- numeric(0)
+for (i in 1:10) drout <- rbind(drout, read.csv(paste0(location,"DRcalibration_",targetepi,"_20151227.",i,".csv"), header = TRUE)) #saved results from dr sampling runs at time 0
+drout <- drout[ drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & drout[,"rrinc"]/drout[,"inc"] < tolerance*drout[,"targetdr"], ]  #within 3fold if rr incident fraction target
+
+outcome <- c("tbdeaths") #can set up loop over multiple outcomes
+#outcome <- c("rronsets") #can set up loop over multiple outcomes
+
+
+allnovelwide <- list()
+for (targetpt in c("DS","DR")) for (DST in c("DSTall","DSTnone")) #for (targetepi in names(targetepis))
 {
-  novewide[[paste0(targetpt, DST)]] <- loadnovel(targetpt=targetpt, DST=DST, targetepi=targetepi, tag=currenttag)$wide
-  
-  
+  allnovelwide[[paste0(targetpt, DST)]] <- loadnovel(targetpt=targetpt, DST=DST, targetepi=targetepi, tag=currenttag, location=location)$wide
+}  
+
+# need to specificy targetpt and DST here
+novelwide <- allnovelwide[["DRDSTall"]]
+drout <- drout[1:nrow(novelwide),]
+
+colnames(novelwide) <- wideheader
 
 traj <- array(0, dim=c(11,3,5)); dimnames(traj) <- list("t"=0:10, "level"=levels, "q"=c(0.025,0.25,0.5,0.075,0.975))
+
 for (t in 0:10) for (l in levels) traj[t+1,l,] <- quantile(novelwide[,colnames(novelwide)==paste0(outcome, t, "all",l)], c(0.025,0.25,0.5,0.075,0.975))
 
 final_abs <- final_diff <- final_pct <- array(0,dim=c( length(elementnames) , 2 , 5 )); 
@@ -46,10 +61,11 @@ for (vary in elementnames)
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
 }  
 
-plot(0:10, traj[,"minimal","0.5"], ylim=c(0,100))
+plot(0:10, traj[,"minimal","0.5"], ylim=c(0,2))
 points(0:10, traj[,"intermediate","0.5"])
 points(0:10, traj[,"optimal","0.5"])
 points(10,median(drout[,"tbdeaths10"]))
+points(10,median(drout[,"rronsets10"]))
 
 par(mar=c(7,4,3,3))
 bdiff <- barplot(height = aperm(final_diff, c(2,1,3))[,,"0.5"], beside = TRUE, ylab="change in TB mortality compared to typical TRP", xlab="", las=2, ylim=c(-6,6),

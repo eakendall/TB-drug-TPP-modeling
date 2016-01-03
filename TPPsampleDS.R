@@ -32,13 +32,13 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
   
   # optimize for desired prev and coprev 
   optimat <- array(0, dim=c(0,4))
-  b <- 4; h <- 0; coprev <- 0; while(h <= 0.0001 | min(optimat[optimat[,2]==h/2, 4])< 0.7)
+  b <- 4; h <- 0; coprev <- 0; while(min(optimat[optimat[,2]==h/2, 4])< 0.7)
   {
     b <- max(4, ceiling(b/3)); prev <- 0; stopat4 <- F; backtracked=F; while(prev<1000) 
     {
       dsvalues$cal$beta <- b; dsvalues$cal$hivrate <- h
       pars <- create.pars(dssetup, dsvalues)
-      e <- equilib (pars=pars, tol=1)
+      e <- equilib(pars=pars, tol=1)
       state <- e$log[nrow(e$log),2:(1+length(pars$fullpars$statenames))]
       prev <- sum(state[c(grep("^A", pars$fullpars$statenames), grep("^T", pars$fullpars$statenames))])
       coprev <- sum(state[c(grep("^A.+Hp", pars$fullpars$statenames), grep("^T.+Hp", pars$fullpars$statenames))]) / prev

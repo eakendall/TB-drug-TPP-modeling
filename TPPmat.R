@@ -13,8 +13,8 @@ set.novelvalues <- function()
 {
   selections <- list()
   selections$poor_n <- array(c(0.06, 0.03, 0, 
-                               0.18, 0.06, 0.03), dim=c(3,2))
-  selections$months_n <- array(c(6, 4, 3, 
+                               0.24, 0.06, 0.03), dim=c(3,2))
+  selections$months_n <- array(c(6, 4, 2, 
                                  20, 9, 6), dim=c(3,2))
   selections$cres <- array(c(0.1,0.1,  0.03,0.03,  0,0, 
                              0.15,0.15,  0.05,0.05,  0,0), dim=c(2,3,2))
@@ -99,7 +99,7 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
     mergedvalues$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
                                        0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
                                        0, 0, 0, mergedvalues$acqres_candn, 
-                                       0, 0, 0, 0), dim=c(4,4))); mergedvalues$acqres_n[mergedvalues$acqres_n>1] <- 1
+                                       0, 0, 0, 0), dim=c(4,4))); if (barrierbase==0) mergedvalues$acqres_n[2,4] <- 0.005; mergedvalues$acqres_n[mergedvalues$acqres_n>1] <- 1
   mergedvalues$eligibility[1:2] <- selections$eligibility[ , whichrow[which(elementnames=="exclusions")], whichcol]
   ltfu_reduction <- selections$ltfu_reduction[whichrow[which(elementnames=="tolerability")], whichcol]; 
     mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr - ltfu_reduction/mergedvalues$months_n
@@ -107,7 +107,7 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
   return(mergedvalues) # a set of edited single-list values for use in create.pars
 }
 
-# evaluates 10-year impact for optimal and minimal for each TRP element, with others at intermediate level, and full trajectory for variation in all TRP parameters together
+# evaluates 10-year impact for optimal and minimal for each TRP element, with others at intermediate ("typical") level, and full trajectory for variation in all TRP parameters together
 evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST="DSTall", tag=currenttag) # uses merged but not unlisted values
 {
   
@@ -121,19 +121,20 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
   elementnames <- c("all", set.novelvalues()$elementnames)
   
   longheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", names(unlist(genericvalues)), "vary","level","time",
-                  paste0(rep(tallynames, times=2), rep(c("5","10"), each=length(tallynames))) )
+                  tallynames)
   
   wideheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST")
-  wideheader <- append(wideheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), rep(c("allminimal", "allintermediate","alloptimal"), each=11*length(tallynames))))
+  wideheader <- append(wideheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), 
+                                          rep(c("allminimal", "allintermediate","alloptimal"), each=11*length(tallynames))))
   for (i in 2:length(elementnames)) wideheader <- append(wideheader, 
-                                                       paste0( rep(tallynames, times=4), 
-                                                               rep( rep(c("5","10"), each=length(tallynames)), 2),
-                                                              rep(elementnames[i], each=4*length(tallynames) ),
-                                                              rep( c("minimal","optimal"), each=2*length(tallynames) ) )
+                                                       paste0( rep(tallynames, times=2*11), 
+                                                               rep( rep(0:10, each=length(tallynames)), 2),
+                                                              rep(elementnames[i], each=22*length(tallynames) ),
+                                                              rep( c("minimal","optimal"), each=11*length(tallynames) ) ) )
                    
   
-  if(!file.exists(paste0("TRPlongoutput_", targetpt,DST,"_",tag,".csv"))) { write(longheader,  file=paste0("../scratch/TRPlongoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(longheader)) }
-  if(!file.exists(paste0("TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0("../scratch/TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
+  if(!file.exists(paste0("../scratch/TRPlongoutput_", targetpt,DST,"_",tag,".csv"))) { write(longheader,  file=paste0("../scratch/TRPlongoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(longheader)) }
+  if(!file.exists(paste0("../scratch/TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0("../scratch/TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
 
   for (inew in rows)
   {
@@ -186,16 +187,17 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
         outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
 
         if (vary=="all") 
-        { for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
+        { 
+          for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
                                 file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
           
           iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
         
         } else 
         {
-          write(c(iter, unlist(valueset[[level]]), vary, level, "5", outset[6,tallynames], "10", outset[11,tallynames]), 
-                file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
-        iresult <- append(iresult, outset[6,tallynames], outset[11,tallynames])
+                    for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
+                          file=paste0("../scratch/TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
+                    iresult <- append(iresult, as.vector(t(outset[,tallynames])))
         }
       }
     } 
@@ -238,93 +240,95 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST=
 
 # will provide a list of "values" inputs for the function that implements novel regimen: 
 # each labeled by the targetpop, the DST use, the TRP element varied (with "none" as one option), and whether the varied TRP element is minimal or optimal
-samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
-{
-  if (target == "DS") {mergedvalues$targetpop <- c(1,0)} else {mergedvalues$targetpop <- c(0,1)}
-  if (DST=="DSTall") {mergedvalues$DSTnew[1:2] <- c(1,1)} else {mergedvalues$DSTnew[1:2] <- c(0,0)}
-    
-  #set all TPR elements to minimal value
-  if (target=="DS") {mergedvalues$poor_n <- 0.06} else {mergedvalues$poor_n <- 0.18}
-  if (target=="DS") {mergedvalues$months_n <- 6} else {mergedvalues$months_n <- 20}
-  if (target=="DS") {mergedvalues$cres[1:2] <- rep(0.1, 2)} else {mergedvalues$cres[1:2] <-rep(0.15, 2)}  #or can make the two vector elements different, if companion resistance is correlated with rif resistance
-  if (target=="DS") {barrierbase <- 0.05} else {barrierbase <- 0.1} # also vary transmissibility (transcost_n)?
-  mergedvalues$eligibility <- 1 - c(0.1, 1) # here (at worst) we exclude all HIV and 10% of others, with improvements to (10,10), (0,100), and (0,0) !!
-  mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr
-        
-  mergedvalues$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-                                      0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
-                                      0, 0, 0, mergedvalues$acqres_candn, 
-                                      0, 0, 0, 0), dim=c(4,4))); mergedvalues$acqres_n[mergedvalues$acqres_n>1] <- 1
-  
-  elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability"); 
-  levelnames <- c("intermediate", "optimal"); exclusionnames <- c("fewerHIV", "fewergeneral", "none")
-  
-  levels <- as.list(levelnames); names(levels) <- levelnames; exclusionlevels <- as.list(exclusionnames); names(exclusionlevels) <- exclusionnames
-  for (name in levelnames) levels[[name]] <- mergedvalues; for (name in exclusionnames) exclusionlevels[[name]] <- mergedvalues
-  TRP <- as.list(elementnames); names(TRP) <- elementnames
-  for (name in elementnames) TRP[[name]] <- levels; TRP[["exclusions"]] <- exclusionlevels
-  TRP$all <- list(); TRP$all$minimal <- TRP$all$intermediate <- TRP$all$optimal <- mergedvalues
-  # input intermediate and optimal TRP ranges here
-  if (target=="DS")
-  {
-    TRP$efficacy$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.03
-    TRP$efficacy$optimal$poor_n <- TRP$all$optimal$poor_n <- 0
-    
-    TRP$duration$intermediate$months_n <- TRP$all$intermediate$months_n <- 4
-    TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 3
-    
-    TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.03,2)
-    TRP$companion$optimal$cres[1:2] <- TRP$all$optimal$cres[1:2] <- rep(0,2)
-    
-    barrierbase <- 0.008; TRP$barrier$intermediate$acqres_n <- TRP$all$intermediate$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-                                                                        0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
-                                                                        0, 0, 0, mergedvalues$acqres_candn, 
-                                                                        0, 0, 0, 0), dim=c(4,4))); TRP$barrier$intermediate$acqres_n[TRP$barrier$intermediate$acqres_n>1] <- 1
-    barrierbase <- 0; TRP$barrier$optimal$acqres_n <- TRP$all$optimal$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-                                                                     0, 0, 0, mergedvalues$acqres_s, 
-                                                                     0, 0, 0, mergedvalues$acqres_candn, 
-                                                                     0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
-    TRP$exclusions$fewerHIV$eligibility <- 1- c(0.1, 0.1)
-    TRP$exclusions$fewergeneral$eligibility <- 1- c(0, 1)
-    TRP$all$intermediate$eligibility <- 1-c(0.05,0.5)
-    TRP$exclusions$none$eligibility <- TRP$all$optimal$eligibility <- 1- c(0, 0)
-    
-    TRP$tolerability$intermediate$ltfurate_n <- TRP$all$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.015/mergedvalues$months_n
-    TRP$tolerability$optimal$ltfurate_n <- TRP$all$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
-  }
-  
-  if (target=="DR")
-  {
-    TRP$efficacy$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.06
-    TRP$efficacy$optimal$poor_n <- TRP$all$optimal$poor_n <- 0.03
-    
-    TRP$duration$intermediate$months_n <-TRP$all$intermediate$months_n <- 9
-    TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 6
-    
-    TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.05, 2)
-    TRP$companion$optimal$cres[1:2] <- TRP$all$optimal$cres[1:2] <- rep(0, 2)
-    
-    barrierbase <- 0.05; TRP$barrier$intermediate$acqres_n <-  TRP$all$intermediate$acqres_n <-  t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-                                                                    0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
-                                                                    0, 0, 0, mergedvalues$acqres_candn, 
-                                                                    0, 0, 0, 0), dim=c(4,4))); TRP$barrier$intermediate$acqres_n[TRP$barrier$intermediate$acqres_n>1] <- 1
-    barrierbase <- 0.008; TRP$barrier$optimal$acqres_n <- TRP$all$optimal$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
-                                                                 0, 0, 0, mergedvalues$mergedvalues$acqres_s, 
-                                                                 0, 0, 0, mergedvalues$acqres_candn, 
-                                                                 0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
-    
-    
-    TRP$exclusions$fewerHIV$eligibility <- 1- c(0.1, 0.1)
-    TRP$exclusions$fewergeneral$eligibility <- 1- c(0, 1)
-    TRP$all$intermediate <- 1-c(0.05,0.5)
-    TRP$exclusions$none$eligibility <- TRP$all$optimal$eligibility <- 1- c(0, 0)
-    
-    TRP$tolerability$intermediate$ltfurate_n <- TRP$all$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
-    TRP$tolerability$optimal$ltfurate_n <- TRP$all$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.06/mergedvalues$months_n
-  }
-  
-return(TRP) # a set of edited single-list values for use in create.pars
-}
+
+
+# samplenovel_minbase <- function(mergedvalues, target="DS", DST="DSTall")
+# {
+#   if (target == "DS") {mergedvalues$targetpop <- c(1,0)} else {mergedvalues$targetpop <- c(0,1)}
+#   if (DST=="DSTall") {mergedvalues$DSTnew[1:2] <- c(1,1)} else {mergedvalues$DSTnew[1:2] <- c(0,0)}
+#     
+#   #set all TPR elements to minimal value
+#   if (target=="DS") {mergedvalues$poor_n <- 0.06} else {mergedvalues$poor_n <- 0.18}
+#   if (target=="DS") {mergedvalues$months_n <- 6} else {mergedvalues$months_n <- 20}
+#   if (target=="DS") {mergedvalues$cres[1:2] <- rep(0.1, 2)} else {mergedvalues$cres[1:2] <-rep(0.15, 2)}  #or can make the two vector elements different, if companion resistance is correlated with rif resistance
+#   if (target=="DS") {barrierbase <- 0.05} else {barrierbase <- 0.1} # also vary transmissibility (transcost_n)?
+#   mergedvalues$eligibility <- 1 - c(0.1, 1) # here (at worst) we exclude all HIV and 10% of others, with improvements to (10,10), (0,100), and (0,0) !!
+#   mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr
+#         
+#   mergedvalues$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+#                                       0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
+#                                       0, 0, 0, mergedvalues$acqres_candn, 
+#                                       0, 0, 0, 0), dim=c(4,4))); mergedvalues$acqres_n[mergedvalues$acqres_n>1] <- 1
+#   
+#   elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability"); 
+#   levelnames <- c("intermediate", "optimal"); exclusionnames <- c("fewerHIV", "fewergeneral", "none")
+#   
+#   levels <- as.list(levelnames); names(levels) <- levelnames; exclusionlevels <- as.list(exclusionnames); names(exclusionlevels) <- exclusionnames
+#   for (name in levelnames) levels[[name]] <- mergedvalues; for (name in exclusionnames) exclusionlevels[[name]] <- mergedvalues
+#   TRP <- as.list(elementnames); names(TRP) <- elementnames
+#   for (name in elementnames) TRP[[name]] <- levels; TRP[["exclusions"]] <- exclusionlevels
+#   TRP$all <- list(); TRP$all$minimal <- TRP$all$intermediate <- TRP$all$optimal <- mergedvalues
+#   # input intermediate and optimal TRP ranges here
+#   if (target=="DS")
+#   {
+#     TRP$efficacy$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.03
+#     TRP$efficacy$optimal$poor_n <- TRP$all$optimal$poor_n <- 0
+#     
+#     TRP$duration$intermediate$months_n <- TRP$all$intermediate$months_n <- 4
+#     TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 3
+#     
+#     TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.03,2)
+#     TRP$companion$optimal$cres[1:2] <- TRP$all$optimal$cres[1:2] <- rep(0,2)
+#     
+#     barrierbase <- 0.008; TRP$barrier$intermediate$acqres_n <- TRP$all$intermediate$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+#                                                                         0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
+#                                                                         0, 0, 0, mergedvalues$acqres_candn, 
+#                                                                         0, 0, 0, 0), dim=c(4,4))); TRP$barrier$intermediate$acqres_n[TRP$barrier$intermediate$acqres_n>1] <- 1
+#     barrierbase <- 0; TRP$barrier$optimal$acqres_n <- TRP$all$optimal$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+#                                                                      0, 0, 0, mergedvalues$acqres_s, 
+#                                                                      0, 0, 0, mergedvalues$acqres_candn, 
+#                                                                      0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
+#     TRP$exclusions$fewerHIV$eligibility <- 1- c(0.1, 0.1)
+#     TRP$exclusions$fewergeneral$eligibility <- 1- c(0, 1)
+#     TRP$all$intermediate$eligibility <- 1-c(0.05,0.5)
+#     TRP$exclusions$none$eligibility <- TRP$all$optimal$eligibility <- 1- c(0, 0)
+#     
+#     TRP$tolerability$intermediate$ltfurate_n <- TRP$all$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.015/mergedvalues$months_n
+#     TRP$tolerability$optimal$ltfurate_n <- TRP$all$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
+#   }
+#   
+#   if (target=="DR")
+#   {
+#     TRP$efficacy$intermediate$poor_n <- TRP$all$intermediate$poor_n <- 0.06
+#     TRP$efficacy$optimal$poor_n <- TRP$all$optimal$poor_n <- 0.03
+#     
+#     TRP$duration$intermediate$months_n <-TRP$all$intermediate$months_n <- 9
+#     TRP$duration$optimal$months_n <- TRP$all$optimal$months_n <- 6
+#     
+#     TRP$companion$intermediate$cres[1:2] <- TRP$all$intermediate$cres[1:2] <- rep(0.05, 2)
+#     TRP$companion$optimal$cres[1:2] <- TRP$all$optimal$cres[1:2] <- rep(0, 2)
+#     
+#     barrierbase <- 0.05; TRP$barrier$intermediate$acqres_n <-  TRP$all$intermediate$acqres_n <-  t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+#                                                                     0, 0, 0, mergedvalues$acqres_nifc*barrierbase, 
+#                                                                     0, 0, 0, mergedvalues$acqres_candn, 
+#                                                                     0, 0, 0, 0), dim=c(4,4))); TRP$barrier$intermediate$acqres_n[TRP$barrier$intermediate$acqres_n>1] <- 1
+#     barrierbase <- 0.008; TRP$barrier$optimal$acqres_n <- TRP$all$optimal$acqres_n <- t(array(c( 0, 0, (1-mergedvalues$acqres_candn)*barrierbase, mergedvalues$acqres_candn*barrierbase, # down is starting resistance (-, c, n, cn), across is acquired pattern (-, c, n, cn) after novel regimen treatment
+#                                                                  0, 0, 0, mergedvalues$mergedvalues$acqres_s, 
+#                                                                  0, 0, 0, mergedvalues$acqres_candn, 
+#                                                                  0, 0, 0, 0), dim=c(4,4))); TRP$barrier$optimal$acqres_n[TRP$barrier$optimal$acqres_n>1] <- 1
+#     
+#     
+#     TRP$exclusions$fewerHIV$eligibility <- 1- c(0.1, 0.1)
+#     TRP$exclusions$fewergeneral$eligibility <- 1- c(0, 1)
+#     TRP$all$intermediate <- 1-c(0.05,0.5)
+#     TRP$exclusions$none$eligibility <- TRP$all$optimal$eligibility <- 1- c(0, 0)
+#     
+#     TRP$tolerability$intermediate$ltfurate_n <- TRP$all$intermediate$ltfurate_n <- mergedvalues$ltfurate_sr - 0.03/mergedvalues$months_n
+#     TRP$tolerability$optimal$ltfurate_n <- TRP$all$optimal$ltfurate_n <- mergedvalues$ltfurate_sr - 0.06/mergedvalues$months_n
+#   }
+#   
+# return(TRP) # a set of edited single-list values for use in create.pars
+# }
   
 
 
@@ -346,7 +350,7 @@ sample.values <- function(values, whichparset="varied_ds", LHS, isim)
 
 
 
-screendrout <- function(drout_filename=paste0("DRcalibration_",currenttag,".csv"), tolerance=3, usethistargetdr)
+screendrout <- function(drout_filename=paste0("../scratch/DRcalibration_",currenttag,".csv"), tolerance=3, usethistargetdr)
 {
   drout <- read.csv(file = drout_filename, header = TRUE) #saved results from dr sampling runs to time 0
   if(missing(usethistargetdr))
@@ -357,106 +361,106 @@ screendrout <- function(drout_filename=paste0("DRcalibration_",currenttag,".csv"
 }
 
 
-loadnovel <- function(targetpt, DST, targetepi, tag=currenttag)
+loadnovel <- function(targetpt, DST, targetepi, tag=currenttag, location="")
 {
-  novelwide <- subset(read.csv(paste0("TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
-  novellong <- subset(read.csv(paste0("TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
+  novelwide <- subset(read.csv(paste0(location,"TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
+  novellong <- subset(read.csv(paste0(location,"TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
   return(novel=list("wide"=novelwide, "long"=novellong))
 }
 
-evaltrp_minbase <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST="DSTall", tag=currenttag) # uses merged but not unlisted values
-{
-  
-  if(missing(genericvalues)) {genericvalues <- readRDS(paste0("genericvalues_",tag,".RDS"))} # source of parameters that will have constant values (as saved at start of sampling)
-  if(length(genericvalues[[1]][[1]]>1)) { genericvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]])) } #merge into single list if needed
-  if(missing(drsetup)) {drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)}
-  if(missing(drout)) {drout <- read.csv(file = paste0("DRcalibration_", tag, ".csv"), header = TRUE)} #includes i,i,targetepi,beta, hivrate, sampledpars(ds/dr), finalstate
-  
-  TRP <- samplenovel(genericvalues, targetpt, DST) #a list (by element) of lists (by level) of values (merged form)
-
-  rows<-1;  if (missing(ids) || missing(idr)) {rows <- 1:nrow(drout)} else {rows <- (1:nrow(drout))[(drout[,"ids"] %in% ids) & (drout[,"idr"] %in% idr)]}
-  
-  novelsetup <- setup.model(DRera = TRUE, treatSL = TRUE, treatnovel = TRUE)
-  
-  
-  headings <- numeric(0); for (i in 1:length(TRP)) headings <- append(headings, paste0( rep( paste0(names(TRP)[[i]], ".", names(TRP[[i]])),each=length(tallynames) ), ".", 
-                                                              rep( tallynames, times=length(names(TRP)[i])*length(names(TRP[[i]])) )) )
-    
-  novelheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", 
-                   headings,
-                   paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), rep(c("alloptimal", "allintermediate","allminimal"), each=11*length(tallynames))))
-  if(!file.exists(paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"))) { write(novelheader,  file=paste0("../scratch/TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(novelheader)) }
-  
-  
-  for (inew in rows)
-  {
-    iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST)) #will include these labels as part of returned output
-    
-    valuevect <- drout[inew, 5+(1:length(unlist(genericvalues)))] ; names(valuevect) <- names(unlist(genericvalues))
-    v <- 0 #initialize at start of valuevect
-    for (pname in names(genericvalues))
-    {
-      genericvalues[[pname]] <- unlist(valuevect[v+(1:length(genericvalues[[pname]]))]); #names(genericvalues[[pname]]) <- names()
-      v <- v + length(genericvalues[[pname]]) # move forward to start of next par vector in sampled values
-    }    
-    
-    state <- drout[inew,drsetup$statenames] #5=isimds, isimdr, targetepi, beta, and hivrate
-    
-    # now we've pulled everything back out from drout. next, we need to set up for including novel regimen, e.g. expand the novel to include novel treatment and resistance. 
-    newstate <- numeric(length(novelsetup$statenames)); names(newstate) <- novelsetup$statenames
-    newstate[drsetup$statenames] <- unlist(state)
-    
-    # and now sample the TRP -- generating a baseline result and a minimal and optimal for each TRP element
-    TRP <- samplenovel(genericvalues, targetpt, DST) #a list (by element) of lists (by level) of values
-    saveRDS(TRP, file=paste0("TRP_",tag,".RDS"))
-    
-    
-    iresult <- numeric(0)
-    for (vary in names(TRP))
-    {  for (level in names(TRP[[vary]]))
-      {
-        print(paste0("Evaluating TRP variation in ",vary, ", ", level ," level, for target population ", targetpt, " with ", DST, ", Simulation #", inew))
-      
-        valueset <- TRP[[vary]][[level]]
-        
-        # revise state to assign companion resistance to specified fractions of 0 and r's
-        s_cr <- valueset$cres[1]; r_cr <- valueset$cres[2]
-        
-        novelstate <- newstate
-        for (name in novelsetup$statenames) if (length(grep("^S", name))==0 & length(grep("^C", name))==0 )
-        {  
-          if (length(grep("+c+",name))==1 )
-          {
-            if (length(grep("+.Rr+", name))==1 ) 
-            {    novelstate[name] <- r_cr * newstate[str_replace(string = name, pattern = "c", replacement = "")]
-            } else novelstate[name] <- s_cr * max(newstate[str_replace(string = name, pattern = "c", replacement = "")], newstate[str_replace(string = name, pattern = "c", replacement = "0")], na.rm = TRUE)
-          } else 
-          {
-            if (length(grep("+.Rr+", name))==1 )
-            { novelstate[name] <- (1-r_cr) * newstate[name]
-            } else novelstate[name] <- (1-s_cr) * newstate[name]
-          }
-        }
-        
-        parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
-        
-        ## implement novel regimen with the given TRP, and record yearly state and stats for ten years
-        outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
-        
-        TRP[[vary]][[level]]$output <- outset
-        
-        iresult <- append(iresult, outset[11,tallynames])
-
-        if (vary=="all") iresult <- append(iresult, as.vector(t(outset[,c(1+length(novelstate)+(1:length(tallynames)))])))
-        
-      }
-    } 
-    
-    write(c(iter, iresult), file=paste0("../scratch/TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(novelheader))
-    
-  }
-  return(TRP)
-}
+# evaltrp_minbase <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST="DSTall", tag=currenttag) # uses merged but not unlisted values
+# {
+#   
+#   if(missing(genericvalues)) {genericvalues <- readRDS(paste0("genericvalues_",tag,".RDS"))} # source of parameters that will have constant values (as saved at start of sampling)
+#   if(length(genericvalues[[1]][[1]]>1)) { genericvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]])) } #merge into single list if needed
+#   if(missing(drsetup)) {drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)}
+#   if(missing(drout)) {drout <- read.csv(file = paste0("DRcalibration_", tag, ".csv"), header = TRUE)} #includes i,i,targetepi,beta, hivrate, sampledpars(ds/dr), finalstate
+#   
+#   TRP <- samplenovel(genericvalues, targetpt, DST) #a list (by element) of lists (by level) of values (merged form)
+# 
+#   rows<-1;  if (missing(ids) || missing(idr)) {rows <- 1:nrow(drout)} else {rows <- (1:nrow(drout))[(drout[,"ids"] %in% ids) & (drout[,"idr"] %in% idr)]}
+#   
+#   novelsetup <- setup.model(DRera = TRUE, treatSL = TRUE, treatnovel = TRUE)
+#   
+#   
+#   headings <- numeric(0); for (i in 1:length(TRP)) headings <- append(headings, paste0( rep( paste0(names(TRP)[[i]], ".", names(TRP[[i]])),each=length(tallynames) ), ".", 
+#                                                               rep( tallynames, times=length(names(TRP)[i])*length(names(TRP[[i]])) )) )
+#     
+#   novelheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", 
+#                    headings,
+#                    paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), rep(c("alloptimal", "allintermediate","allminimal"), each=11*length(tallynames))))
+#   if(!file.exists(paste0("TRPoutput_", targetpt,DST,"_",tag,".csv"))) { write(novelheader,  file=paste0("../scratch/TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(novelheader)) }
+#   
+#   
+#   for (inew in rows)
+#   {
+#     iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST)) #will include these labels as part of returned output
+#     
+#     valuevect <- drout[inew, 5+(1:length(unlist(genericvalues)))] ; names(valuevect) <- names(unlist(genericvalues))
+#     v <- 0 #initialize at start of valuevect
+#     for (pname in names(genericvalues))
+#     {
+#       genericvalues[[pname]] <- unlist(valuevect[v+(1:length(genericvalues[[pname]]))]); #names(genericvalues[[pname]]) <- names()
+#       v <- v + length(genericvalues[[pname]]) # move forward to start of next par vector in sampled values
+#     }    
+#     
+#     state <- drout[inew,drsetup$statenames] #5=isimds, isimdr, targetepi, beta, and hivrate
+#     
+#     # now we've pulled everything back out from drout. next, we need to set up for including novel regimen, e.g. expand the novel to include novel treatment and resistance. 
+#     newstate <- numeric(length(novelsetup$statenames)); names(newstate) <- novelsetup$statenames
+#     newstate[drsetup$statenames] <- unlist(state)
+#     
+#     # and now sample the TRP -- generating a baseline result and a minimal and optimal for each TRP element
+#     TRP <- samplenovel(genericvalues, targetpt, DST) #a list (by element) of lists (by level) of values
+#     saveRDS(TRP, file=paste0("TRP_",tag,".RDS"))
+#     
+#     
+#     iresult <- numeric(0)
+#     for (vary in names(TRP))
+#     {  for (level in names(TRP[[vary]]))
+#       {
+#         print(paste0("Evaluating TRP variation in ",vary, ", ", level ," level, for target population ", targetpt, " with ", DST, ", Simulation #", inew))
+#       
+#         valueset <- TRP[[vary]][[level]]
+#         
+#         # revise state to assign companion resistance to specified fractions of 0 and r's
+#         s_cr <- valueset$cres[1]; r_cr <- valueset$cres[2]
+#         
+#         novelstate <- newstate
+#         for (name in novelsetup$statenames) if (length(grep("^S", name))==0 & length(grep("^C", name))==0 )
+#         {  
+#           if (length(grep("+c+",name))==1 )
+#           {
+#             if (length(grep("+.Rr+", name))==1 ) 
+#             {    novelstate[name] <- r_cr * newstate[str_replace(string = name, pattern = "c", replacement = "")]
+#             } else novelstate[name] <- s_cr * max(newstate[str_replace(string = name, pattern = "c", replacement = "")], newstate[str_replace(string = name, pattern = "c", replacement = "0")], na.rm = TRUE)
+#           } else 
+#           {
+#             if (length(grep("+.Rr+", name))==1 )
+#             { novelstate[name] <- (1-r_cr) * newstate[name]
+#             } else novelstate[name] <- (1-s_cr) * newstate[name]
+#           }
+#         }
+#         
+#         parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
+#         
+#         ## implement novel regimen with the given TRP, and record yearly state and stats for ten years
+#         outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
+#         
+#         TRP[[vary]][[level]]$output <- outset
+#         
+#         iresult <- append(iresult, outset[11,tallynames])
+# 
+#         if (vary=="all") iresult <- append(iresult, as.vector(t(outset[,c(1+length(novelstate)+(1:length(tallynames)))])))
+#         
+#       }
+#     } 
+#     
+#     write(c(iter, iresult), file=paste0("../scratch/TRPoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(novelheader))
+#     
+#   }
+#   return(TRP)
+# }
 
 
 
@@ -589,7 +593,7 @@ makemat <- function(pars)
       {
         periods <- paste0("T", reg, 1:Tperiods)
         jt <- 1
-        while (sum(Tperiod.lengths[1:jt]) < durations[reg])
+        while (sum(Tperiod.lengths[1:jt]) < durations[reg]-0.0001)
         {
           relapses <- relapsefracs(period=jt)
           mat[periods[jt],c(periods[jt+1],"R"),jr,jr,jh,jh] <- # move on; or discontinue and relapse 
