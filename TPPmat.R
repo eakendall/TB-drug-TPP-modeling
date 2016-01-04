@@ -361,12 +361,12 @@ screendrout <- function(drout_filename=paste0("../scratch/DRcalibration_",curren
 }
 
 
-loadnovel <- function(targetpt, DST, targetepi, tag=currenttag, location="")
-{
-  novelwide <- subset(read.csv(paste0(location,"TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
-  novellong <- subset(read.csv(paste0(location,"TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
-  return(novel=list("wide"=novelwide, "long"=novellong))
-}
+# loadnovel <- function(targetpt, DST, targetepi, tag=currenttag, location="")
+# {
+#   novelwide <- subset(read.csv(paste0(location,"TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
+#   novellong <- subset(read.csv(paste0(location,"TRPwideoutput_", targetpt, DST,"_", tag,".csv"), ), targetprev==targetepis[[targetepi]][1] ) 
+#   return(novel=list("wide"=novelwide, "long"=novellong))
+# }
 
 # evaltrp_minbase <- function(genericvalues, drsetup, drout, ids, idr, targetpt="DS", DST="DSTall", tag=currenttag) # uses merged but not unlisted values
 # {
@@ -580,7 +580,7 @@ makemat <- function(pars)
       relapse[,fraction_completed >= 1/3 & fraction_completed < 2/3] <- 
         (t((relapsemat) * (relapse246[2] + (relapse246[1]-relapse246[2])*(2/3-fraction_completed))))[, fraction_completed >= 1/3 & fraction_completed < 2/3]
       relapse[,fraction_completed >= 2/3 & fraction_completed < 1] <- 
-        (t((relapsemat) * (relapse246[3] + (relapse246[3]-relapse246[3])*(1-fraction_completed))))[, fraction_completed >= 2/3 & fraction_completed < 1]
+        (t((relapsemat) * (relapse246[3] + (relapse246[3]-relapse246[2])*(1-fraction_completed))))[, fraction_completed >= 2/3 & fraction_completed < 1]
       relapse[,fraction_completed >= 1] <- t(relapsemat)[, fraction_completed >= 1]
       relapse[relapse>1] <- 1 #if sum exceeds 100%, set to 100% relapse
       return(relapse) 
