@@ -1,10 +1,11 @@
-taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1] #should have same array as dr runs
-tname <- commandArgs(trailingOnly=TRUE)[2]
-targetpt <- commandArgs(trailingOnly=TRUE)[3]
-DST <- commandArgs(trailingOnly=TRUE)[4]
+taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1] #should have same array as dr runs
+tname <- "India"#commandArgs(trailingOnly=TRUE)[2]
+targetpt <- "DS"#commandArgs(trailingOnly=TRUE)[3]
+DST <- "DSTnone"#commandArgs(trailingOnly=TRUE)[4]
 #startrow <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
+location<-""
 
-tag <- "20151227"
+tag <- "20160105"
 currenttag <- paste0(tname,"_",tag,".",taskid)
 
 source("TPPmat.R")
@@ -18,10 +19,12 @@ tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- set.novelvalues()$elementnames
 
 
-drout <- screendrout(drout_filename=paste0("../scratch/DRcalibration_",currenttag,".csv"), tolerance=1.5) # limits output to those simulations with DR fraction of incidence in targetepi range
+drout <- screendrout(drout_filename=paste0("DRcalibration_",currenttag,".csv"), tolerance=1.5) # limits output to those simulations with DR fraction of incidence in targetepi range
 
-startrow <- max(read.csv(paste0("../scratch/TRPwideoutput_",targetpt,DST,"_",currenttag,".csv"))$inew) +1
+if (file.exists(paste0(location,"TRPwideoutput_",targetpt,DST,"_",currenttag,".csv"))) 
+    startrow <- max(max(read.csv(paste0(location,"TRPwideoutput_",targetpt,DST,"_",currenttag,".csv"))$inew) +1, 1) else
+      startrow <- 1
 
-idr <-  1:20 # use for test runs, or if splitting DR tasks into subtasks here
+# idr <-  1:3 # use for test runs, or if splitting DR tasks into subtasks here
 
-evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout[startrow:nrow(drout), ], idr=idr, targetpt=targetpt, DST=DST, tag=currenttag) # can also specify ids and idr to run just a subset of drout
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, rows=startrow:nrow(drout), targetpt=targetpt, DST=DST, tag=currenttag) # can also specify ids and idr to run just a subset of drout

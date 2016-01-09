@@ -1,40 +1,40 @@
-taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
-ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+# taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
+# ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 
-tag <- "20151223"
-Nsims_ds <- 600
+tag <- "20160105"
+Nsims_ds <- 250
 
 
 source("TPPmat.R")
 values <- set.values()
 
-Nsamplepars_ds <- length(unlist(values$varied_ds)); ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1)); print(ilimits)
+Nsamplepars_ds <- length(unlist(values$varied_ds)); #ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1)); print(ilimits)
 
-if(exists(paste0("LHS_",tag,".RDS"))) readRDS(paste0("LHS_",tag,".RDS")) else 
+if(exists(paste0("LHS_",tag,".RDS"))) LHS <- readRDS(paste0("LHS_",tag,".RDS")) else 
   {LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0("LHS_",tag,".RDS"))}
 
-currenttag <- paste0(tag,".",taskid)
+currenttag <- tag#paste0(tag,".",taskid)
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- set.novelvalues()$elementnames
 
-dsheader <- c("ids",  "targetprev","targetcoprev","targetdr",
+dsheader <- c("ids",  "targetprev","targetcoprev","targetdr",  
               names(unlist(values)), 
             dssetup$statenames, tallynames) 
-if(!file.exists(paste0("DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0("../scratch/DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
+if(!file.exists(paste0("DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0("DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
 
-for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
+for (isim in 1:250)#(ilimits[taskid]+1):ilimits[taskid+1])
 {
   dsvalues <- sample.values(values=values, whichparset="varied_ds", LHS=LHS, isim=isim)
   pars <- create.pars(setup = dssetup, values = dsvalues)
   
   # optimize for desired prev and coprev 
   optimat <- array(0, dim=c(0,4))
-  b <- 4; h <- 0; coprev <- 0; while(min(optimat[optimat[,2]==h/2, 4])< 0.7)
+  h <- 0; coprev <- 0; while(h <= 0.0004 | min(optimat[optimat[,2]==h/4, 4])< 0.6)
   {
-    b <- max(4, ceiling(b/3)); prev <- 0; stopat4 <- F; backtracked=F; while(prev<1000) 
+    b <- 3; prev <- 0; stopat3 <- F; while(prev<900) 
     {
       dsvalues$cal$beta <- b; dsvalues$cal$hivrate <- h
       pars <- create.pars(dssetup, dsvalues)
@@ -43,15 +43,15 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
       prev <- sum(state[c(grep("^A", pars$fullpars$statenames), grep("^T", pars$fullpars$statenames))])
       coprev <- sum(state[c(grep("^A.+Hp", pars$fullpars$statenames), grep("^T.+Hp", pars$fullpars$statenames))]) / prev
       optimat <- rbind(optimat, c(b,h,prev,coprev))
-      if (b==4 & prev>1000 & stopat4 ==F) { b <- 1; prev <- 0; stopat4 <- T} else 
-        if (b==4 & prev>50 & coprev<0.2 & backtracked==F) {b <- 1; backtracked<-T} else
-        if (b>14 | prev<30) b <- b+2 else 
+      if (b==3 & prev>900 & stopat3 ==F) { b <- 1; prev <- 0; stopat3 <- T} else 
+        if (b>14) b <- b+2 else 
           b <- b+1
     }
     print(paste0("Tried beta up to ", b, " for hivrate=", h))
-    if (h==0) h <- 0.00025 else h <- h*2
+    if (h==0) h <- 0.0001 else h <- h*4
   }                     
   
+  saveRDS(optimat, file=paste0("optimat",isim,".RDS"))
   #will treat each  epi (country) separately for the rest of the (DS and DR) calibration  
   for (tname in names(targetepis))
   {
@@ -74,7 +74,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
     estate <- with(opte,log[nrow(log),2:(length(dsstatenames)+1)])
   
     # save equilibrium state and values
-    write(file=paste0("../scratch/DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
+    write(file=paste0("DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
       sep=",", ncol=length(dsheader), append=TRUE)
     
   }
