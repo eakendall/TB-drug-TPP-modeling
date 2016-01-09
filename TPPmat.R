@@ -119,8 +119,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
   novelsetup <- setup.model(DRera = TRUE, treatSL = TRUE, treatnovel = TRUE)
   elementnames <- c("all", set.novelvalues()$elementnames)
   
-  longheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", names(unlist(genericvalues)), "vary","level","time",
-                  tallynames)
+  stateheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "vary","level","time", novelsetup$statenames)
   
   wideheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", names(unlist(genericvalues)))
   wideheader <- append(wideheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), 
@@ -132,7 +131,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
                                                                  rep( c("minimal","optimal"), each=11*length(tallynames) ) ) )
   
   
-  if(!file.exists(paste0(location,"TRPlongoutput_", targetpt,DST,"_",tag,".csv"))) { write(longheader,  file=paste0(location,"TRPlongoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(longheader)) }
+  if(!file.exists(paste0(location,"TRPstateoutput_", targetpt,DST,"_",tag,".csv"))) { write(stateheader,  file=paste0(location,"TRPstateoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(stateheader)) }
   if(!file.exists(paste0(location,"TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0(location,"TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
   
   for (inew in rows)
@@ -185,26 +184,18 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
         
         outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
         
-        if (vary=="all") 
-        { 
-          for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
-                                file=paste0(location,"TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
+        write(t(cbind(t(array(rep(c(iter,vary,level), times=11),dim=c(length(iter)+2,11))), outset[,c("time",novelsetup$statenames)])), 
+                                file=paste0(location,"TRPstateoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(stateheader))
           
-          iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
+        iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
           
-        } else 
-        {
-          for (t in 0:10) write(c(iter, unlist(valueset[[level]]), vary, level, t, outset[t,tallynames]), 
-                                file=paste0(location,"TRPlongoutput_",targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(longheader))
-          iresult <- append(iresult, as.vector(t(outset[,tallynames])))
-        }
       }
     } 
     
     write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", append=TRUE, ncol=length(wideheader))
     
   }
-  return(iresult)
+  return(0)
 }
 
 
@@ -710,13 +701,23 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
     
     ########## tally how much each current state contributes to outcomes of interest (then will multiply by state and append to output)
     
-    outcomes <- c("prev", "inc", "rrinc", "rronsets", "panronsets", "relapses", "tbdeaths", "rrdeaths", "hivtoo", "dxs", "rDSTs", "nDSTs", "rxtime_s", "rxtime_r", "rxtime_n")
+    outcomes <- c("prev","rprev","cprev","nprev","cnprev","rnovelprev", "inc", "rrinc", "rronsets", "panronsets", "relapses", "tbdeaths", "rrdeaths", "hivtoo", "dxs", "rDSTs", "nDSTs", "rxtime_s", "rxtime_r", "rxtime_n")
     tally <- array(0,dim=c(length(Tnames)*length(Rnames)*length(Hnames), length(outcomes))); dimnames(tally) <- list(statenames, outcomes)
     
     if (do.tally==TRUE)
     {
       tally[c(grep("^A", statenames), grep("^T", statenames)), "prev"] <- 1
       
+      tally[c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)), "rprev"] <- 1
+      
+      tally[c(grep("^A.[.]R(rc|c)", statenames), grep("^Ti[.]Rr", statenames)), "cprev"] <- 1
+      
+      tally[c(grep("^A.[.]R(rcn|cn|n)", statenames), grep("^Ti[.]Rr", statenames)), "nprev"] <- 1
+      
+      tally[c(grep("^A.[.]R(rcn|cn)", statenames), grep("^Ti[.]Rr", statenames)), "cnprev"] <- 1
+      
+      tally[c(grep("^A.[.]R(rc|rn)", statenames), grep("^Ti[.]Rr", statenames)), "rnovelprev"] <- 1
+            
       tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"inc"] <- #doens't include relapses (mostly early), but does include reinfections (mostly late) - i.3. this is a count of new infecitons, whether or not they are recognized as such
         apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A",statenames)], 1, sum)
       
