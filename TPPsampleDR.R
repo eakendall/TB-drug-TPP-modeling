@@ -2,6 +2,7 @@ taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 tname <- commandArgs(trailingOnly=TRUE)[3]
 rDSTall <- commandArgs(trailingOnly=TRUE)[4]
+location <- "../scratch/"
 
 tag <- "20160105"
 
@@ -12,12 +13,8 @@ if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 
 source("TPPmat.R")
 
-dsout <- read.csv("DScalibration_20160105.csv"); Nsims_ds <- 250
-# dsout <- data.frame()
-# nds<-1; 
-#while(file.exists(paste0("DScalibration_",tag,".",nds,".csv"))) {dsout <- rbind(dsout, read.csv(paste0("DScalibration_",tag,".",nds,".csv"), header=TRUE)); nds <- nds+1}
+dsout <- read.csv(paste0(location,"DScalibration_20160105.csv")); Nsims_ds <- 250
 
-# Nsims_ds <- max(dsout[,"ids"])
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
@@ -32,11 +29,11 @@ tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 drheader <- c("ids","idr", "targetprev","targetcoprev","targetdr",
               names(unlist(values)), 
               drsetup$statenames, tallynames, paste0(tallynames,"10")) 
-if(!file.exists(paste0("DRcalibration_", currenttag, ".csv"))) { write(drheader, sep = ",", file=paste0("DRcalibration_",currenttag,".csv"), ncolumns=length(drheader)) }
+if(!file.exists(paste0(location,"DRcalibration_", currenttag, ".csv"))) { write(drheader, sep = ",", file=paste0(location,"DRcalibration_",currenttag,".csv"), ncolumns=length(drheader)) }
 
 drtrajheader <- c("ids","idr", "targetprev","targetcoprev","targetdr",
                   paste0( rep(-25:10, each=length(tallynames)), rep(tallynames, times=36) ))
-if(!file.exists(paste0("DRtraj_", currenttag, ".csv"))) { write(drtrajheader, sep = ",", file=paste0("DRtraj_",currenttag,".csv"), ncolumns=length(drtrajheader)) }
+if(!file.exists(paste0(location,"DRtraj_", currenttag, ".csv"))) { write(drtrajheader, sep = ",", file=paste0(location,"DRtraj_",currenttag,".csv"), ncolumns=length(drtrajheader)) }
 
 for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
   #for (tname in names(targetepis))
@@ -73,9 +70,9 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
                                   unlist(drvalues),
                                   drend[26,2:ncol(drend)],
                                   drend[36,tallynames]))
-      write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0("DRtraj_",currenttag,".csv"), append=TRUE, sep=".", ncol=5+length(tallynames)*36 )
+      write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0(location,"DRtraj_",currenttag,".csv"), append=TRUE, sep=".", ncol=5+length(tallynames)*36 )
       print(paste0("Finished isimds=", isim, ", isimdr=", isimdr))
     } 
     
-    write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file=paste0("DRcalibration_",currenttag,".csv"))
+    write(t(results), ncolumns = ncol(results), append=TRUE,  sep = ",", file=paste0(location,"DRcalibration_",currenttag,".csv"))
   }

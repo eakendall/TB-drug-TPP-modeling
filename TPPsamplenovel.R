@@ -2,8 +2,9 @@ taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1] #should have same array 
 tname <- commandArgs(trailingOnly=TRUE)[2]
 targetpt <- commandArgs(trailingOnly=TRUE)[3]
 DST <- commandArgs(trailingOnly=TRUE)[4]
-location<-""
-rDSTall<-FALSE
+rDSTall<-commandArgs(trailingOnly=TRUE)[5]
+location<-"../scratch/"
+
 
 tag <- "20160105"
 currenttag <- paste0(tname,"_",tag,".",taskid)
@@ -19,7 +20,8 @@ mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], val
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- set.novelvalues()$elementnames
 
+drout <- screendrout(drout_filename=paste0(location,"DRcalibration_",currenttag,".csv"), tolerance=1.5) # limits output to those simulations with DR fraction of incidence in targetepi range
 
-drout <- screendrout(drout_filename=paste0("DRcalibration_",currenttag,".csv"), tolerance=1.5) # limits output to those simulations with DR fraction of incidence in targetepi range
+startrow <- max(read.csv(paste0(location,"TRPwideoutput_",targetpt,DST,"_",currenttag,".csv"))$inew) +1
 
-evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, rows=1:nrow(drout), targetpt=targetpt, DST=DST, tag=currenttag, rDSTall=rDSTall) # can also specify ids and idr to run just a subset of drout
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, rows=startrow:nrow(drout), targetpt=targetpt, DST=DST, tag=currenttag, rDSTall=rDSTall, location=location) # can also specify ids and idr to run just a subset of drout
