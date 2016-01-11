@@ -53,31 +53,32 @@ for (isim in 1:250)#(ilimits[taskid]+1):ilimits[taskid+1])
   
   saveRDS(optimat, file=paste0("optimat",isim,".RDS"))
   #will treat each  epi (country) separately for the rest of the (DS and DR) calibration  
+
   for (tname in names(targetepis))
   {
-    # find fit and create params for each set (country) of targetepis
-    fit <- apply((t(optimat[,c(3,4)])-targetepis[[tname]][1:2])^2/targetepis[[tname]][1:2]^2, 2, sum)
-    hs <- (0.0001*2^(0:10))[ 0.0001*2^(0:10) <= max(optimat[,2])]; bs <- min(optimat[,1]):max(optimat[,1])
-  
-    largefitmat <- interp(optimat[,1], 100*optimat[,2], z=fit, nx=50, ny=50, extrap=F, duplicate="mean")
+    fit <- (optimat[,3]-targetepis[[tname]][1])^2/targetepis[[tname]][1]^2 + (optimat[,4]-targetepis[[tname]][2])^2/targetepis[[tname]][2]^2
+    
+    optimat[,2][optimat[,2]==0] <- 0.00000001
+    
+    largefitmat <- interp(optimat[,1], -log(optimat[,2]), z=fit, nx=50, ny=50, extrap=F, duplicate="mean")
     largefitmat$z[is.na(largefitmat$z)] <- 10000
     vindex <- which.min(largefitmat$z); aindex <- c(vindex - nrow(largefitmat$z)*floor(vindex/nrow(largefitmat$z)), ceiling(vindex/nrow(largefitmat$z)))
     
-    dsvalues$cal$beta <- largefitmat$x[aindex[1]]; dsvalues$cal$hivrate <- largefitmat$y[aindex[2]]/100
+    dsvalues$cal$beta <- largefitmat$x[aindex[1]]; dsvalues$cal$hivrate <- exp(-largefitmat$y[aindex[2]])
+    if (dsvalues$cal$hivrate<0.0000001) dsvalues$cal$hivrate <- 0
+    
     print(paste0("Chose beta=", dsvalues$cal$beta, ", hivrate=", dsvalues$cal$hivrate, " for sim #",isim, " and epi of ", tname))
     
     newpars <- create.pars(values=dsvalues, setup=dssetup)
     
     # and get equilibrium state
-    opte <- equilib(pars=newpars, tol=0.1)
-    dsstatenames <- dssetup$statenames
-    estate <- with(opte,log[nrow(log),2:(length(dsstatenames)+1)])
-  
+    opte <- equilib(pars=newpars, tol=0.5)
+    estate <- with(opte,log[nrow(log),2:(length(dssetup$statenames)+1)])
+    
     # save equilibrium state and values
     write(file=paste0("DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
-      sep=",", ncol=length(dsheader), append=TRUE)
+          sep=",", ncol=length(dsheader), append=TRUE)
     
   }
+  
 }
-    
-

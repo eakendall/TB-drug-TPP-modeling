@@ -32,20 +32,23 @@ for (isim in 1:Nsims_ds)
   
  for (tname in names(targetepis))
  {
-    fit <- apply((t(optimat[,c(3,4)])-targetepis[[tname]][1:2])^2/targetepis[[tname]][1:2]^2, 2, sum)
-    optimat[,2][optimat[,2]==0] <- 0.000001
+    fit <- (optimat[,3]-targetepis[[tname]][1])^2/targetepis[[tname]][1]^2 + (optimat[,4]-targetepis[[tname]][2])^2/targetepis[[tname]][2]^2
+    
+    optimat[,2][optimat[,2]==0] <- 0.00000001
     
     largefitmat <- interp(optimat[,1], -log(optimat[,2]), z=fit, nx=50, ny=50, extrap=F, duplicate="mean")
     largefitmat$z[is.na(largefitmat$z)] <- 10000
     vindex <- which.min(largefitmat$z); aindex <- c(vindex - nrow(largefitmat$z)*floor(vindex/nrow(largefitmat$z)), ceiling(vindex/nrow(largefitmat$z)))
     
-    dsvalues$cal$beta <- largefitmat$x[aindex[1]]; dsvalues$cal$hivrate <- largefitmat$y[aindex[2]]/100
+    dsvalues$cal$beta <- largefitmat$x[aindex[1]]; dsvalues$cal$hivrate <- exp(-largefitmat$y[aindex[2]])
+    if (dsvalues$cal$hivrate<0.0000001) dsvalues$cal$hivrate <- 0
+    
     print(paste0("Chose beta=", dsvalues$cal$beta, ", hivrate=", dsvalues$cal$hivrate, " for sim #",isim, " and epi of ", tname))
     
     newpars <- create.pars(values=dsvalues, setup=dssetup)
     
     # and get equilibrium state
-    opte <- equilib(pars=newpars, tol=0.1)
+    opte <- equilib(pars=newpars, tol=0.5)
     estate <- with(opte,log[nrow(log),2:(length(dssetup$statenames)+1)])
     
     # save equilibrium state and values
