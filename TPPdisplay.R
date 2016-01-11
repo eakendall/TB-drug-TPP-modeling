@@ -1,67 +1,16 @@
 source("TPPmat.R")
 
 currenttag <- "India_20160105"; tolerance <- 1.5; location=""
-# currenttag <- "Philippines_20151227"
-# targetepi <- "Philippines"
-# tolerance <- 2 #1.5 for India and SouthAfrica, 2 for Brazil and Philippines
-# location="fromMARCC/Phil20/"
 
-levels <- c("minimal","intermediate","optimal"); 
-elementnames <- c("all", set.novelvalues()$elementnames)
-
-dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
-drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
-novelsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
-tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
-grays <- c("gray30","gray60","gray90")
-values <- set.values(); genericvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
-
-# wideheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST")
-# wideheader <- append(wideheader, paste0(rep(tallynames,times=11*3),rep(rep(0:10, each=length(tallynames)), times=3), 
-#                                         rep(c("allminimal", "allintermediate","alloptimal"), each=11*length(tallynames))))
-# for (i in 2:length(elementnames)) wideheader <- append(wideheader, 
-#                                                        paste0( rep(tallynames, times=2*11), 
-#                                                                rep( rep(0:10, each=length(tallynames)), 2),
-#                                                                rep(elementnames[i], each=22*length(tallynames) ),
-#                                                                rep( c("minimal","optimal"), each=11*length(tallynames) ) ) )
-elementlabels <- c("All elements\nvaried", "% durably cured\n(optimal conditions)", "Regimen duration", 
-                   "Prevalence of\nexisting resistance\nto regimen", "Barrier to\nacquired novel\ndrug resistance", 
-                   "Exclusions and\ncontraindications", "Adherence/burden\nto patient")
-dslabels <- c("","","", "94% cured","97% cured", "99% cured", "6 months","4 months", "2 months", 
-              "10% resistant", "3% resistant", "None resistant", "1 acquired resistance per 20 treatments", "1 acquired resistance per 125 treatments", "Minimal acquired resistance",
-              "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "1.5% fewer dropouts", "3% fewer dropouts")
-drlabels <- c("","","", "76% cured","94% cured", "97% cured", "20 months","9 months", "6 months", 
-              "15% resistant", "5% resistant", "None resistant", "1 acquired resistance per 10 treatments", "1 acquired resistance per 20 treatments", "1 acquired resistance per 125 treatments",
-              "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "3% fewer dropouts", "6% fewer dropouts")
-
-####### pull in data ###########
-
-drout <- numeric(0)
-for (i in 1:10) drout <- rbind(drout, read.csv(paste0(location,"DRcalibration_",currenttag,".",i,".csv"), header = TRUE)) #saved results from dr sampling runs at time 0
-drout <- drout[ drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & drout[,"rrinc"]/drout[,"inc"] < tolerance*drout[,"targetdr"], ]  #within 3fold if rr incident fraction target
-
-
-allnovelwide <- list()
-for (targetpt in c("DS","DR")) for (DST in c("DSTall","DSTnone")) #for (targetepi in names(targetepis))
-{
-  i <- 1; allnovelwide[[paste0(targetpt, DST)]] <- numeric(0)
-  while (file.exists(paste0(location,"TRPwideoutput_", targetpt, DST,"_", currenttag,".",i,".csv")))
-  {
-    allnovelwide[[paste0(targetpt, DST)]] <- rbind(allnovelwide[[paste0(targetpt, DST)]], read.csv(paste0(location,"TRPwideoutput_", targetpt, DST,"_", currenttag,".",i,".csv")))
-    i <- i+1
-  }
-}  
+source("displayfunction.R")
 
 
 ###############################
-# Once country data loaded 
+# Results overview #
 
-# need to specificy targetpt and DST here
-
-novelwide <- allnovelwide[["DSDSTall"]]
+novelwide <- allnovelwide[["DSDSTall"]]; drout <- alldrout[1:nrow(novelwide),]
 
 outcome <- c("tbdeaths") #can set up loop over multiple outcomes
-
 
 traj <- array(0, dim=c(11,3,5)); dimnames(traj) <- list("t"=0:10, "level"=levels, "q"=c(0.025,0.25,0.5,0.075,0.975))
 
@@ -98,109 +47,126 @@ for (vary in elementnames)
 }  
 
 par(mar=c(4,4,1,1), mfrow=c(1,1))
-plot(0:10, traj[,"minimal","0.5"], ylim=c(0,targetepis[[targetepi]][1]/8), type='l', col="red", xlab="Years after introduction", ylab="Annual TB mortality")
+plot(0:10, traj[,"minimal","0.5"], ylim=c(0,targetepis[[targetepi]][1]/4), type='l', col="red", xlab="Years after introduction", ylab="Annual TB mortality")
 points(0:10, traj[,"intermediate","0.5"], type='l', col='orange')
 points(0:10, traj[,"optimal","0.5"], type='l', col='green')
 points(c(0,10), c(median(drout[,"tbdeaths"]),median(drout[,"tbdeaths10"])), col='black', type='l') 
 legend("bottomleft", legend= c("Continued current standard", "Minimal novel DS regimen", "Intermediate novel DS regimen", "Optimal novel DS regimen"),
        col=c("black","red","orange","green"), lty=1)
 
-
 par(mar=c(3,5,4,3), mfrow=c(1,1))
 bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
-                    ylab="Percent reduction in year 10 TB mortality with novel regimen\n compared to projection under continued current practice", 
+                    ylab="Percent reduction in year 10 TB mortality with novel regimen,\n compared to projection under current standard of care", 
                     xlab="", las=2, cex.lab=1, 
-                    ylim=c(120*final_pctdown[1,3,"0.5"], 8),
-                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)",x="bottomright",cex=0.8),
+                    ylim=c(150*final_pctdown[1,3,"0.5"], 8),
+                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)",x=bpctdown[2,7], y=110*final_pctdown[1,3,"0.5"],cex=0.8),
                     main="", #paste0("Novel regimen for DS TB, with universal DST"), cex.main=1,
                     col=cols, names.arg=rep("", length(elementnames)))
 text(bpctdown+0.4, -0.5, dslabels ,cex=0.9, pos=2, srt=90, col="black", font=2) 
-text(colMeans(bpctdown)-0.5 ,1, elementlabels, cex=1, pos=4, srt=90, font=1)
-mtext("Varied TRP element(s)", side=3, line=3)
+text(colMeans(bpctdown)-0.5 ,1, elementlabels, cex=1, pos=4, srt=90, font=1, xpd=NA)
+mtext("Varied TRP element(s) \n(All others held fixed at intermediate level)", side=3, line=2)
 arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
 
-# Make this 2x2 for DS/DR and w/wo DST
+# calculate contribution of each element to total novel regimen impact
+text(bpctdown[2,4], 140*final_pctdown[1,3,"0.5"], "Fraction of total variation in novel regimen's impact attributable to variation in specified characteristic", pos=1, xpd=NA)
+text(bpctdown[2,2:7], 150*final_pctdown[1,3,"0.5"], paste0(round(((final_pctdown[,3,3]-final_pctdown[,1,3] )/(final_pctdown[1,3,3]-final_pctdown[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
 
-novelwide <- allnovelwide[["DRDSTall"]]
 
-outcome <- c("tbdeaths") #can set up loop over multiple outcomes
+
+# Same for DR regimen
+## resize plot area to wide ##
+novelwide <- allnovelwide[["DRDSTall"]]; drout <- alldrout[1:nrow(novelwide),]
+
+outcome <- c("tbdeaths") 
 y <- 10
 
-final_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
-dimnames(final_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
+r_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
+dimnames(r_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
 
 for (vary in elementnames) 
 { 
-  final_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, y, vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
+  r_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, y, vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, y,"allintermediate")] - drout[ , paste0(outcome,"10")] )/
+  r_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, y,"allintermediate")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, y, vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
+  r_pctdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, y, vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
 }  
+
 
 par(mar=c(3,5,8,3), mfrow=c(1,2))
-bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
-                    ylab="Percent reduction in year 10 total TB mortality with novel regimen\n compared to projection under continued current practice", 
-                    xlab="", las=2, cex.lab=1, ylim=c(-10,1),
-                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)",x="bottomright",cex=0.8),
-                    main="",
+ylow=250*r_pctdown[1,3,"0.5"]
+bpctdown <- barplot(height = 100*aperm(r_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
+                    ylab="Percent reduction in year 10 TB mortality with novel regimen,\n compared to projection under current standard of care", 
+                    xlab="", las=2, cex.lab=1, 
+                    ylim=c(1,-0.05)*ylow,
+                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)",x=bpctdown[2,7], y=90*min(r_pctdown[1,3,"0.025"]),cex=0.8),
+                    main="", 
                     col=cols, names.arg=rep("", length(elementnames)))
-text(bpctdown+0.4, -0.1, drlabels ,cex=0.8, pos=2, srt=90, col="black", font=2) 
-text(colMeans(bpctdown) ,0.1, elementlabels, cex=1, pos=4, srt=90, xpd=NA)
-mtext("Varied TRP element(s)", side=3, line=7)
-arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
+text(bpctdown+0.5, ylow/100, drlabels ,cex=0.9, pos=2, srt=90, col="black", font=2) 
+text(colMeans(bpctdown)-0.5 ,-ylow/100, elementlabels, cex=0.8, pos=4, srt=90, font=1, xpd=NA)
+mtext("Varied TRP element(s) \n(All others held fixed at intermediate level)", side=3, line=6)
+arrows(bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
 
-outcome <- c("rrdeaths") #can set up loop over multiple outcomes
+text(bpctdown[2,4], 7/8*ylow, "Fraction of total variation in novel regimen's impact\nattributable to variation in specified characteristic:", pos=1, xpd=NA)
+text(bpctdown[2,2:7], 15/16*ylow, paste0(round(((r_pctdown[,3,3]-r_pctdown[,1,3] )/(r_pctdown[1,3,3]-r_pctdown[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
 
-final_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
-dimnames(final_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
+
+outcome <- c("rrdeaths") 
+
+r_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
+dimnames(r_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
 
 for (vary in elementnames) 
 { 
-  final_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
+  r_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
+  r_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
+  r_pctdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
 }  
 
-bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
+ylow <- 130*r_pctdown[1,3,"0.5"]
+bpctdown <- barplot(height = 100*aperm(r_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
                     ylab="Percent reduction in year 10 rifampin-resistant TB mortality", 
-                    xlab="", las=2, cex.lab=1, ylim=c(-50,5),
-                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)",x="bottomright",cex=0.8),
+                    xlab="", las=2, cex.lab=1, 
+                    ylim=c(1,-0.05)*ylow,
                     main="", 
                     col=cols, names.arg=rep("", length(elementnames)))
-text(bpctdown+0.4, -0.1, drlabels ,cex=0.8, pos=2, srt=90, col="black", font=2) 
-text(colMeans(bpctdown) ,0.8, elementlabels, cex=1, pos=4, srt=90, xpd=NA)
-mtext("Varied TRP element(s)", side=3, line=7)
-arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
+text(bpctdown+0.5, ylow/100, drlabels ,cex=0.9, pos=2, srt=90, col="black", font=2) 
+text(colMeans(bpctdown)-0.5 ,-ylow/100, elementlabels, cex=0.8, pos=4, srt=90, font=1, xpd=NA)
+mtext("Varied TRP element(s) \n(All others held fixed at intermediate level)", side=3, line=6)
+arrows(bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
 
+text(bpctdown[2,4], 7/8*ylow, "Fraction of total variation in novel regimen's impact\nattributable to variation in specified characteristic:", pos=1, xpd=NA)
+text(bpctdown[2,2:7], 15/16*ylow, paste0(round(((r_pctdown[,3,3]-r_pctdown[,1,3] )/(r_pctdown[1,3,3]-r_pctdown[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
 
-
+                    
 
 
 ############ duration
 
 # sensitivity analysis: ltfu at 2 months
-ltfu2mo <- rbind(read.csv("TRPwideoutput_DSDSTall_ltfu2mo.India_20160105.1.csv"), read.csv("TRPwideoutput_DSDSTall_ltfu2mo.India_20160105.2.csv"))
-r <- read.csv("DRcalibration_ltfu2mo.India_20160105.1.csv", header=FALSE); s <- read.csv("DRcalibration_ltfu2mo.India_20160105.2.csv"); 
-colnames(r) <- colnames(s); drltfu <- rbind(r,s)
-plotpctdown(outcome="tbdeaths", scenario="DSDSTall", elements=elementnames, novelwide=ltfu2mo, drout =drltfu, barlabels=TRUE)
-mtext("With all losses to follow up occurring at 2 months (to maximize the impact of regimen duration)", side=1, line=4, font=2)
+ltfu2mo <- read.csv("TRPwideoutput_DSDSTall_ltfu2mo.India_20160105.1.csv", header=TRUE)
+drltfu <- screendrout("DRcalibration_ltfu2mo.India_20160105.1.csv", tolerance=1.5)
+par(mfrow=c(1,1)); p<-plotpctdown(outcome="tbdeaths", scenario="DSDSTall", elements=elementnames, novelwide=ltfu2mo, drout =drltfu, barlabels=TRUE, elementlabs=TRUE, 
+               main="With all losses to follow up occurring at 2 months\n(to maximize the impact of regimen duration)", mar=c(4,4,7,1))
+text(p$positions[2,4], -34, "Fraction of total variation in novel regimen's impact\nattributable to variation in specified characteristic:", pos=1, xpd=NA)
+text(p$positions[2,2:7], -37, paste0(round(((p$array[,3,3]-p$array[,1,3] )/(p$array[1,3,3]-p$array[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
 
 # resource use: barplots as above but for outcomes of diagnoses, DSTs (rif and novel in same plot), and rxmonths (all 3 in same plot)
+novelwide <- allnovelwide[["DSDSTall"]]; drout <- alldrout[1:nrow(novelwide),]
 
-cumresource <- resource <- array(0,dim=c( length(elementnames) , 3 , 4 )); 
-dimnames(cumresource) <- dimnames(resource) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "reg"=c("First-line","Second-line","Novel", "Treatment courses"))
+cumresource <- array(0,dim=c( length(elementnames) , 3 , 3)); resource <- array(0,dim=c( length(elementnames) , 3 , 3,5)); 
+dimnames(cumresource) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "reg"=c("First-line","Second-line","Novel")); dimnames(resource) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "reg"=c("First-line","Second-line","Novel"), "q"=c(0.025,0.25,0.5,0.75,0.975))
 
-for (vary in elementnames) for (nreg in 1:4) 
+for (vary in elementnames) for (nreg in 1:3) 
 { 
   outcome <- c("rxtime_s","rxtime_r","rxtime_n", "dxs")[nreg]
-  resource[vary,1,nreg] <- median(novelwide[ , paste0(outcome, "10", vary,"minimal")])
-  resource[vary,2,nreg] <- median(novelwide[ , paste0(outcome, "10allintermediate")])
-  resource[vary,3,nreg] <- median(novelwide[ , paste0(outcome, "10", vary,"optimal")])
+  resource[vary,1,nreg,] <- quantile(novelwide[ , paste0(outcome, "10", vary,"minimal")],c(0.025,0.25,0.5,0.75,0.975))
+  resource[vary,2,nreg,] <- quantile(novelwide[ , paste0(outcome, "10allintermediate")],c(0.025,0.25,0.5,0.75,0.975))
+  resource[vary,3,nreg,] <- quantile(novelwide[ , paste0(outcome, "10", vary,"optimal")],c(0.025,0.25,0.5,0.75,0.975))
   for (t in 1:10)
   {
     cumresource[vary,1,nreg] <- cumresource[vary,1,nreg] + median(novelwide[ , paste0(outcome, t, vary,"minimal")])
@@ -209,40 +175,123 @@ for (vary in elementnames) for (nreg in 1:4)
   }
 }  
 
-cols <- c("pink", "beige","palegreen")
 
-par(mar=c(4,5,3,2), mfrow=c(2,2), oma=c(2,1,1,1)) 
-bres <- barplot(12*cbind(aperm(resource,c(1,3,2))["efficacy",1:3,], aperm(resource,c(1,3,2))["duration",1:3,], aperm(resource,c(1,3,2))["companion",1:3,]), beside = FALSE, 
-                      space=c(0.75,0.25,0.25), 
-                    col=cols, ylab="Patient-months of treatment\nin year 10, by regimen")
-legend(x = bres[1], y=max(12*rowSums(resource["efficacy",,1:3]))+10, xjust=0.2, yjust=0, fill=rev(cols),
+par(mar=c(4,6,3,2), mfcol=c(2,3), oma=c(2,1,1,1)) 
+bres <- barplot(12*cbind(aperm(resource,c(1,3,2,4))["efficacy",1:3,,3], aperm(resource,c(1,3,2,4))["duration",1:3,,3], aperm(resource,c(1,3,2,4))["companion",1:3,,3]), beside = FALSE, 
+                      space=c(0.75,0.25,0.25), cex.lab=1.2,
+                    col=rev(blues), ylab="Patient-months of treatment\nin year 10, by regimen")
+legend(x = -2*bres[1], y=max(12*rowSums(resource["efficacy",,1:3,3]))+120, xjust=0, yjust=0, fill=blues,
        c("novel regimen","second-line regimen","first-line regimen"), xpd=NA)
-text(bres[c(2,5,8)], -10*12, c("efficacy","duration","companion\nresistance"), cex=1, pos=1, xpd=NA)
+text(bres[c(2,5,8)], -5*12, elementlabels[2:4], cex=1, pos=1, xpd=NA)
 
 bres <- barplot(12*cbind(aperm(cumresource,c(1,3,2))["efficacy",1:3,], aperm(cumresource,c(1,3,2))["duration",1:3,], aperm(cumresource,c(1,3,2))["companion",1:3,]), beside = FALSE, 
-                space=c(0.75,0.25,0.25), 
-                col=cols, ylab="Cumulative patient-months of treatment\nthrough year 10, by regimen")
-text(bres[c(2,5,8)], -100*12, c("efficacy","duration","companion\nresistance"), cex=1, pos=1, xpd=NA)
-
-bres <- barplot(c(aperm(resource,c(1,3,2))["efficacy",4,], aperm(resource,c(1,3,2))["duration",4,], aperm(resource,c(1,3,2))["companion",4,]), beside = TRUE, 
-                space=c(0.75,0.25,0.25),
-                col=c("gray30","gray60","gray90"), ylab="Total treatment courses initiated", xlab="")
-text(bres[c(2,5,8)], -25, c("efficacy","duration","companion\nresistance"), cex=1, pos=1, xpd=NA)
+                space=c(0.75,0.25,0.25), cex.lab=1.2,
+                col=rev(blues), ylab="Cumulative patient-months of treatment\nthrough year 10, by regimen")
+text(bres[c(2,5,8)], -50*12, elementlabels[2:4], cex=1, pos=1, xpd=NA)
 
 
-bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,c(2,3,4),"0.5"], beside = TRUE, 
-                    ylab="% reduction in year 10 TB mortality", 
-                    xlab="", cex.lab=1, 
-                    ylim=c(100*final_pctdown[1,3,"0.5"], 8))
-arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,c(2,3,4),"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,c(2,3,4),"0.975"], angle=90, code=3, length=0.05)
+# diagnostic and other resources
 
+tests <- array(0,dim=c( length(elementnames) , 3 , 3, 5 ));
+dimnames(tests) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "test"=c("Novel regimen DSTs performed","Rifampin DSTs performed","Treatment courses initiated"),"q"=c(0.025,0.25,0.5,0.075,0.975))
+
+for (vary in elementnames)  for (ntest in 1:3)
+{ 
+  test <- c("nDSTs","rDSTs","dxs")[ntest]
+  tests[vary,1,ntest,] <- quantile(novelwide[ , paste0(test, "10", vary,"minimal")], c(0.025,0.25,0.5,0.075,0.975))
+  tests[vary,2,ntest,] <- quantile(novelwide[ , paste0(test, "10allintermediate")], c(0.025,0.25,0.5,0.075,0.975))
+  tests[vary,3,ntest,] <- quantile(novelwide[ , paste0(test, "10", vary,"optimal")], c(0.025,0.25,0.5,0.075,0.975))
+}  
+
+
+bup <- barplot(c(aperm(tests,c(1,3,2,4))["efficacy",3,,3], aperm(tests,c(1,3,2,4))["duration",3,,3], aperm(tests,c(1,3,2,4))["companion",3,,3]), beside = TRUE, 
+                space=c(0.75,0.25,0.25), ylim=c(0,140), cex.lab=1.2,
+                col=c("gray30","gray60","gray90"), ylab="Total treatment courses initiated, year 10", xlab="")
+text(bup[c(2,5,8)], -12, elementlabels[2:4], cex=1, pos=1, xpd=NA)
+# mtext("Varied TRP element (All others held fixed at intermediate level)", side=1, line=5, cex=0.7)
+arrows(bup, aperm(tests, c(2,1,3,4))[,2:4,3,"0.025"], bup, aperm(tests, c(2,1,3,4))[,2:4,3,"0.975"], angle=90, code=3, length=0.05)
+
+
+bup <- barplot(c(aperm(tests,c(1,3,2,4))["efficacy",1,,3], aperm(tests,c(1,3,2,4))["duration",1,,3], aperm(tests,c(1,3,2,4))["companion",1,,3]), beside = TRUE, 
+               space=c(0.75,0.25,0.25), ylim=c(0,140), cex.lab=1.2,
+               col=c("gray30","gray60","gray90"), ylab="Novel regimen DSTs performed, year 10", xlab="")
+text(bup[c(2,5,8)], -12, elementlabels[2:4], cex=1, pos=1, xpd=NA)
+# mtext("Varied TRP element (All others held fixed at intermediate level)", side=1, line=5, cex=0.7)
+arrows(bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.025"], bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.975"], angle=90, code=3, length=0.05)
+
+outcomes <- c("tbdeaths","inc","relapses") 
+
+down <- array(0,dim=c( length(elementnames) , 3 , length(outcomes), 5 )); 
+dimnames(down) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), outcome=outcomes, "q"=c(0.025,0.25,0.5,0.075,0.975))
+
+for (vary in elementnames) for (nout in 1:length(outcomes))
+{ 
+  outcome <- outcomes[nout]
+  down[vary,1,nout,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
+                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
+  down[vary,2,nout,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
+                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
+  down[vary,3,nout,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
+                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
+}  
+
+bdown <- barplot(100*c(down["efficacy",,1,3], down["duration",,1,3], down["companion",,1,3]), beside = TRUE, 
+               space=c(0.75,0.25,0.25), ylim=c(-25,0), cex.lab=1.2,
+               col=c("gray30","gray60","gray90"), ylab="% reduction in TB deaths, year 10", xlab="")
+text(bup[c(2,5,8)], -28, elementlabels[2:4], cex=1, pos=1, xpd=NA)
+# mtext("Varied TRP element (All others held fixed at intermediate level)", side=1, line=5, cex=0.7)
+arrows(bdown, 100*c(t(down[2:4,,1,"0.025"])), bdown, 100*c(t(down[2:4,,1,"0.975"])), angle=90, code=3, length=0.05)
+
+# bdown <- barplot(100*c(down["efficacy",,2,3], down["duration",,2,3], down["companion",,2,3]), beside = TRUE, 
+#                  space=c(0.75,0.25,0.25), ylim=c(-25,0), cex.lab=1.2,
+#                  col=c("gray30","gray60","gray90"), ylab="% reduction in TB incidence, year 10", xlab="")
+# text(bup[c(2,5,8)], -28, elementlabels[2:4], cex=1, pos=1, xpd=NA)
+# # mtext("Varied TRP element (All others held fixed at intermediate level)", side=1, line=5, cex=0.7)
+# arrows(bdown, 100*c(t(down[2:4,,2,"0.025"])), bdown, 100*c(t(down[2:4,,2,"0.975"])), angle=90, code=3, length=0.05)
+# 
+tinc  <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
+dimnames(tinc) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
+
+for (vary in elementnames)
+{ 
+  tinc[vary,1,] <- quantile((novelwide[ , paste0("inc", "10", vary,"minimal")] + novelwide[ , paste0("relapses", "10", vary,"minimal")] - 
+                               (drout[ , paste0("inc","10")]  + drout[ , paste0("relapses","10")] ))/
+                              (drout[ , paste0("inc","10")] + drout[ , paste0("relapses","10")] ), c(0.025,0.25,0.5,0.075,0.975))
+  tinc[vary,2,] <- quantile((novelwide[ , paste0("inc", "10allintermediate")] + novelwide[ , paste0("relapses", "10allintermediate")] - 
+                               (drout[ , paste0("inc","10")] + drout[ , paste0("relapses","10")] ))/
+                                   (drout[ , paste0("inc","10")] + drout[ , paste0("relapses","10")]), c(0.025,0.25,0.5,0.075,0.975))
+  tinc[vary,3,] <- quantile((novelwide[ , paste0("inc", "10", vary,"optimal")] + novelwide[ , paste0("relapses", "10", vary,"optimal")] - 
+                               (drout[ , paste0("inc","10")]  + drout[ , paste0("relapses","10")] ))/
+                              (drout[ , paste0("inc","10")] + drout[ , paste0("relapses","10")] ), c(0.025,0.25,0.5,0.075,0.975))  
+}
+
+btinc <- barplot(100*c(tinc["efficacy",,3], tinc["duration",,3], tinc["companion",,3]), beside = TRUE, 
+                 space=c(0.75,0.25,0.25), ylim=c(-15,0), cex.lab=1.2,
+                 col=c("gray30","gray60","gray90"), ylab="% reduction in TB incidence, year 10", xlab="")
+text(btinc[c(2,5,8)], -16.5, elementlabels[2:4], cex=1, pos=1, xpd=NA)
+arrows(btinc, 100*c(t(tinc[2:4,,"0.025"])), btinc, 100*c(t(tinc[2:4,,"0.975"])), angle=90, code=3, length=0.05)
+
+
+library("sensitivity")
+prcc <- list()
+prcc$duration <- pcc(X = novelwide[,40:73], y= (novelwide[,"tbdeaths10durationminimal"] - novelwide[,"tbdeaths10durationoptimal"] )/ (novelwide[,"tbdeaths10allminimal"] - novelwide[,"tbdeaths10alloptimal"] ), rank=TRUE)
+cbind(rownames(prcc$duration$PRCC), prcc$duration$PRCC)[rev(order(abs(prcc$duration$PRCC))),]
+
+# Novel DS regimen results are highly sensitive to the fraction of DR TB being correctly diagnosed, 
+# and to outcomes of DR TB on both first and second line therapy, because we've assumed the novel regimen works for DS TB too even it's not the intended target. 
+
+# Therefore
+ ## Will redo India DS DSTall simulations assuming perfect rif DST (rDSTall), and maybe use that as primary dataset !!
+par(mfrow=c(2,2))
+novelwide <- read.csv("TRPwideoutput_DSDSTall_rDSTall.India_20160105.1.csv", header=TRUE)
+drout <- alldrout[1:nrow(novelwide),]
+plot(0:10, novelwide[1,paste0("rxtime_r",0:10,"allminimal")])
 
 
 ###############
 #Companion drug resistance
 
-novelwide <- allnovelwide[["DSDSTnone"]]; colnames(novelwide) <- wideheader
-outcome <- c("tbdeaths") #can set up loop over multiple outcomes
+novelwide <- allnovelwide[["DSDSTnone"]]; drout <- alldrout[1:nrow(novelwide),]
 
 final_pctdown2 <- array(0,dim=c( length(elementnames) , 3 , 5 ));
 dimnames(final_pctdown2) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
@@ -250,80 +299,58 @@ dimnames(final_pctdown2) <- list("vary"=elementnames, "level"=c("minimal", "inte
 for (vary in elementnames) 
 { 
   final_pctdown2[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
-                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
+                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
   final_pctdown2[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
-                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
+                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
   final_pctdown2[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
-                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
+                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
 }  
 
-
 par(mar=c(4,4,2,1), mfrow=c(1,2), oma=c(1,1,1,1))
+
+bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,c(4),"0.5"], beside = TRUE, 
+                    ylab="% reduction in year 10 TB mortality", 
+                    xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("10%","3%","0%"), cex.lab=1, main="With DST for\nnovel regimen",
+                    ylim=c(-25,2), col=c("gray30","gray60","gray90"))
+arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,4,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,4,"0.975"], angle=90, code=3, length=0.05)
+
 
 bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,c(4),"0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 TB mortality", 
                     xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("10%","3%","0%"), cex.lab=1, main="Without DST for\nnovel regimen",
-                    ylim=c(-15,4), col=c("gray30","gray60","gray90"))
+                    ylim=c(-25,2), col=c("gray30","gray60","gray90"))
 arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.025"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.975"], angle=90, code=3, length=0.05)
 
 
-library("sensitivity")
-pcc(X = drout[,38:70], y= (novelwide[,"tbdeaths10companionminimal"] - drout[,"tbdeaths10"] )/ drout[,"tbdeaths10"], rank=TRUE)
+# include DR
 
-###???!!! what is going on with dxrate here?? 
-
-
-
-
-novelwide <- allnovelwide[["DRDSTall"]]
-
-outcome <- c("rrdeaths") #can set up loop over multiple outcomes
-
-final_pctdown2 <- array(0,dim=c( length(elementnames) , 3 , 5 ));
-dimnames(final_pctdown2) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
-
-for (vary in elementnames) 
-{ 
-  final_pctdown2[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown2[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown2[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-}  
-
-novelwide <- allnovelwide[["DRDSTnone"]]
-
-outcome <- c("rrdeaths") #can set up loop over multiple outcomes
-
-final_pctdown3 <- array(0,dim=c( length(elementnames) , 3 , 5 ));
-dimnames(final_pctdown3) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
-
-for (vary in elementnames) 
-{ 
-  final_pctdown3[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown3[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown3[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-}  
+outcomes <- rep(c("tbdeaths", "panronsets", "rrdeaths", "panronsets"), each=2); 
+scenarios <- c("DSDSTall", "DSDSTnone","DSDSTall", "DSDSTnone","DRDSTall","DRDSTnone","DRDSTall","DRDSTnone"); 
+plotelements <- rep("companion",8)
+par(mfcol=c(2,4))
+for (version in 1:8) plotresult(outcomes[version], scenarios[version], plotelements[version])
 
 
-par(mfrow=c(1,2))
-bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,c(4),"0.5"], beside = TRUE, 
-                    ylab="% reduction in year 10 TB mortality", 
-                    xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("15%","5%","0%"), cex.lab=1,
-                    col=c("gray30","gray60","gray90"), main="RR regimen\nWith novel regimen DST")
-arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.025"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.975"], angle=90, code=3, length=0.05)
+## !! need to look at outcomes such as novelprev, rnovelprev once have new runs from MARCC (will replace current 1-2)
+# change 2nd outcome above to novelprev or nprev?
+# but note that there is the problem that c resistance isn't at true equilibrium, and without treatment to sustain companion resistance, cprev falls. But slowly. cnprev falls more rapidly 
 
 
-bpctdown <- barplot(height = 100*aperm(final_pctdown3, c(2,1,3))[,c(4),"0.5"], beside = TRUE, 
-                    ylab="% reduction in year 10 TB mortality", 
-                    xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("15%","5%","0%"), cex.lab=1,
-                    col=c("gray30","gray60","gray90"), main="RR regimen\nWithout novel regimen DST")
-arrows(bpctdown, aperm(100*final_pctdown3, c(2,1,3))[,4,"0.025"], bpctdown, aperm(100*final_pctdown3, c(2,1,3))[,4,"0.975"], angle=90, code=3, length=0.05)
+#sensitivity
+novelwide <- allnovelwide[["DSDSTall"]]; drout <- alldrout[1:nrow(novelwide),]
+prcc$companion <- pcc(X = novelwide[,40:73], y= (novelwide[,"tbdeaths10companionminimal"] - novelwide[,"tbdeaths10companionoptimal"] )/ (novelwide[,"tbdeaths10allminimal"] - novelwide[,"tbdeaths10alloptimal"] ), rank=TRUE)
+prcc$companionres <- pcc(X = novelwide[,40:73], y= ( novelwide[,"novelprev10companionminimal"] / novelwide[,"novelprev10companionoptimal"] ), rank=TRUE)
+cbind(rownames(prcc$companion$PRCC), prcc$companion$PRCC)[rev(order(abs(prcc$companion$PRCC))),]
+cbind(rownames(prcc$companionres$PRCC), prcc$companionres$PRCC)[rev(order(abs(prcc$companionres$PRCC))),]
+# summary: currently has the issue with dr's benefitting from "mis"treatment with the novel regimen, so will need to use rDSTall
 
+
+novelwide <- allnovelwide[["DRDSTall"]]; drout <- alldrout[1:nrow(novelwide),]
+prcc$companion_dr <- pcc(X = novelwide[,40:73], y= (novelwide[,"tbdeaths10companionminimal"] - novelwide[,"tbdeaths10companionoptimal"] )/ (novelwide[,"tbdeaths10allminimal"] - novelwide[,"tbdeaths10alloptimal"] ), rank=TRUE)
+prcc$companionres_dr <- pcc(X = novelwide[,40:73], y= ( novelwide[,"novelprev10companionminimal"] / novelwide[,"novelprev10companionoptimal"] ), rank=TRUE)
+cbind(rownames(prcc$companion_dr$PRCC), prcc$companion_dr$PRCC)[rev(order(abs(prcc$companion_dr$PRCC))),]
+cbind(rownames(prcc$companionres_dr$PRCC), prcc$companionres_dr$PRCC)[rev(order(abs(prcc$companionres_dr$PRCC))),]
+# summary: correlated with parameters that increase the number of treatments (and to a lesser extent, that reduce the new dr transmissions to dilute the remaining c cases) per incident case
 
 
 
@@ -331,48 +358,22 @@ arrows(bpctdown, aperm(100*final_pctdown3, c(2,1,3))[,4,"0.025"], bpctdown, aper
 ###########################
 ## Barrier to resistance ##
 
-outcome <- "panronsets"
+outcomes <- rep(c("tbdeaths", "panronsets", "rrdeaths", "panronsets"), each=2); 
+scenarios <- c("DSDSTall", "DSDSTnone","DSDSTall", "DSDSTnone","DRDSTall","DRDSTnone","DRDSTall","DRDSTnone"); 
+plotelements <- rep("barrier",8)
+par(mfcol=c(2,4))
+for (version in 1:8) plotresult(outcomes[version], scenarios[version], plotelements[version])
 
-novelwide <- allnovelwide[["DSDSTall"]]
 
-final_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 ));
-dimnames(final_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
+novelwide <- allnovelwide[["DSDSTall"]]; drout <- alldrout[1:nrow(novelwide),]
+prcc$barrier <- pcc(X = novelwide[,40:73], y= (novelwide[,"tbdeaths10barrierminimal"] - novelwide[,"tbdeaths10barrieroptimal"] )/ (novelwide[,"tbdeaths10allminimal"] - novelwide[,"tbdeaths10alloptimal"] ), rank=TRUE)
+prcc$barrierres <- pcc(X = novelwide[,40:73], y= ( novelwide[,"novelprev10barrierminimal"] / novelwide[,"novelprev10barrieroptimal"] ), rank=TRUE)
+cbind(rownames(prcc$barrier$PRCC), prcc$barrier$PRCC)[rev(order(abs(prcc$barrier$PRCC))),]
+cbind(rownames(prcc$barrierres$PRCC), prcc$barrierres$PRCC)[rev(order(abs(prcc$barrierres$PRCC))),]
 
-for (vary in elementnames) 
-{ 
-  final_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-}  
 
-novelwide <- allnovelwide[["DSDSTnone"]]; colnames(novelwide) <- wideheader
+# synergy between barrier and companion? !!
 
-final_pctdown2 <- array(0,dim=c( length(elementnames) , 3 , 5 ));
-dimnames(final_pctdown2) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
-
-for (vary in elementnames) 
-{ 
-  final_pctdown2[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown2[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown2[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
-                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-}  
-
-par(mar=c(4,4,2,1), mfrow=c(1,2), oma=c(1,1,1,1))
-bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
-                    main="Novel regimen for DS TB,\nwith novel regimen DST",
-                    col=c("gray30","gray60","gray90"))
-arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
-
-bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,c(4),"0.5"], beside = TRUE, 
-                    main="Novel regimen for DS TB,\nwithout novel regimen DST",
-                    col=c("gray30","gray60","gray90"))
-arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.025"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.975"], angle=90, code=3, length=0.05)
 
 
 
@@ -383,27 +384,48 @@ arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.025"], bpctdown, aper
 # synergy with maximal efficacy
 synergyheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", names(unlist(genericvalues)))
 for (i in (2:length(elementnames))) synergyheader <- append(synergyheader,  #fixed this after the fact
-                                                            paste0( rep(tallynames, times=2*11), 
-                                                                    rep( rep(0:10, each=length(tallynames)), 2),
-                                                                    rep(elementnames[i], each=22*length(tallynames) ),
-                                                                    rep( c("minimal","optimal"), each=11*length(tallynames) ) ) )
+                                                            paste0( rep(tallynames[c(1,8:23)], times=2*11), 
+                                                                    rep( rep(0:10, each=length(tallynames)-6), 2),
+                                                                    rep(elementnames[i], each=22*(length(tallynames)-6) ),
+                                                                    rep( c("minimal","optimal"), each=11*(length(tallynames)-6) ) ) )
 
-novelwide <- read.csv("efficacyhigh_DSDSTall_India_20160105.1.csv"); colnames(novelwide) <- synergyheader
-drout <- alldrout[1:nrow(novelwide),]
-final_pctdown <- array(0,dim=c( length(elementnames)-1 , 3, 5 ));
-dimnames(final_pctdown) <- list("vary"=elementnames[-1], "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
+esynergy <- read.csv("efficacyhigh_DSDSTall_India_20160105.1.csv"); colnames(esynergy) <- synergyheader
+drout <- alldrout[1:nrow(esynergy),]
+outcome <- "tbdeaths"
+edown <- array(0,dim=c( length(elementnames)-1 , 3, 5 ));
+dimnames(edown) <- list("vary"=elementnames[-1], "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.075,0.975))
 
 for (vary in elementnames[-1]) 
 { 
-  final_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
+  edown[vary,1,] <- quantile((esynergy[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10efficacyoptimal")] - drout[ , paste0(outcome,"10")] )/
+  edown[vary,2,] <- quantile((esynergy[ , paste0(outcome, "10efficacyoptimal")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
-  final_pctdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
+  edown[vary,3,] <- quantile((esynergy[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.075,0.975))
 }  
 
-par(mfrow=c(1,1))
+par(mfrow=c(1,1), mar=c(9,3,4,1))
+bpctdown <- barplot(height = 100*aperm(edown, c(2,1,3))[,,"0.5"], beside = TRUE, 
+                    col=c("gray30","gray60","gray90"), ylim=100*min(edown[,,"0.5"])*c(1.5,-0.1),
+                    names.arg=elementlabels[2:7], cex.names=0.7,
+                    main="Exploring synergy with efficacy:\nNovel regimen impact with maximal % durably cured throughout\n(but for other characteristics still intermediate level)")
+arrows(bpctdown, aperm(100*edown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*edown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
+
+text(mean(bpctdown), -32.5, "Fraction of total variation in novel regimen's impact attributable to variation in characteristic:
+     \nWith novel regimen efficacy at maximal level (99% cure) throughout", pos=1, xpd=NA)
+text(bpctdown[2,], -35.5, paste0(round((edown[,1,3]-edown[,3,3] )/(median(novelwide[,"tbdeaths10allminimal"]/drout[,"tbdeaths10"])-median(novelwide[,"tbdeaths10alloptimal"]/drout[,"tbdeaths10"]))*100, digits=1), "%") , pos=1, xpd=NA)
+text(mean(bpctdown), -37, "With novel regimen efficacy at intermediate level (97% cure) throughout", pos=1, xpd=NA)
+text(bpctdown[2,], -38, paste0(round(((final_pctdown[,3,3]-final_pctdown[,1,3] )/(final_pctdown[1,3,3]-final_pctdown[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
+
+
+# synergy: impact of exclusion variation when efficacy intermediate vs when efficacy optimal: 
+y <- c(final_pctdown["exclusions",1,3], final_pctdown["exclusions",3,3], edown["exclusions",1,3], edown["exclusions",3,3])*-100
+b <- barplot(y, beside=TRUE, space=c(0.75,0,0.75,0), ylim=max(y)*c(1.5,-0.1))
+text(x = b,y = y, round(y,1))
+text(b, y/50, dslabels[c(16,18,16,18)]  ,cex=1, pos=2, srt=90, col="black", font=2)
+
+
 bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
                     main=paste0("Novel ",substr(scenario,1,2)," TB regimen,\n",scenarionames[[scenario]]," DST"),
                     ylim=100*min(final_pctdown[,,"0.5"])* c(1.5,-0.2), ylab=outcomenames[[outcome]],
@@ -411,4 +433,4 @@ bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside
 arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
 text(bpctdown+0.4, -0.1, dslabels[which(elements==elementnames) * 3 - (2:0)] ,cex=1, pos=2, srt=90, col="black", font=2)
 mtext(paste0("Varying ",elementlabels[which(elements==elementnames)], "with fixed maximal efficacy"), side=1, cex=0.8, line=5)
-}  
+  

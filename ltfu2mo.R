@@ -57,16 +57,18 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
       v <- v + length(drvalues[[setname]][[pname]]) # move forward to start of next par vector in sampled values
     }    
     
+    drpars <- create.pars(setup=drsetup, values=drvalues)
+    
     drend <- ode(unlist(drstate), seq(-25,10), dxdt, drpars$fullpars, rvary=T, nvary=F, do.tally=TRUE, method="adams")
     
     # will later screen out unacceptable range (or could adjust transmissibility to get targeted RifDR incidence)
     
     # save time-zero state and values
-    write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0("DRtraj_ltfu2mo.",currenttag,".csv"), append=TRUE, sep=".", ncol=5+length(tallynames)*36 )
+    write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0("DRtraj_ltfu2mo.",currenttag,".csv"), append=TRUE, sep=".", ncol=length(drtrajheader) )
 
     write(c(isim, isimdr, unlist(targetepis[tname]), 
             unlist(drvalues), drend[26,2:ncol(drend)],
-            drend[36,tallynames]), ncolumns = length(results), append=TRUE,  sep = ",", file=paste0("DRcalibration_ltfu2mo.",currenttag,".csv"))
+            drend[36,tallynames]), append=TRUE,  sep = ",", ncol=length(drheader), file=paste0("DRcalibration_ltfu2mo.test.",currenttag,".csv"))
     
     print(paste0("Finished isimds=", isim, ", isimdr=", isimdr," for ltfu2mo ",currenttag))
   } 

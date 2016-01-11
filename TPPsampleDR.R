@@ -1,12 +1,14 @@
-taskid <- 4#as.numeric(commandArgs(trailingOnly=TRUE))[1]
-ntasks <- 10#as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- "SouthAfrica"#commandArgs(trailingOnly=TRUE)[3]
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+tname <- commandArgs(trailingOnly=TRUE)[3]
+rDSTall <- commandArgs(trailingOnly=TRUE)[4]
 
 tag <- "20160105"
 
 Nsims_dr <- 20
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
+if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 
 source("TPPmat.R")
 
@@ -58,6 +60,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
     {
       # sample 
       drvalues <- sample.values(values=dsvalues, whichparset="varied_dr", LHS=drLHS, isim=isimdr)
+      if (rDSTall==TRUE) { drvalues$varied_dr$DSTrif_n <- 1; drvalues$varied_dr$noDSTrif_p <- 0 }
       drpars <- create.pars(setup = drsetup, values = drvalues)
       
       # add and run to present over 25 years, with linear second line treatment scaleup to (present) max levels from years -10 to 0
