@@ -36,7 +36,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
   
   optimat[,2][optimat[,2]==0] <- 0.000001
   
-  largefitmat <- interp(optimat[,1], -log(optimat[,2]), z=fit, nx=1000, ny=1000, extrap=F, duplicate="mean")
+  largefitmat <- interp(optimat[,1], -log(optimat[,2]), z=fit, nx=10, ny=10, extrap=F, duplicate= "mean")
   largefitmat$z[is.na(largefitmat$z)] <- 10000
   vindex <- which.min(largefitmat$z); aindex <- c(vindex - nrow(largefitmat$z)*floor(vindex/nrow(largefitmat$z)), ceiling(vindex/nrow(largefitmat$z)))
   
