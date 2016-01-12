@@ -6,7 +6,7 @@ rDSTall<-commandArgs(trailingOnly=TRUE)[5]
 location<-"../scratch/"
 
 
-tag <- "20160105"
+tag <- "20160111"
 currenttag <- paste0(tname,"_",tag,".",taskid)
 if(rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 

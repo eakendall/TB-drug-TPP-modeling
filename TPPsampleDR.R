@@ -2,11 +2,11 @@ taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 tname <- commandArgs(trailingOnly=TRUE)[3]
 rDSTall <- commandArgs(trailingOnly=TRUE)[4]
+Nsims_dr <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
 location <- "../scratch/"
 
-tag <- "20160105"
+tag <- "20160111"
 
-Nsims_dr <- 20
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
 if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)

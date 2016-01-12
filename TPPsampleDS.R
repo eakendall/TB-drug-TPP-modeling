@@ -1,9 +1,8 @@
-# taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
-# ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 
-tag <- "20160105"
+tag <- "20160111"
 Nsims_ds <- 250
-
 
 source("TPPmat.R")
 values <- set.values()
@@ -32,7 +31,7 @@ for (isim in 1:250)#(ilimits[taskid]+1):ilimits[taskid+1])
   
   # optimize for desired prev and coprev 
   optimat <- array(0, dim=c(0,4))
-  h <- 0; coprev <- 0; while(h <= 0.0004 | min(optimat[optimat[,2]==h/4, 4])< 0.6)
+  h <- 0; coprev <- 0; while(h <= 0.0002 | min(optimat[optimat[,2]==h/4, 4])< 0.6)
   {
     b <- 3; prev <- 0; stopat3 <- F; while(prev<900) 
     {
@@ -43,12 +42,12 @@ for (isim in 1:250)#(ilimits[taskid]+1):ilimits[taskid+1])
       prev <- sum(state[c(grep("^A", pars$fullpars$statenames), grep("^T", pars$fullpars$statenames))])
       coprev <- sum(state[c(grep("^A.+Hp", pars$fullpars$statenames), grep("^T.+Hp", pars$fullpars$statenames))]) / prev
       optimat <- rbind(optimat, c(b,h,prev,coprev))
-      if (b==3 & prev>900 & stopat3 ==F) { b <- 1; prev <- 0; stopat3 <- T} else 
+      if (b==3 & prev>400 & stopat3 ==F) { b <- 1; prev <- 0; stopat3 <- T} else 
         if (b>14) b <- b+2 else 
           b <- b+1
     }
     print(paste0("Tried beta up to ", b, " for hivrate=", h))
-    if (h==0) h <- 0.0001 else h <- h*4
+    if (h==0) h <- 0.0001 else h <- h*2
   }                     
   
   saveRDS(optimat, file=paste0("optimat",isim,".RDS"))
