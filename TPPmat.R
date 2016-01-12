@@ -140,10 +140,11 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
   {
     iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST)) #will include these labels as part of returned output
     
-    valuevect <- drout[inew, 5+(1:length(unlist(genericvalues)))] ; names(valuevect) <- names(unlist(genericvalues))
-    if (rDSTall==TRUE) { valuevect["DSTrif_n"] <- 1; valuevect["noDSTrif_p"] <- 0 }
+    
+    valuevect <- unlist(drout[inew, 5+(1:length(unlist(genericvalues)))]) ; names(valuevect) <- names(unlist(genericvalues))
+    if (rDSTall==TRUE) { valuevect[which(names(valuevect)=="DSTrif_n.varied_dr.DSTrif_n")] <- 1; valuevect[which(names(valuevect)=="noDSTrif_p.varied_dr.noDSTrif_p")] <- 0 }
     v <- 0; for (pname in names(genericvalues))
-    { genericvalues[[pname]] <- unlist(valuevect[v+(1:length(genericvalues[[pname]]))]); #names(genericvalues[[pname]]) <- names()
+    { genericvalues[[pname]] <- valuevect[v+(1:length(genericvalues[[pname]]))]; #names(genericvalues[[pname]]) <- names()
       v <- v + length(genericvalues[[pname]]) # move forward to start of next par vector in sampled values
     }    
     

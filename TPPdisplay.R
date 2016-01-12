@@ -1,6 +1,7 @@
 source("TPPmat.R")
 
-currenttag <- "India_20160105"; tolerance <- 1.5; location=""
+currenttag <- "India_20160105"; tolerance <- 1.5; location="fromMARCC"
+targetepi <- "India"
 
 source("displayfunction.R")
 
@@ -59,7 +60,7 @@ bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside
                     ylab="Percent reduction in year 10 TB mortality with novel regimen,\n compared to projection under current standard of care", 
                     xlab="", las=2, cex.lab=1, 
                     ylim=c(150*final_pctdown[1,3,"0.5"], 8),
-                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)",x=bpctdown[2,7], y=110*final_pctdown[1,3,"0.5"],cex=0.8),
+                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x=10, y=110*final_pctdown[1,3,"0.5"],cex=0.8),
                     main="", #paste0("Novel regimen for DS TB, with universal DST"), cex.main=1,
                     col=cols, names.arg=rep("", length(elementnames)))
 text(bpctdown+0.4, -0.5, dslabels ,cex=0.9, pos=2, srt=90, col="black", font=2) 
@@ -152,8 +153,11 @@ ltfu2mo <- read.csv("TRPwideoutput_DSDSTall_ltfu2mo.India_20160105.1.csv", heade
 drltfu <- screendrout("DRcalibration_ltfu2mo.India_20160105.1.csv", tolerance=1.5)
 par(mfrow=c(1,1)); p<-plotpctdown(outcome="tbdeaths", scenario="DSDSTall", elements=elementnames, novelwide=ltfu2mo, drout =drltfu, barlabels=TRUE, elementlabs=TRUE, 
                main="With all losses to follow up occurring at 2 months\n(to maximize the impact of regimen duration)", mar=c(4,4,7,1))
-text(p$positions[2,4], -34, "Fraction of total variation in novel regimen's impact\nattributable to variation in specified characteristic:", pos=1, xpd=NA)
-text(p$positions[2,2:7], -37, paste0(round(((p$array[,3,3]-p$array[,1,3] )/(p$array[1,3,3]-p$array[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
+text(p$positions[2,4], -34, "Fraction of total variation in novel regimen's impact attributable to variation in specified characteristic,\n
+     with all losses to follow up occurring at 2 months", pos=1, xpd=NA)
+text(p$positions[2,2:7], -38.5, paste0(round(((p$array[,3,3]-p$array[,1,3] )/(p$array[1,3,3]-p$array[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
+text(p$positions[2,4], -41, "With losses to follow up spaced evenly throughout treatment", pos=1, xpd=NA)
+text(p$positions[2,2:7], -43, paste0(round(((final_pctdown[,3,3]-final_pctdown[,1,3] )/(final_pctdown[1,3,3]-final_pctdown[1,1,3] ))[2:7]*100, digits=1), "%") , pos=1, xpd=NA)
 
 # resource use: barplots as above but for outcomes of diagnoses, DSTs (rif and novel in same plot), and rxmonths (all 3 in same plot)
 novelwide <- allnovelwide[["DSDSTall"]]; drout <- alldrout[1:nrow(novelwide),]

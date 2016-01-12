@@ -6,7 +6,7 @@ DST <- commandArgs(trailingOnly=TRUE)[5]
 rDSTall<-commandArgs(trailingOnly=TRUE)[6]
 location<-"../scratch/"
 
-if ((targetpt="DS" & rDSTall!=TRUE) |  (targetpt="DR" & rDSTall==TRUE) ) stop(call. = TRUE)
+if ((targetpt=="DS" & rDSTall!=TRUE) |  (targetpt=="DR" & rDSTall==TRUE) ) stop(call. = TRUE)
 
 
 tag <- "20160111"
