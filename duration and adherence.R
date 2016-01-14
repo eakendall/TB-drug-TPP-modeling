@@ -4,8 +4,8 @@
 # 
 # so 2 3x3 arrays, one for HIV and one for non-HIV exclusions
 
-taskid <- 2#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
-tname <- "SouthAfrica"#commandArgs(trailingOnly=TRUE)[2]
+taskid <- 5#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
+tname <- "India"#commandArgs(trailingOnly=TRUE)[2]
 targetpt <- "DS"#commandArgs(trailingOnly=TRUE)[3]
 DST <- "DSTall"#commandArgs(trailingOnly=TRUE)[4]
 rDSTall <- TRUE #commandArgs(trailingOnly=TRUE)[5]
@@ -35,12 +35,10 @@ drout <- drout[drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & 
 
 
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
-header <- append(header, paste0( rep(tallynames, times=2*3*3), "10",
-                         rep(c("HIV","nonHIV") ,each=3*3*length(tallynames)),
-                         "exclusions", rep(c("minimal","intermediate","optimal"), each=3*length(tallynames)),
-                         "efficacy", rep(c("minimal","intermediate","optimal"), each=length(tallynames)) ) )
+header <- append(header, paste0( rep(tallynames, times=3), "10",
+                         "duration", rep(c("minimal","intermediate","optimal"), each=length(tallynames)) ) )
                                                                  
-if(!file.exists(paste0(location,"Exclusions","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Exclusions","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
+if(!file.exists(paste0(location,"Adherence.low","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Adherence.low","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
   
 for (inew in 1:nrow(drout))
 {
@@ -58,13 +56,12 @@ for (inew in 1:nrow(drout))
   
   iresult <- numeric(0) #will become full row of results for this dr row (inew), for all elements and levels
 
-  for (H in c("HIV","nonHIV")) for (exclusions in c("minimal","intermediate","optimal")) for (efficacy in c("minimal","intermediate","optimal"))
+  for (duration in c("minimal","intermediate","optimal")) 
   {
-    print(paste0("Evaluating TRP variation HIV ",H,", exclusions ",exclusions,", efficacy ",efficacy," for Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
+    print(paste0("Evaluating TRP variation duration ",duration," with adherence minimal, for Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
     valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
-                          minimals=c("exclusions","efficacy")[which(c(exclusions,efficacy)=="minimal")], 
-                          optimals=c("exclusions","efficacy")[which(c(exclusions,efficacy)=="optimal")],
-                          HIV=H) # HIV = both (default), HIV, or nonHIV
+                          minimals=c("tolerability","duration"[duration=="minimal"]), 
+                          optimals="duration"[duration=="optimal"])
     s_cr <- valueset$cres[1]; r_cr <- valueset$cres[2]
     novelstate <- newstate
     for (name in novelsetup$statenames) if (length(grep("^S", name))==0 & length(grep("^C", name))==0 )
@@ -88,5 +85,5 @@ for (inew in 1:nrow(drout))
       
     iresult <- append(iresult, outset[tallynames])
   }
-  write(unlist(c(iter, valuevect, iresult)), file=paste0("Efficacy","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+  write(unlist(c(iter, valuevect, iresult)), file=paste0("Adherence.low","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
 }

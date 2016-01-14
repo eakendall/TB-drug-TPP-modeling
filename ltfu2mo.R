@@ -7,11 +7,11 @@ DST <- commandArgs(trailingOnly=TRUE)[4]
 rDSTall <- commandArgs(trailingOnly=TRUE)[5]
 
 tag <- "20160111"
-location<-""
-dsout <- read.csv(paste0(location,"DScalibration_",tag,".csv"))
+location<-"../scratch/"
+dsout <- read.csv(paste0(location,"DScalibration_",tname,"_",tag,".csv"))
 
-if(rDSTall) tag <- paste0("rDSTall.",tag)
 currenttag <- paste0(tname,"_",tag,".",taskid)
+if(rDSTall) currenttag <- paste0("rDSTall.",currenttag)
 
 source("TPPmat.R")
 makemat <- function(pars) 
@@ -92,7 +92,6 @@ drtrajheader <- c("ids","idr", "targetprev","targetcoprev","targetdr",
                   paste0( rep(-25:10, each=length(tallynames)), rep(tallynames, times=36) ))
 if(!file.exists(paste0("DRtraj_ltfu2mo.", currenttag, ".csv"))) { write(drtrajheader, sep = ",", file=paste0("DRtraj_ltfu2mo.",currenttag,".csv"), ncolumns=length(drtrajheader)) }
 
-
 olddrout <- read.csv(paste0("DRcalibration_",currenttag,".csv"))
   
 isims <- min(olddrout$ids):max(olddrout$ids)
@@ -128,23 +127,18 @@ for (isim in isims)
     
     drend <- ode(unlist(drstate), seq(-25,10), dxdt, drpars$fullpars, rvary=T, nvary=F, do.tally=TRUE, method="adams")
     
-    # will later screen out unacceptable range (or could adjust transmissibility to get targeted RifDR incidence)
-    
-    # save time-zero state and values
-    write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0("DRtraj_ltfu2mo.",currenttag,".csv"), append=TRUE, sep=".", ncol=length(drtrajheader) )
+    write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0("DRtraj_ltfu2mo.",currenttag,".csv"), append=TRUE, sep=",", ncol=length(drtrajheader) )
     
     write(c(isim, isimdr, unlist(targetepis[tname]), 
             unlist(drvalues), drend[26,2:ncol(drend)],
-            drend[36,tallynames]), append=TRUE,  sep = ",", ncol=length(drheader), file=paste0("DRcalibration_ltfu2mo.test.",currenttag,".csv"))
+            drend[36,tallynames]), append=TRUE,  sep = ",", ncol=length(drheader), file=paste0("DRcalibration_ltfu2mo.",currenttag,".csv"))
     
     print(paste0("Finished isimds=", isim, ", isimdr=", isimdr," for ltfu2mo ",currenttag))
   } 
   
 }
-  
-}
 
 drout <- screendrout(drout_filename = paste0("DRcalibration_ltfu2mo.",currenttag,".csv"), tolerance = 1.5)
 
-evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt=targetpt, DST=DST, tag=paste0("ltfu2mo.",currenttag), location=locations, rDSTall=rDSTall )
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt=targetpt, DST=DST, tag=paste0("ltfu2mo.",currenttag), location=location, rDSTall=rDSTall )
 
