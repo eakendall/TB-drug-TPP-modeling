@@ -4,11 +4,11 @@
 # 
 # so 2 3x3 arrays, one for HIV and one for non-HIV exclusions
 
-taskid <- 2#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
+taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
 tname <- "SouthAfrica"#commandArgs(trailingOnly=TRUE)[2]
-targetpt <- "DS"#commandArgs(trailingOnly=TRUE)[3]
+targetpt <- "DR"#commandArgs(trailingOnly=TRUE)[3]
 DST <- "DSTall"#commandArgs(trailingOnly=TRUE)[4]
-rDSTall <- TRUE #commandArgs(trailingOnly=TRUE)[5]
+rDSTall <- FALSE #commandArgs(trailingOnly=TRUE)[5]
 location<-""#"../source/"
 
 tag <- "20160111"
@@ -88,5 +88,5 @@ for (inew in 1:nrow(drout))
       
     iresult <- append(iresult, outset[tallynames])
   }
-  write(unlist(c(iter, valuevect, iresult)), file=paste0("Efficacy","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+  write(unlist(c(iter, valuevect, iresult)), file=paste0("Exclusions","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
 }
