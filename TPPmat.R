@@ -535,9 +535,9 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
                    ( (1-DSTrif)*targetpop[1] + DSTrif*targetpop[2] ) * availability * max(DSTnew) * rep(eligibility, each=length(grep("^A.[.]Rr",statenames))/2) , 1, sum )
       }
       
-      tally[grep("^Ts", statenames), "rxtime_s"] <- Tperiod.lengths[1:length(grep("^Ts", statenames))] #doesn't include ineffective (Ti) months
-      tally[grep("^Tr", statenames), "rxtime_r"] <- Tperiod.lengths[1:length(grep("^Tr", statenames))] #doesn't include ineffective (Ti) months
-      tally[grep("^Tn", statenames), "rxtime_n"] <- Tperiod.lengths[1:length(grep("^Tn", statenames))] #doesn't include ineffective (Ti) months
+      tally[grep("^Ts", statenames), "rxtime_s"] <- rep(1, length(grep("^Ts", statenames))) #doesn't include ineffective (Ti) months
+      tally[grep("^Tr", statenames), "rxtime_r"] <- rep(1, length(grep("^Tr", statenames))) #doesn't include ineffective (Ti) months
+      tally[grep("^Tn", statenames), "rxtime_n"] <- rep(1, length(grep("^Tn", statenames))) #doesn't include ineffective (Ti) months
     }
     
     tallied <- t(tally) %*% state ; names(tallied) <- outcomes; 
