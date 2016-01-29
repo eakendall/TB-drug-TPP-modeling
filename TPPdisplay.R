@@ -7,11 +7,11 @@ source("displayfunction.R")
 
 
 ###############################
-par(mar=c(3,4,7,1))
+par(mar=c(3,6,7,1), mfrow=c(1,1),oma=c(0,0,0,0))
 bpctdown <- barplot(height = array(-c(1,3,5,2,3,4), dim=c(3,2)), beside = TRUE, 
-                    ylab="Impact of novel regimen", ylim=c(-6,0), yaxt='n',
+                    ylab="Impact of novel regimen\n(mortality reduction)", ylim=c(-6,0), yaxt='n',
                     xlab="", las=1, cex.lab=1.5, 
-                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x=8, y= 2.1, cex=1.2),
+                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x=8, y= 2.2, cex=1.2),
                     col=cols, names.arg=c("Over full range\n of possible novel regimens","Varying only\nspecified characteristic"), cex.names=1.1)
 arrows(bpctdown[1,], -5.5, bpctdown[3,], -5.5, angle=90, code=3, length=0.1)
 
@@ -55,14 +55,15 @@ bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside
                     space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),5)),
                     col=cols, names.arg=rep("", length(elementnames)))
 axis(2, at=seq(-25,0,by=5), labels=paste0(seq(-25,0,by=5),"%"),las=2,cex.axis=0.8)
-text((bpctdown+0.4)[,2], -0.5, dslabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
+# text((bpctdown+0.4)[,2], -0.5, dslabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
 text(colMeans(bpctdown) ,-23, elementlabels, cex=0.9, pos=1, srt=0, font=1, xpd=NA)
 mtext("Varied TRP element(s)", side=1, line=1)
 arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
 # arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
 # calculate contribution of each element to total novel regimen impact
 
-ffracs <- (final_pctdown[2:7,3,3]-final_pctdown[2:7,1,3] )/sum(final_pctdown[2:7,3,3]-final_pctdown[2:7,1,3] )
+# ffracs <- (final_pctdown[2:7,3,3]-final_pctdown[2:7,1,3] )/sum(final_pctdown[2:7,3,3]-final_pctdown[2:7,1,3] )
+ffracs <- (final_pctdown[2:7,3,3]-final_pctdown[2:7,1,3] )/(final_pctdown[1,3,3]-final_pctdown[1,1,3] )
 fp <- numeric(6); for (i in 1:6) fp[i] <- sum(ffracs[1:i])
 fp2 <- c(0,fp[-6]) + (fp - c(0,fp[-6]))/2
 
@@ -109,12 +110,12 @@ ylow=300*r_pctdown[1,3,"0.5"]
 bpctdown <- barplot(height = 100*aperm(r_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
                     ylab="% reduction, total TB mortality (median [IQR])", 
                     main="", xlab="", las=2, cex.lab=1, 
-                    ylim=c(1,0)*ylow, yaxt='n',
+                    ylim=c(1.5,0)*ylow, yaxt='n',
                     legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x="bottomright",cex=0.7),
                     space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),5)),
                     col=cols, names.arg=rep("", length(elementnames)))
-axis(2, at=-seq(0,-ylow,by=5), labels=paste0(seq(0,-ylow,by=5),"%"),las=2,cex.axis=0.8)
-text((bpctdown+0.4)[,2], -0.1, drlabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
+axis(2, at=c(-5,0), labels=paste0(c(5,0),"%"),las=2,cex.axis=0.8)
+# text((bpctdown+0.4)[,2], -0.1, drlabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
 text(colMeans(bpctdown) ,ylow/2, shortelementlabels, cex=0.8, pos=1, srt=90, font=1, xpd=NA)
 mtext("Varied TRP element(s)", side=1, line=1, xpd=NA, cex=0.8)
 arrows(bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
@@ -127,7 +128,7 @@ bpctdown <- barplot(height = 100*aperm(rr_pctdown, c(2,1,3))[,,"0.5"], beside = 
                     space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),5)),
                     col=cols, names.arg=rep("", length(elementnames)))
 axis(2, at=-seq(0,-ylow,by=5), labels=paste0(seq(0,-ylow,by=5),"%"),las=2,cex.axis=0.8)
-text((bpctdown+0.5)[,2], ylow/100, drlabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
+# text((bpctdown+0.5)[,2], ylow/100, drlabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
 text(colMeans(bpctdown) ,ylow, elementlabels, cex=0.7, pos=4, srt=90, font=1, xpd=NA)
 mtext("Varied TRP element(s)", side=1, line=1, cex=0.8)
 arrows(bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05)
@@ -141,7 +142,7 @@ fp2 <- c(0,fp[-6]) + (fp - c(0,fp[-6]))/2
 par(mar=c(1,1,3,1), mfrow=c(1,1), oma=c(0,0,0,0)) 
 b <- barplot(array(ffracs, dim=c(6,1)), horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n',
              legend.text=shortelementlabels[-1], col=rainbow(6), args.legend=list(x=0.2,y=1.6))
-mtext("Fraction of total variation in novel regimen's impact attributable to\nvariation in specified characteristic", side=3, font=2, cex=1.2)
+mtext("Fraction of total variation in novel regimen's MDR-TB mortality impact attributable to\nvariation in specified characteristic", side=3, font=2, cex=1.2)
 text(fp2,b+0.1*(rep(c(0,1),3)),paste0(round(100*ffracs,0),"%"), font=2)
 
 ############ duration
@@ -167,13 +168,16 @@ for (vary in elementnames) for (nreg in 1:3)
 }  
 
 
-par(mar=c(5,6,6,1), mfcol=c(1,1), oma=c(0,0,0,0)) 
-bres <- barplot(12*cbind(aperm(resource,c(1,3,2,4))["efficacy",1:3,,3], aperm(resource,c(1,3,2,4))["companion",1:3,,3],aperm(resource,c(1,3,2,4))["duration",1:3,,3]), beside = FALSE, 
+par(mar=c(6,6,6,1), mfcol=c(1,1), oma=c(0,0,0,0)) 
+bres <- barplot(12*cbind(aperm(resource,c(1,3,2,4))["efficacy",c(2,1,3),,3], aperm(resource,c(1,3,2,4))["companion",c(2,1,3),,3],aperm(resource,c(1,3,2,4))["duration",c(2,1,3),,3]), beside = FALSE, 
                 space=c(0.75,0.25,0.25), cex.lab=1.2, main="Treatment provided", ylim=c(0,500),
-                col=rev(blues), ylab="Patient-months of treatment\nin year 10, by regimen")
+                col=rev(blues), ylab="Patient-months of treatment\nin year 10, by regimen", 
+                names.arg=(c("minimal\n(lowest)","","optimal\n(highest)", 
+                             "minimal\n(highest)","","optimal\n(lowest)",
+                             "minimal\n(longest)","","optimal\n(shortest)")))
 legend(x = bres[1], y=max(12*rowSums(resource["duration",,1:3,3]))+20, xjust=0.5, yjust=0, fill=blues,
-       c("Novel DS regimen","Second-line regimen","First-line regimen"), xpd=NA)
-text(bres[c(2,5,8)], -8*12, shortelementlabels[c(2,4,6)], cex=1.1, pos=1, xpd=NA)
+       c("Novel DS regimen","MDR regimen","Standard DS regimen")[c(1,3,2)], xpd=NA)
+text(bres[c(2,5,8)], -6*12, c("% Durably Cured", "Baseline novel-\nregimen resistance","Duration"), cex=1.1, pos=1, xpd=NA)
 
 
 # diagnostic and other resources
@@ -198,7 +202,7 @@ par(mar=c(5,6,2,1), mfcol=c(1,1), oma=c(0,0,0,0))
 bup <- barplot(c(aperm(tests,c(1,3,2,4))["efficacy",1,,3], aperm(tests,c(1,3,2,4))["companion",1,,3],aperm(tests,c(1,3,2,4))["duration",1,,3]), beside = TRUE, 
                space=c(0.75,0.25,0.25), ylim=c(0,70), cex.lab=1.2, main="Diagnostic testing",
                col=cols, ylab="Novel regimen DSTs\nperformed, year 10", xlab="")
-text(bup[c(2,5,8)], -15, shortelementlabels[c(2,4,6)], cex=1.1, pos=1, xpd=NA)
+text(bup[c(2,5,8)], -15, c("% Durably Cured", "Baseline novel-regimen resistance","Duration"), cex=1.1, pos=1, xpd=NA)
 arrows(bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.25"], bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.75"], angle=90, code=3, length=0.05)
 
 
@@ -206,7 +210,7 @@ arrows(bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.25"], bup, aperm(tests, c(2,1,3,4
 novelwide <- allnovelwide[["DRDSTall_"]]; drout <- alldrout[1:nrow(novelwide),]
 
 cumresource <- array(0,dim=c( length(elementnames) , 3 , 3)); resource <- array(0,dim=c( length(elementnames) , 3 , 3,5)); 
-dimnames(cumresource) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "reg"=c("First-line","Second-line","Novel")); dimnames(resource) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "reg"=c("First-line","Second-line","Novel DR"), "q"=c(0.025,0.25,0.5,0.75,0.975))
+dimnames(cumresource) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "reg"=c("Standard DS regimen","Standard DR regimen","Novel regimen")); dimnames(resource) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "reg"=c("First-line","Second-line","Novel DR"), "q"=c(0.025,0.25,0.5,0.75,0.975))
 
 for (vary in elementnames) for (nreg in 1:3) 
 { 
@@ -227,8 +231,8 @@ bres <- barplot(12*cbind(aperm(resource,c(1,3,2,4))["efficacy",1:3,,3], aperm(re
                 space=c(0.75,0.25,0.25), cex.lab=1.2, main="Treatment provided", ylim=c(0,500),
                 col=rev(blues), ylab="Patient-months of treatment\nin year 10, by regimen")
 legend(x = bres[1], y=max(12*rowSums(resource["duration",,1:3,3]))+10, xjust=0.5, yjust=0, fill=blues,
-       c("Novel DR regimen","Second-line regimen","First-line regimen"), xpd=NA)
-text(bres[c(2,5,8)], -8*12, shortelementlabels[c(2,4,6)], cex=1.1, pos=1, xpd=NA)
+       c("Novel DR regimen","Standard DR regimen","DS regimen"), xpd=NA)
+text(bres[c(2,5,8)], -8*12, c("% Durably Cured", "Baseline novel-regimen resistance","Duration"), cex=1.1, pos=1, xpd=NA)
 
 par(mar=c(5,6,6,1), mfcol=c(1,1), oma=c(0,0,0,0)) 
 bres <- barplot(cbind(aperm(resource,c(1,3,2,4))["duration",2:3,,3]), beside = FALSE, 
@@ -268,7 +272,7 @@ par(mar=c(5,6,2,1), mfcol=c(1,1), oma=c(0,0,0,0))
 bup <- barplot(c(aperm(tests,c(1,3,2,4))["efficacy",1,,3], aperm(tests,c(1,3,2,4))["companion",1,,3],aperm(tests,c(1,3,2,4))["duration",1,,3]), beside = TRUE, 
                space=c(0.75,0.25,0.25), ylim=c(0,70), cex.lab=1.2, main="Diagnostic testing",
                col=cols, ylab="Novel regimen DSTs\nperformed, year 10", xlab="")
-text(bup[c(2,5,8)], -15, shortelementlabels[c(2,4,6)], cex=1.1, pos=1, xpd=NA)
+text(bup[c(2,5,8)], -15, c("% Durably Cured", "Baseline novel-regimen resistance","Duration"), cex=1.1, pos=1, xpd=NA)
 arrows(bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.25"], bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.75"], angle=90, code=3, length=0.05)
 
 
@@ -711,15 +715,25 @@ mtext("Without DST for novel regimen",side=3,outer=TRUE,line=3,cex=1.3)
 
 
 
-############
+# Projections without novel regimen #
+
+par(mar=c(4,4,4,1))
+rrfracs <- apply(alldrout[,paste0("rrfrac",c("","10"))], 2, quantile, c(0.025,0.25,0.5,0.75,0.975))
+colnames(rrfracs) <- c("year 0", "year 10 without novel regimen")
+
+rrfracsDST <- apply(alldrDST[,paste0("rrfrac",c("","10"))], 2, quantile, c(0.025,0.25,0.5,0.75,0.975))
+colnames(rrfracsDST) <- c("year 0", "year 10 without novel regimen")
+
+
+############################
 # exclusions
 
 # India exclusions
 
-iexc <- rbind(read.csv("Efficacy_DSDSTall_rDSTall.India_20160111.idr1.csv",header=FALSE), read.csv("Efficacy_DSDSTall_rDSTall.India_20160111.idr2.csv",header=FALSE))
-colnames(iexc) <- colnames(read.csv("Exclusions_DSDSTall_rDSTall.India_20160111.idr1.csv"))
-drout <- rbind(alldrDST[alldrDST$idr == 1,], alldrDST[alldrDST$idr == 2,])
-outcome <- "tbdeaths"
+iexc <- rbind(read.csv("Exclusions_DRDSTall_India_20160111.idr1.csv",header=FALSE), read.csv("Exclusions_DRDSTall_India_20160111.idr2.csv",header=FALSE))
+# colnames(iexc) <- colnames(read.csv("Exclusions_DSDSTall_rDSTall.India_20160111.idr1.csv"))
+drout <- rbind(alldrout[alldrout$idr == 1,], alldrout[alldrout$idr == 2,])
+outcome <- "rrdeaths"
 idown <- array(0,dim=c(  3, 3, 2, 5 ));
 dimnames(idown) <- list( "efflevel"=levels, "exclevel"=levels, "HIV"=c("HIV","nonHIV"), "q"=c(0.025,0.25,0.5,0.75,0.975))
 
@@ -733,26 +747,25 @@ par(mar=c(5,5,1,1), mfrow=c(1,2), oma=c(0,0,2,0))
 inoH <- barplot(height = 100*idown["intermediate",,"nonHIV","0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="HIV-unrelated exclusions\nfrom novel regimen", names.arg=c("11%","5%","0%"), cex.lab=1, main="",
-                    ylim=c(-15,2), col=cols)
-mtext("Novel DS regimen; intermediate efficacy; 5% HIV coprevalence", outer=TRUE, side=3, cex=1.4)
+                    ylim=c(-40,2), col=cols)
+mtext("Novel DR regimen; intermediate efficacy; 5% HIV coprevalence", outer=TRUE, side=3, cex=1.4)
 arrows(inoH, 100*idown["intermediate",,"nonHIV","0.25"], inoH, 100*idown["intermediate",,"nonHIV","0.75"], angle=90, code=3, length=0.05)
 
 
 iH <- barplot(height = 100*idown["intermediate",,"HIV","0.5"], beside = TRUE, 
                   ylab="% reduction in year 10 TB mortality (median [IQR])", 
                   xlab="HIV-related exclusions\nfrom novel regimen", names.arg=c("100%","5%","0%"), cex.lab=1, main="",
-                  ylim=c(-15,2), col=cols)
+                  ylim=c(-40,2), col=cols)
 arrows(inoH, 100*idown["intermediate",,"HIV","0.25"], inoH, 100*idown["intermediate",,"HIV","0.75"], angle=90, code=3, length=0.05)
 
 
 # South Africa exclusions
 
-sexc <- rbind(read.csv("Efficacy_DSDSTall_rDSTall.SouthAfrica_20160111.idr1.csv",header=FALSE), read.csv("Efficacy_DSDSTall_rDSTall.SouthAfrica_20160111.idr2.csv",header=FALSE))
-colnames(sexc) <- colnames(read.csv("Exclusions_DSDSTall_rDSTall.India_20160111.idr1.csv"))
-sdrDST <- read.csv("DRcalibration_rDSTall.SouthAfrica_20160111.1.csv"); 
-  sdrDST <- sdrDST[sdrDST[,"rrinc"]/sdrDST[,"inc"] > 1/tolerance*sdrDST[,"targetdr"] & sdrDST[,"rrinc"]/sdrDST[,"inc"] < tolerance*sdrDST[,"targetdr"], ];
-  drout <- rbind(sdrDST[sdrDST$idr == 1,], sdrDST[sdrDST$idr == 2,])
-outcome <- "tbdeaths"
+sexc <- rbind(read.csv("Exclusions_DRDSTall_SouthAfrica_20160111.idr1.csv"), read.csv("Exclusions_DRDSTall_SouthAfrica_20160111.idr2.csv"))
+sdrout <- read.csv("DRcalibration_SouthAfrica_20160111.1.csv"); 
+  sdrout <- sdrout[sdrout[,"rrinc"]/sdrout[,"inc"] > 1/tolerance*sdrout[,"targetdr"] & sdrout[,"rrinc"]/sdrout[,"inc"] < tolerance*sdrout[,"targetdr"], ];
+  drout <- rbind(sdrout[sdrout$idr == 1,], sdrout[sdrout$idr == 2,])
+outcome <- "rrdeaths"
 sdown <- array(0,dim=c( 3, 3, 2, 5 ));
 dimnames(sdown) <- list("efflevel"=levels, "exclevel"=levels, "HIV"=c("HIV","nonHIV"), "q"=c(0.025,0.25,0.5,0.75,0.975))
 
@@ -766,15 +779,15 @@ par(mar=c(5,5,1,1), mfrow=c(1,2), oma=c(0,0,2,0))
 snoH <- barplot(height = 100*sdown["intermediate",,"nonHIV","0.5"], beside = TRUE, 
                 ylab="% reduction in year 10 TB mortality (median [IQR])", 
                 xlab="HIV-unrelated exclusions\nfrom novel regimen", names.arg=c("11%","5%","0%"), cex.lab=1, main="",
-                ylim=c(-15,2), col=cols)
-mtext("Novel DS regimen; intermediate efficacy; 60% HIV coprevalence", outer=TRUE, side=3, cex=1.4)
+                ylim=c(-60,2), col=cols)
+mtext("Novel DR regimen; intermediate efficacy; 60% HIV coprevalence", outer=TRUE, side=3, cex=1.4)
 arrows(snoH, 100*sdown["intermediate",,"nonHIV","0.25"], snoH, 100*sdown["intermediate",,"nonHIV","0.75"], angle=90, code=3, length=0.05)
 
 
 sH <- barplot(height = 100*sdown["intermediate",,"HIV","0.5"], beside = TRUE, 
               ylab="% reduction in year 10 TB mortality (median [IQR])", 
               xlab="HIV-related exclusions\nfrom novel regimen", names.arg=c("100%","5%","0%"), cex.lab=1, main="",
-              ylim=c(-15,2), col=cols)
+              ylim=c(-60,2), col=cols)
 arrows(sH, 100*sdown["intermediate",,"HIV","0.25"], sH, 100*sdown["intermediate",,"HIV","0.75"], angle=90, code=3, length=0.05)
 
 # # synergy with maximal efficacy

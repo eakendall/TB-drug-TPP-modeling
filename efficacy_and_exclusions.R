@@ -4,7 +4,7 @@
 # 
 # so 2 3x3 arrays, one for HIV and one for non-HIV exclusions
 
-taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
+taskid <- 2#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
 tname <- "SouthAfrica"#commandArgs(trailingOnly=TRUE)[2]
 targetpt <- "DR"#commandArgs(trailingOnly=TRUE)[3]
 DST <- "DSTall"#commandArgs(trailingOnly=TRUE)[4]
