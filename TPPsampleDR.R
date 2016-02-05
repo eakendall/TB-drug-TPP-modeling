@@ -1,18 +1,18 @@
-taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
-ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- commandArgs(trailingOnly=TRUE)[3]
-rDSTall <- commandArgs(trailingOnly=TRUE)[4]
-Nsims_dr <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
-location <- "../scratch/"
+taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
+tname <- "India"#commandArgs(trailingOnly=TRUE)[3]
+rDSTall <- TRUE # commandArgs(trailingOnly=TRUE)[5]
+Nsims_dr <- 20#as.numeric(commandArgs(trailingOnly=TRUE))[5]
+location <- ""
 
-tag <- "20160111"
+tag <- "20160201"
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
 if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 
 source("TPPmat.R")
 
-dsout <-read.csv(paste0(location,"DScalibration_",tname,"_",tag,".csv"), header=TRUE)
+dsout <-read.csv(paste0(location,"DScalibration_",tname,"_",tag,".1.csv"), header=TRUE)
 
 Nsims_ds <- 250; ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
