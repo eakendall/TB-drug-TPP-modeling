@@ -1,7 +1,7 @@
 taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- "India"#commandArgs(trailingOnly=TRUE)[3]
-rDSTall <- TRUE # commandArgs(trailingOnly=TRUE)[5]
+tname <- "Philippines"#commandArgs(trailingOnly=TRUE)[3]
+rDSTall <- FALSE # commandArgs(trailingOnly=TRUE)[5]
 Nsims_dr <- 20#as.numeric(commandArgs(trailingOnly=TRUE))[5]
 location <- ""
 
@@ -68,7 +68,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
                                 unlist(drvalues),
                                 drend[26,2:ncol(drend)],
                                 drend[36,tallynames]))
-    write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0(location,"test_DRtraj_",currenttag,".csv"), append=TRUE, sep=",", ncol=5+length(tallynames)*36 )
+    write( c(isim, isimdr, unlist(targetepis[tname]), c(t(drend[, tallynames]))), file=paste0(location,"DRtraj_",currenttag,".csv"), append=TRUE, sep=",", ncol=5+length(tallynames)*36 )
     print(paste0("Finished isimds=", isim, ", isimdr=", isimdr))
   } 
   

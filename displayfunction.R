@@ -11,9 +11,9 @@ shortelementlabels <- c("All", "% Durably Cured", "Duration",
                    "Existing Resistance", "Barrier to Resistance", 
                    "Exclusions", "Adherence")[c(1,2,5,4,6,3,7)]
 
-elementlabels <- c("All elements\nvaried", "% Durably Cured\n(optimal conditions)", "Regimen Duration", 
+elementlabels <- c("All elements\nvaried", "% Durably Cured\n(optimal conditions)", "Regimen\nDuration", 
                    "Prevalence of\nExisting Resistance\nto Regimen", "Barrier to\nAcquired Novel\nDrug Resistance", 
-                   "Medical exclusions,\ncontraindications, and\nearly discontinuations", "Adherence/Burden\nto Patient")[c(1,2,5,4,6,3,7)]
+                   "Medical exclusions,\ncontraindications,\nand early\ndiscontinuations", "Adherence/Burden\nto Patient")[c(1,2,5,4,6,3,7)]
 dslabels <- c("","","", "94% cured","97% cured", "99% cured", "6 months","4 months", "2 months", 
               "10% resistant", "3% resistant", "None resistant", "1 acquired resistance per 20 treatments", "1 acquired resistance per 125 treatments", "Minimal acquired resistance",
               "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "1.5% fewer dropouts", "3% fewer dropouts")[rep(c(1,4,3,5,2,6), each=3)+c(0,1,2)]

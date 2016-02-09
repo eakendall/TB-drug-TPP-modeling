@@ -1,14 +1,15 @@
 #source the function below, then run these:
 
-taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
-tname <- commandArgs(trailingOnly=TRUE)[2]
-targetpt <- commandArgs(trailingOnly=TRUE)[3]
-DST <- commandArgs(trailingOnly=TRUE)[4]
-rDSTall <- commandArgs(trailingOnly=TRUE)[5]
+taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
+tname <- "India"#commandArgs(trailingOnly=TRUE)[2]
+targetpt <- "DS"#commandArgs(trailingOnly=TRUE)[3]
+DST <- "DSTall"#commandArgs(trailingOnly=TRUE)[4]
+if (targetpt=="DS") rDSTall <- TRUE else rDSTall <- FALSE
 
-tag <- "20160111"
-location<-"../scratch/"
-dsout <- read.csv(paste0(location,"DScalibration_",tname,"_",tag,".csv"))
+tag <- "20160201"
+location<-""
+dsout <- read.csv(paste0(location,"DScalibration_",tname,"_",tag,".1.csv"))
+idrs <- 1:2
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
 if(rDSTall) currenttag <- paste0("rDSTall.",currenttag)
@@ -114,7 +115,7 @@ for (isim in isims)
   
   Nsims_dr <-  max(olddrout$idr)
   
-  for (isimdr in 1:Nsims_dr)
+  for (isimdr in idrs)
   {
     drvalues <- values
     valuevect <- olddrout[which(olddrout$ids==isim & olddrout$idr==isimdr), 5+(1:length(unlist(mergedvalues)))] 

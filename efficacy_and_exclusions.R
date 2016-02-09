@@ -4,14 +4,14 @@
 # 
 # so 2 3x3 arrays, one for HIV and one for non-HIV exclusions
 
-taskid <- 2#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
-tname <- "SouthAfrica"#commandArgs(trailingOnly=TRUE)[2]
-targetpt <- "DR"#commandArgs(trailingOnly=TRUE)[3]
-DST <- "DSTall"#commandArgs(trailingOnly=TRUE)[4]
-rDSTall <- FALSE #commandArgs(trailingOnly=TRUE)[5]
-location<-""#"../source/"
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
+tname <- commandArgs(trailingOnly=TRUE)[2]
+targetpt <- commandArgs(trailingOnly=TRUE)[3]
+DST <- commandArgs(trailingOnly=TRUE)[4]
+rDSTall <- commandArgs(trailingOnly=TRUE)[5]
+location<-"../scratch/"
 
-tag <- "20160111"
+tag <- "20160201"
 currenttag <- paste0(tname,"_",tag)
 if (rDSTall == TRUE) currenttag <- paste0("rDSTall.",currenttag)
 tasktag <- paste0(currenttag,".idr",taskid)

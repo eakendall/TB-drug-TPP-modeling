@@ -9,7 +9,7 @@ location<-"../scratch/"
 if ((targetpt=="DS" & rDSTall!=TRUE) |  (targetpt=="DR" & rDSTall==TRUE) ) stop(call. = TRUE)
 
 
-tag <- "20160111"
+tag <- "20160201"
 
 Nsims_ds <- 250
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
@@ -24,7 +24,7 @@ drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
 novelsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
 values <- set.values()
 mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
-tallynames <- readRDS(paste0(location,"tallynames_20160111.RDS"))
+tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- set.novelvalues()$elementnames
 
 alldrout <- numeric(0)
@@ -37,4 +37,4 @@ drout <- alldrout[alldrout$ids %in% (ilimits[taskid]+1):ilimits[taskid+1],]
 tolerance <- 1.5
 drout <- drout[drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & drout[,"rrinc"]/drout[,"inc"] < tolerance*drout[,"targetdr"], ]  #within 3fold if rr incident fraction target
 
-evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, rows=1:nrow(drout), targetpt=targetpt, DST=DST, tag=currenttag, rDSTall=rDSTall, location=location) # can also specify ids and idr to run just a subset of drout
+evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, rows=18:19, targetpt=targetpt, DST=DST, tag=currenttag, rDSTall=rDSTall, location=location) # can also specify ids and idr to run just a subset of drout

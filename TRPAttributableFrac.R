@@ -5,7 +5,7 @@
 
 taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1] #will match taskids for standard TRP runs, or no, just make one file for now
 tname <- "India"#commandArgs(trailingOnly=TRUE)[2]
-targetpt <- "DS"#commandArgs(trailingOnly=TRUE)[3]
+targetpt <- "DR"#commandArgs(trailingOnly=TRUE)[3]
 DST <- "DSTall"#commandArgs(trailingOnly=TRUE)[4]
 if (targetpt=="DS") rDSTall <- TRUE else rDSTall <- FALSE #commandArgs(trailingOnly=TRUE)[5]
 location<-""#"../source/"
@@ -37,7 +37,7 @@ header <- append(header, paste0( rep(tallynames, times=length(elementnames)-1), 
                                                                  
 if(!file.exists(paste0(location,"Allbut","_", targetpt,DST,"_",currenttag,".csv"))) { write(header,  file=paste0(location,"Allbut","_", targetpt,DST,"_",currenttag,".csv"), sep=",", ncol=length(header)) }
   
-for (inew in 1:nrow(drout))
+for (inew in 80:nrow(drout))
 {
   iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST, rDSTall)) #will include these labels as part of returned output
   

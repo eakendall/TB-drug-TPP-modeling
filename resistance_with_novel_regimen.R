@@ -4,14 +4,14 @@
 # and maybe for DS and DR regimen (but will do just DS first)
 
 
-taskid <- 2#as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
-tname <- "India"#commandArgs(trailingOnly=TRUE)[2]
-targetpt <- "DS"#commandArgs(trailingOnly=TRUE)[3]
-DST <- "DSTall"#commandArgs(trailingOnly=TRUE)[4]
-rDSTall <- TRUE #commandArgs(trailingOnly=TRUE)[5]
-location<-""#"../source/"
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
+tname <- commandArgs(trailingOnly=TRUE)[2]
+targetpt <- commandArgs(trailingOnly=TRUE)[3]
+DST <- commandArgs(trailingOnly=TRUE)[4]
+rDSTall <- commandArgs(trailingOnly=TRUE)[5]
+location<-"../scratch/"
 
-tag <- "20160111"
+tag <- "20160201"
 currenttag <- paste0(tname,"_",tag)
 if (rDSTall == TRUE) currenttag <- paste0("rDSTall.",currenttag)
 tasktag <- paste0(currenttag,".idr",taskid)
@@ -248,5 +248,5 @@ for (inew in 1:nrow(drout))
       
     iresult <- append(iresult, c(t(outset[,rtallynames])))
   }
-  write(unlist(c(iter, valuevect, iresult)), file=paste0("Resistance","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+  write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Resistance","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
 }
