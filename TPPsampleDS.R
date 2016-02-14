@@ -3,16 +3,17 @@
 
 taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- "India"
-pessimistic <- FALSE
+tname <- commandArgs(trailingOnly=TRUE)[3]
+pessimistic <- commandArgs(trailingOnly=TRUE)[4]
 
 tag <- "20160214"
+if (pessimistic) tag <- paste0(tag,"p")
 Nsims_ds <- 50
 
 source("TPPmat.R")
 values <- set.values(pessimistic=pessimistic)
 
-Nsamplepars_ds <- length(unlist(values$varied_ds)); #ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1)); print(ilimits)
+Nsamplepars_ds <- length(unlist(values$varied_ds)); ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1)); print(ilimits)
 
 if(exists(paste0("LHS_",tag,".RDS"))) LHS <- readRDS(paste0("LHS_",tag,".RDS")) else 
   {LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0("LHS_",tag,".RDS"))}

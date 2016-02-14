@@ -26,10 +26,10 @@ set.novelvalues <- function(pessimistic=FALSE)
   
   if(pessimistic)
   {
-    selections$ltfu_n <- array(c(0.03,0.0225,0.015,
+    selections$ltfurate_n <- array(c(0.03,0.0225,0.015,
                                  0.02,0.015,0.01), dim=c(3,2))
   
-  } else selections$ltfu_n <- array(c(0.01, 0.0075, 0.005,
+  } else selections$ltfurate_n <- array(c(0.01, 0.0075, 0.005,
                                       0.01, 0.0075, 0.005), dim=c(3,2))
   
       
@@ -89,9 +89,9 @@ set.values <- function(pessimistic=FALSE)
 
 
 #returns a set of values for a specified starting values and trp element combination
-sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, minimals=NA, HIV="both")
+sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, minimals=NA, HIV="both", pessimistic=FALSE)
 {
-  selections <- set.novelvalues()$selections
+  selections <- set.novelvalues(pessimistic=pessimistic)$selections
   elementnames <- set.novelvalues()$elementnames
   
   if (DST=="DSTall") {mergedvalues$DSTnew[1:2] <- c(1,1)} else {mergedvalues$DSTnew[1:2] <- c(0,0)}
@@ -116,7 +116,7 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
 }
 
 # evaluates 10-year impact for optimal and minimal for each TRP element, with others at intermediate ("typical") level, and full trajectory for variation in all TRP parameters together
-evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS", DST="DSTall", tag=currenttag,location="",rDSTall=FALSE) # uses merged but not unlisted values
+evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS", DST="DSTall", tag=currenttag,location="",rDSTall=FALSE, pes=FALSE) # uses merged but not unlisted values
 {
   if(missing(genericvalues)) {genericvalues <- readRDS(paste0("genericvalues_",tag,".RDS"))} # source of parameters that will have constant values (as saved at start of sampling)
   if(length(genericvalues[[1]][[1]]>1)) { genericvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]])) } #merge into single list if needed
@@ -164,12 +164,12 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
       print(paste0("Evaluating TRP variation in ",vary,  ",  Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
       valueset <- list()
       if (vary=="all")
-      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=elementnames[-1])
-        valueset$i <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST)
-        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=elementnames[-1])
+      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=elementnames[-1], pessimistic=pes)
+        valueset$i <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, pessimistic=pes)
+        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=elementnames[-1], pessimistic=pes)
       } else 
-      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=vary)
-        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=vary)
+      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=vary, pessimistic=pes)
+        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=vary, pessimistic=pes)
       }
       for (level in names(valueset))
       {
