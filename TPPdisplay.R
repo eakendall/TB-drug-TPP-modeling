@@ -75,7 +75,7 @@ arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(1
 # 
 
 allbut_ds <- read.csv("Allbut_DSDSTall_India_20160201.csv")
-
+drout <- droutds
 
 contribs <- array(0,dim=c(7,5)); dimnames(contribs) <- list("element"=elementnames, "q"=c(0.025,0.25,0.5,0.75,0.975))
 
@@ -93,8 +93,8 @@ contribs["all",] <- quantile(
 
 par(mar=c(1,1,3,1), mfrow=c(1,1)) 
 b <- barplot(contribs[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n',
-             legend.text=shortelementlabels, col=rainbow(7), args.legend=list(x=1.5, y=8, cex=0.9))
-mtext("Median fraction of the total mortality impact of an all-optimal novel regimen that is lost\nwhen one characteristic [or all characteristics] is reduced to its minimal value", side=3, line=0, font=2, cex=1.2, xpd=NA)
+             legend.text=shortelementlabels, col=rainbow(7), args.legend=list(x="topright", cex=0.8))#1.5, y=8, cex=0.8))
+mtext("Contribution of each regimen characteristic to optimal novel regimen's mortality impact\n(median fraction of impact lost when one characteristic is reduced to its minimal value)", side=3, line=0, font=2, cex=1, xpd=NA)
 text(contribs[,3]+0.05, b, paste0(round(contribs[,3]*100, 1),"%"))
 
 
@@ -160,9 +160,9 @@ arrows(bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*
 mtext("Reduction in year 10 TB mortality with novel DR-TB regimen,\n compared to projection under current standard of care",side=3,outer=TRUE, cex=1.4, line=-1, xpd=NA) 
 
 
+#something's wrong here. why is an all-minimal novel regimen better than SOC? 
 
-
-allbut_dr <- read.csv("Allbut_DRDSTall_India_20160201.csv")
+allbut_dr <- read.csv("Allbut_DRDSTall_India_20160201.csv"); novelwide <- allnovelwide[["DRDSTall_"]]; drout <- alldrout; outcome <- "rrdeaths"
 
 contribs <- array(0,dim=c(7,5)); dimnames(contribs) <- list("element"=elementnames, "q"=c(0.025,0.25,0.5,0.75,0.975))
 
@@ -170,7 +170,7 @@ for (vary in elementnames[2:7])
 {
   contribs[vary,] <- quantile( 
     ( novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]  - 
-        (allbut_ds[ , paste0(outcome, "10allbut",vary)] - drout[ , paste0(outcome,"10")]) ) /
+        (allbut_dr[ , paste0(outcome, "10allbut",vary)] - drout[ , paste0(outcome,"10")]) ) /
       (novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
 contribs["all",] <- quantile( 
@@ -179,10 +179,10 @@ contribs["all",] <- quantile(
     (novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
 
 par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(contribs[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n',
-             legend.text=shortelementlabels, col=rainbow(7), args.legend=list(x=1.5, y=8, cex=0.9))
-mtext("Median fraction of the rifampin-resistant mortality impact of an all-optimal novel DR regimen that is lost\nwhen one characteristic [or all characteristics] is reduced to its minimal value", side=3, line=0, font=2, cex=1.2, xpd=NA)
-text(contribs[,3]+0.05, b, paste0(round(contribs[,3]*100, 1),"%"))
+b <- barplot(contribs[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
+             legend.text=shortelementlabels, col=rainbow(7), args.legend=list(x=0.6, y=9.2, cex=0.9))
+mtext("Contribution of each regimen characteristic to optimal novel DR regimen's DR mortality impact\n(Median loss of impact when one characteristic is reduced to its minimal value)", side=3, line=0, font=2, cex=1, xpd=NA)
+text(contribs[,3]+0.02, b, paste0(round(contribs[,3]*100, 1),"%"))
 
 # ffracs <- (rr_pctdown[2:7,3,3]-rr_pctdown[2:7,1,3] )/sum(rr_pctdown[2:7,3,3]-rr_pctdown[2:7,1,3] )
 # fp <- numeric(6); for (i in 1:6) fp[i] <- sum(ffracs[1:i])
@@ -700,10 +700,10 @@ mtext("Partial rank correlation of model parameter with the\nmortality impact of
 
 rtallynames <- readRDS("rtallynames_20160111.RDS")
 
-RtrajDST <- read.csv("Resistance_DRDSTall_India_20160201.idr1.csv")
-for (i in 2:5) RtrajDST <- rbind(RtrajDST, read.csv(paste0("Resistance_DRDSTall_India_20160201.idr",i,".csv")))
+RtrajDST <- read.csv("Resistance_DSDSTall_rDSTall.India_20160201.idr1.csv")
+for (i in 2:5) RtrajDST <- rbind(RtrajDST, read.csv(paste0("Resistance_DSDSTall_rDSTall.India_20160201.idr",i,".csv")))
 drout <- rbind(alldrDST[alldrDST$idr == 1,], alldrDST[alldrDST$idr == 2,], alldrDST[alldrDST$idr == 3,],
-               alldrDST[alldrDST$idr == 4,], alldrDST[alldrDST$idr == 2,])
+               alldrDST[alldrDST$idr == 4,], alldrDST[alldrDST$idr == 5,])
 
 rtraj <- array(0,dim=c( 3, 3 , 5, 5, 11));
 dimnames(rtraj) <- list("barrier"=levels, "companion"=levels, 
@@ -732,10 +732,10 @@ points(0:10, rtraj[b,c,"cprev",3,], type='l', lwd=2,col="green")
 }
 mtext("With DST for novel regimen",side=3,outer=TRUE,line=3,cex=1.3)
 
-Rtraj <- read.csv("Resistance_DRDSTnone_India_20160201.idr1.csv")
-for (i in 2:5) Rtraj <- rbind(Rtraj, read.csv(paste0("Resistance_DRDSTnone_India_20160201.idr",i,".csv")))
+Rtraj <- read.csv("Resistance_DSDSTnone_rDSTall.India_20160201.idr1.csv")
+for (i in 2:5) Rtraj <- rbind(Rtraj, read.csv(paste0("Resistance_DSDSTnone_rDSTall.India_20160201.idr",i,".csv")))
 drout <- rbind(alldrDST[alldrDST$idr == 1,], alldrDST[alldrDST$idr == 2,], alldrDST[alldrDST$idr == 3,],
-               alldrDST[alldrDST$idr == 4,], alldrDST[alldrDST$idr == 2,])
+               alldrDST[alldrDST$idr == 4,], alldrDST[alldrDST$idr == 5,])
 
 rtraj <- array(0,dim=c( 3, 3 , 5, 5, 11));
 dimnames(rtraj) <- list("barrier"=levels, "companion"=levels, 
@@ -765,22 +765,72 @@ mtext("Without DST for novel regimen",side=3,outer=TRUE,line=3,cex=1.3)
 
 
 
+
+### varying both companion and barrier
+
+RtrajDST <- read.csv("Resistance_DSDSTall_rDSTall.India_20160201.idr1.csv")
+for (i in 2:5) RtrajDST <- rbind(RtrajDST, read.csv(paste0("Resistance_DSDSTall_rDSTall.India_20160201.idr",i,".csv")))
+drout <- rbind(alldrDST[alldrDST$idr == 1,], alldrDST[alldrDST$idr == 2,], alldrDST[alldrDST$idr == 3,],
+               alldrDST[alldrDST$idr == 4,], alldrDST[alldrDST$idr == 5,])
+
+resDST <- array(0,dim=c( 3 , 3 , 5 ));
+dimnames(resDST) <- list("companion"=levels, "barrier"=levels, "q"=c(0.025,0.25,0.5,0.75,0.975))
+outcome <- "tbdeaths"
+for (c in levels) for (b in levels)
+{ 
+  resDST[c,b,] <- quantile((RtrajDST[ , paste0(outcome, "10companion", c,"barrier",b)] - drout[ , paste0(outcome,"10")] )/
+                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
+}  
+
+
+Rtraj <- read.csv("Resistance_DSDSTnone_rDSTall.India_20160201.idr1.csv")
+for (i in 2:5) Rtraj <- rbind(Rtraj, read.csv(paste0("Resistance_DSDSTnone_rDSTall.India_20160201.idr",i,".csv")))
+drout <- rbind(alldrDST[alldrDST$idr == 1,], alldrDST[alldrDST$idr == 2,], alldrDST[alldrDST$idr == 3,],
+               alldrDST[alldrDST$idr == 4,], alldrDST[alldrDST$idr == 5,])
+resnoDST <- array(0,dim=c( 3 , 3 , 5 ));
+dimnames(resnoDST) <- list("companion"=levels, "barrier"=levels, "q"=c(0.025,0.25,0.5,0.75,0.975))
+outcome <- "tbdeaths"
+for (c in levels) for (b in levels)
+{ 
+  resnoDST[c,b,] <- quantile((Rtraj[ , paste0(outcome, "10companion", c,"barrier",b)] - drout[ , paste0(outcome,"10")] )/
+                             drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
+}  
+
+
+par(mar=c(5,5,3,1), mfrow=c(1,2), oma=c(0,0,0,0))
+
+bpctdown <- barplot(height = 100*diag(resDST[,,"0.5"]), beside = TRUE, 
+                    ylab="% reduction in year 10 TB mortality (median [IQR])", 
+                    xlab="Varying both companion resistance prevalence\nand barrier to acquired resistance",
+                    names.arg=levels, cex.lab=1, main="With DST for\nnovel DS regimen",
+                    ylim=c(-15,8), col=cols)
+arrows(bpctdown, 100*diag(resDST[,,"0.25"]), bpctdown, 100*diag(resDST[,,"0.75"]), angle=90, code=3, length=0.05)
+
+bpctdown <- barplot(height = 100*diag(resnoDST[,,"0.5"]), beside = TRUE, 
+                    ylab="% reduction in year 10 TB mortality (median [IQR])", 
+                    xlab="Varying both companion resistance prevalence\nand barrier to acquired resistance",
+                    names.arg=levels, cex.lab=1, main="Without DST for\nnovel DS regimen",
+                    ylim=c(-15,8), col=cols)
+arrows(bpctdown, 100*diag(resnoDST[,,"0.25"]), bpctdown, 100*diag(resnoDST[,,"0.75"]), angle=90, code=3, length=0.05)
+
+
 # Projections without novel regimen #
 
-par(mar=c(4,4,4,1))
 rrfracs <- apply(alldrout[,paste0("rrfrac",c("","10"))], 2, quantile, c(0.025,0.25,0.5,0.75,0.975))
 colnames(rrfracs) <- c("year 0", "year 10 without novel regimen")
+rrfracs
+
 
 rrfracsDST <- apply(alldrDST[,paste0("rrfrac",c("","10"))], 2, quantile, c(0.025,0.25,0.5,0.75,0.975))
 colnames(rrfracsDST) <- c("year 0", "year 10 without novel regimen")
-
+rrfracsDST
 
 ############################
 # exclusions
 
 # India exclusions
 
-iexc <- rbind(read.csv("Exclusions_DRDSTall_India_20160111.idr1.csv",header=FALSE), read.csv("Exclusions_DRDSTall_India_20160111.idr2.csv",header=FALSE))
+iexc <- rbind(read.csv("Exclusions_DRDSTall_India_20160201.idr1.csv"), read.csv("Exclusions_DRDSTall_India_20160201.idr2.csv"))
 # colnames(iexc) <- colnames(read.csv("Exclusions_DSDSTall_rDSTall.India_20160111.idr1.csv"))
 drout <- rbind(alldrout[alldrout$idr == 1,], alldrout[alldrout$idr == 2,])
 outcome <- "rrdeaths"

@@ -69,10 +69,10 @@ i <- 1; while(file.exists(paste0(location,"DRcalibration_rDSTall.",currenttag,".
 alldrDST <- alldrDST[alldrDST[,"rrinc"]/alldrDST[,"inc"] > 1/tolerance*alldrDST[,"targetdr"] & alldrDST[,"rrinc"]/alldrDST[,"inc"] < tolerance*alldrDST[,"targetdr"], ]  #within 3fold if rr incident fraction target
 
 
-# trajdrout <- numeric(0)
-# i <- 1; while(file.exists(paste0(location,"DRtraj_",currenttag,".",i,".csv")))
-# {trajdrout <- rbind(trajdrout, read.csv(paste0(location,"DRtraj_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
-# trajdrout <- trajdrout[trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] > 1/tolerance*trajdrout[,"targetdr"] & trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] < tolerance*trajdrout[,"targetdr"], ]  #within 3fold if rr incident fraction target
+trajdrout <- numeric(0)
+i <- 1; while(file.exists(paste0(location,"DRtraj_",currenttag,".",i,".csv")))
+{trajdrout <- rbind(trajdrout, read.csv(paste0(location,"DRtraj_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
+trajdrout <- trajdrout[trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] > 1/tolerance*trajdrout[,"targetdr"] & trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] < tolerance*trajdrout[,"targetdr"], ]  #within 3fold if rr incident fraction target
 
 
 allnovelwide <- list()

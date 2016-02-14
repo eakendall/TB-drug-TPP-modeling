@@ -12,7 +12,7 @@ location<-""#"../source/"
 
 tag <- "20160201" # note: for this tag I'm not going to add rDSTall to file names except for DRcal/traj
 currenttag <- paste0(tname,"_",tag)
-if (rDSTall == TRUE) drtag <- paste0("rDSTall.",currenttag)
+drtag <- ifelse(rDSTall == TRUE, paste0("rDSTall.",currenttag), currenttag)
 # tasktag <- paste0(currenttag,".idr",taskid)
 source("TPPmat.R")
 
@@ -37,7 +37,7 @@ header <- append(header, paste0( rep(tallynames, times=length(elementnames)-1), 
                                                                  
 if(!file.exists(paste0(location,"Allbut","_", targetpt,DST,"_",currenttag,".csv"))) { write(header,  file=paste0(location,"Allbut","_", targetpt,DST,"_",currenttag,".csv"), sep=",", ncol=length(header)) }
   
-for (inew in 80:nrow(drout))
+for (inew in 1:nrow(drout))
 {
   iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST, rDSTall)) #will include these labels as part of returned output
   

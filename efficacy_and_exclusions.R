@@ -88,5 +88,5 @@ for (inew in 1:nrow(drout))
       
     iresult <- append(iresult, outset[tallynames])
   }
-  write(unlist(c(iter, valuevect, iresult)), file=paste0("Exclusions","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+  write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Exclusions","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
 }

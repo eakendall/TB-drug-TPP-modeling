@@ -51,7 +51,7 @@ set.values <- function()
       relapse24 <- c(7.5, 3)
       transcost_n <- 0.3
     })
-    varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those vary for novel regimen outside of trp
+    varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those that vary for novel regimen outside of trp
       nonpoor_s_rifr <- 0.2
       acqres_s <- 0.008; 
       poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
@@ -61,12 +61,11 @@ set.values <- function()
       poor_n_cnr <- c(0.14,0.2)
       acqres_candn <- 0.1# probably of acquiring c resistance if already n resistant (in same or subsequent treatment course)
       acqres_nifc <- 6 # increase in probably of acquiring n resistance if already c resistant (in same treatment course)
-      
     })
     fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen within trp
       months_s <- 6; months_r <- 20
       acqres_r <- 0
-      availability <- 0.8 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
+      availability <- 0# 0.8 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
       targetpop <- c(1,0) #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
       cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
       DSTnew <- c(1,1) #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
@@ -137,7 +136,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
   if(!file.exists(paste0(location,"TRPwideoutput_", targetpt,DST,"_",tag,".csv"))) { write(wideheader,  file=paste0(location,"TRPwideoutput_", targetpt,DST,"_",tag,".csv"), sep=",", ncol=length(wideheader)) }
   
   for (inew in rows)
-  {
+    {
     iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST)) #will include these labels as part of returned output
     
     
@@ -568,12 +567,12 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
     }
     
-    
     if (t>0 & length(Rnames)==8) 
     {
       dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
-      dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
-        c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * c(1-fullpars$cres, fullpars$cres) * (1-exp(-15*sum(FOI)))
+      dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + 
+        sum(deaths) * c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * 
+        (1-exp(-15*sum(FOI)))
     }
     
     # return dxdt to ode, and also return tally for tracking purposes

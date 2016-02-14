@@ -1,6 +1,6 @@
 taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- "Philippines"#commandArgs(trailingOnly=TRUE)[3]
+tname <- "India"#commandArgs(trailingOnly=TRUE)[3]
 rDSTall <- FALSE # commandArgs(trailingOnly=TRUE)[5]
 Nsims_dr <- 20#as.numeric(commandArgs(trailingOnly=TRUE))[5]
 location <- ""
