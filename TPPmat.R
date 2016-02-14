@@ -9,7 +9,7 @@ targetepis <- list("Brazil"=c(52, 0.17, 0.014), "India"=c(195, 0.04, 0.022), "Ph
 # will provide a list of "values" inputs for the function that implements novel regimen: 
 # each labeled by the targetpop, the DST use, the TRP element varied (with "none" as one option), and whether the varied TRP element is minimal, intermediate, or optimal
 
-set.novelvalues <- function()
+set.novelvalues <- function(pessimistic=FALSE)
 {
   selections <- list()
   selections$poor_n <- array(c(0.06, 0.03, 0, 
@@ -23,14 +23,22 @@ set.novelvalues <- function()
   selections$eligibility <- array(c(0.89,0,  0.95,0.9,  1,1,
                                     0.89,0,  0.95,0.9,  1,1), dim=c(2,3,2))
   # !! can add specifics e.g. hiv or pediatric low/med/high as separate selection item
-  selections$ltfu_reduction <- array(c(0, 0.015, 0.03,
-                                       0, 0.03, 0.06), dim=c(3,2))
+  
+  if(pessimistic)
+  {
+    selections$ltfu_n <- array(c(0.03,0.0225,0.015,
+                                 0.02,0.015,0.01), dim=c(3,2))
+  
+  } else selections$ltfu_n <- array(c(0.01, 0.0075, 0.005,
+                                      0.01, 0.0075, 0.005), dim=c(3,2))
+  
+      
   elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability")
   return(list("selections"=selections, "elementnames"=elementnames))
 }
 
 
-set.values <- function()
+set.values <- function(pessimistic=FALSE)
 {
   values <- list()
   values <- within(values, {
@@ -46,7 +54,7 @@ set.values <- function()
       relapsepoor <- 0.67
       dxrate <- c(0.6,0.9, # new and rerx  hiv-, and new and rerx hiv+
                   2, 3)
-      ltfurate_sr <- 0.01 #monthly rate
+      ltfurate_sr <- ifelse(pessimistic,0.03,0.01) #monthly rate
       initialloss_s <- 0.15
       relapse24 <- c(7.5, 3)
       transcost_n <- 0.3
@@ -102,8 +110,7 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
   mergedvalues$eligibility[1:2] <- selections$eligibility[ , whichrow[which(elementnames=="exclusions")], whichcol]
   if (HIV=="HIV") mergedvalues$eligibility[1] <- 1
   if (HIV=="nonHIV") mergedvalues$eligibility[2] <- mergedvalues$eligibility[1]
-  ltfu_reduction <- selections$ltfu_reduction[whichrow[which(elementnames=="tolerability")], whichcol]; 
-  mergedvalues$ltfurate_n <- max(0, mergedvalues$ltfurate_sr - ltfu_reduction/mergedvalues$months_n)
+  mergedvalues$ltfurate_n <- selections$ltfurate_n
   
   return(mergedvalues) # a set of edited single-list values for use in create.pars
 }
