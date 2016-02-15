@@ -5,6 +5,7 @@ taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 tname <- commandArgs(trailingOnly=TRUE)[3]
 pessimistic <- commandArgs(trailingOnly=TRUE)[4]
+location <- "../scratch/"
 
 tag <- "20160214"
 if (pessimistic) tag <- paste0(tag,"p")
@@ -15,8 +16,8 @@ values <- set.values(pessimistic=pessimistic)
 
 Nsamplepars_ds <- length(unlist(values$varied_ds)); ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1)); print(ilimits)
 
-if(exists(paste0("LHS_",tag,".RDS"))) LHS <- readRDS(paste0("LHS_",tag,".RDS")) else 
-  {LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0("LHS_",tag,".RDS"))}
+if(exists(paste0(location,"LHS_",tag,".RDS"))) LHS <- readRDS(paste0(location,"LHS_",tag,".RDS")) else 
+  {LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0(location,"LHS_",tag,".RDS"))}
 
 currenttag <- paste0(tag,".",taskid)
 
@@ -28,7 +29,7 @@ elementnames <- set.novelvalues()$elementnames
 dsheader <- c("ids",  "targetprev","targetcoprev","targetdr",  
               names(unlist(values)), 
             dssetup$statenames, tallynames) 
-if(!file.exists(paste0("DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0("DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
+if(!file.exists(paste0(location,"DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0(location,"DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
 
 for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
 {
@@ -56,7 +57,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
     if (h==0) h <- 0.0001 else h <- h*2
   }                     
   
-  saveRDS(optimat, file=paste0(location,"/optimats",tag,"/optimat",isim,".RDS"))
+  saveRDS(optimat, file=paste0(location,"optimats",tag,"/optimat",isim,".RDS"))
   #will treat each  epi (country) separately for the rest of the (DS and DR) calibration  
 
 optimat[,2][optimat[,2]==0] <- 0.000001
@@ -94,7 +95,7 @@ if (dsvalues$cal$hivrate<0.00001) dsvalues$cal$hivrate <- 0
   estate <- with(opte,log[nrow(log),2:(length(dssetup$statenames)+1)])
   
     # save equilibrium state and values
-  write(file=paste0("DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
+  write(file=paste0(location,"DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
         sep=",", ncol=length(dsheader), append=TRUE)
   
 #   }

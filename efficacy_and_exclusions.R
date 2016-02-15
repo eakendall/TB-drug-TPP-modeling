@@ -39,7 +39,9 @@ header <- append(header, paste0( rep(tallynames, times=2*3*3), "10",
                          rep(c("HIV","nonHIV") ,each=3*3*length(tallynames)),
                          "exclusions", rep(c("minimal","intermediate","optimal"), each=3*length(tallynames)),
                          "efficacy", rep(c("minimal","intermediate","optimal"), each=length(tallynames)) ) )
-                                                                 
+header <- append(header, paste0( tallynames, "10allminimal"))
+
+
 if(!file.exists(paste0(location,"Exclusions","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Exclusions","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
   
 for (inew in 1:nrow(drout))
@@ -88,5 +90,32 @@ for (inew in 1:nrow(drout))
       
     iresult <- append(iresult, outset[tallynames])
   }
+  
+  valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
+                        minimals=elementnames[2:7])
+  s_cr <- valueset$cres[1]; r_cr <- valueset$cres[2]
+  novelstate <- newstate
+  for (name in novelsetup$statenames) if (length(grep("^S", name))==0 & length(grep("^C", name))==0 )
+  {  
+    if (length(grep("+c+",name))==1 )
+    {
+      if (length(grep("+.Rr+", name))==1 ) 
+      {    novelstate[name] <- r_cr * newstate[str_replace(string = name, pattern = "c", replacement = "")]
+      } else novelstate[name] <- s_cr * max(newstate[str_replace(string = name, pattern = "c", replacement = "")], newstate[str_replace(string = name, pattern = "c", replacement = "0")], na.rm = TRUE)
+    } else 
+    {
+      if (length(grep("+.Rr+", name))==1 )
+      { novelstate[name] <- (1-r_cr) * newstate[name]
+      } else novelstate[name] <- (1-s_cr) * newstate[name]
+    }
+  }
+  
+  parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
+  
+  outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")[11,]
+  
+  iresult <- append(iresult, outset[tallynames])
+  
+  
   write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Exclusions","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
 }
