@@ -110,7 +110,7 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
   mergedvalues$eligibility[1:2] <- selections$eligibility[ , whichrow[which(elementnames=="exclusions")], whichcol]
   if (HIV=="HIV") mergedvalues$eligibility[1] <- 1
   if (HIV=="nonHIV") mergedvalues$eligibility[2] <- mergedvalues$eligibility[1]
-  mergedvalues$ltfurate_n <- selections$ltfurate_n[whichrow[which(elementnames=="adherence")], whichcol]
+  mergedvalues$ltfurate_n <- selections$ltfurate_n[whichrow[which(elementnames=="tolerability")], whichcol]
   
   return(mergedvalues) # a set of edited single-list values for use in create.pars
 }

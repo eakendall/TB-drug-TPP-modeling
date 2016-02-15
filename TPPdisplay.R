@@ -592,9 +592,9 @@ mtext("Partial rank correlation of model parameter with the\nmortality impact of
 
 
 # plot PRCCs for no DST:
-o <- rev(rev(order(abs(prcc$companionnodst$PRCC$original)))[1:10])
-ores <- rev(rev(order(abs(prcc$companionnodst_dr$PRCC$original)))[1:10])
-display <- c(ores[!(ores %in% o)],o)
+o2 <- rev(rev(order(abs(prcc$companionnodst$PRCC$original)))[1:10])
+ores2 <- rev(rev(order(abs(prcc$companionnodst_dr$PRCC$original)))[1:10])
+display <- c(o2[!o2 %in% c(ores, o)], ores2[!ores2 %in% c(o2,ores,o)], ores[!(ores %in% o)],o)
 
 par(mfrow=c(1,2),mar=c(4,0,2,2), oma=c(0,25,3,0))
 b <- barplot(prcc$companionnodst$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
@@ -735,8 +735,9 @@ par(mar=c(3,3,1,1),oma=c(0,4,5,0), mfrow=c(2,2))
 for (b in c(3,1)) for (c in c(3,1)) 
 {plot(0:10, rtraj[b,c,"novelprev",3,], type='l', lwd=2, ylim=c(0,0.2), xlab="",ylab="Prevalence of resistance", cex.lab=0.8, yaxt="n");
  if (b==3 & c==3) legend("topright",c("Any novel-regimen resistance","Companion-drug resistance", "Novel-drug resistance"), lwd=2,lty=1,col=c("black","green","purple"), cex=0.9)
- if (b==3) mtext(paste0(c("Unfavorable (10%)","Intermediate (3%)","No")[c]," baseline\ncompanion-drug resistance"),side=3, line =1, cex=0.8,font=2)
- if (c==3) mtext(paste0(c("Minimal","Intermediate","Optimal")[b]," barrier to resistance\n",c("(1/20 treatments","(1/125 treatments", "(no acquired resistance")[b],"\nif iniitally regimen- susceptible)"),side=2, cex=0.8,line=4, font=2)
+ if (b==3) mtext(paste0(c("Unfavorable (10%)","Intermediate (3%)","No")[c]," baseline\ncompanion-drug resistance"),side=3, line =1, cex=1,font=2)
+ if (c==3) mtext(paste0(c("Minimal","Intermediate","Optimal")[b]," barrier to resistance\n"),side=2, cex=1,line=4, font=2)
+                        #,c("(1/20 treatments","(1/125 treatments", "(no acquired resistance")[b],"\nif iniitally regimen- susceptible)"
 #   mtext(paste0(c("Unfavorable (10%)","Optimal (3%)","No")[c]," baseline companion-resistance,\nand ",levels[b]," barrier to resistance\n(",c("1/20 treatments)","1/125 treatments)", "no acquired resistance if iniitally fully susceptible")[b]),
 #         side=3,line=1,xpd=NA, cex=0.7)
   mtext("Year",side=1,line=2,cex=0.7)
@@ -767,9 +768,10 @@ par(mar=c(3,3,1,1),oma=c(0,4,5,0), mfrow=c(2,2))
 for (b in c(3,1)) for (c in c(3,1)) 
 {plot(0:10, rtraj[b,c,"novelprev",3,], type='l', lwd=2, ylim=c(0,0.2), xlab="",ylab="Prevalence of resistance", cex.lab=0.8, yaxt="n");
   if (b==3 & c==3) legend("topright",c("Any novel-regimen resistance","Companion-drug resistance", "Novel-drug resistance"), lwd=2,lty=1,col=c("black","green","purple"), cex=0.9)
- if (b==3) mtext(paste0(c("Unfavorable (10%)","Intermediate (3%)","No")[c]," baseline\ncompanion-drug resistance"),side=3, line =1, cex=0.8,font=2)
- if (c==3) mtext(paste0(c("Minimal","Intermediate","Optimal")[b]," barrier to resistance\n",c("(1 in 20 acquire resistance","(1 in 125 acquire resistance", "(no acquired resistance")[b],"\nif iniitally regimen- susceptible)"),side=2, cex=0.8,line=4, font=2) #   mtext(paste0(c("Unfavorable (10%)","Optimal (3%)","No")[c]," baseline companion-resistance,\nand ",levels[b]," barrier to resistance\n(",c("1/20 treatments)","1/125 treatments)", "no acquired resistance if iniitally fully susceptible")[b]),
- #         side=3,line=1,xpd=NA, cex=0.7)
+  if (b==3) mtext(paste0(c("Unfavorable (10%)","Intermediate (3%)","No")[c]," baseline\ncompanion-drug resistance"),side=3, line =1, cex=1,font=2)
+ if (c==3) mtext(paste0(c("Minimal","Intermediate","Optimal")[b]," barrier to resistance\n"),side=2, cex=1,line=3, font=2)
+                        #c("(1 in 20 acquire resistance","(1 in 125 acquire resistance", "(no acquired resistance")[b],"\nif iniitally regimen- susceptible)"),side=2, cex=0.8,line=4, font=2) #   mtext(paste0(c("Unfavorable (10%)","Optimal (3%)","No")[c]," baseline companion-resistance,\nand ",levels[b]," barrier to resistance\n(",c("1/20 treatments)","1/125 treatments)", "no acquired resistance if iniitally fully susceptible")[b]),
+         #side=3,line=1,xpd=NA, cex=1)
  mtext("Year",side=1,line=2,cex=0.7)
  axis(side=2,at = c(seq(0,0.3,by=0.05)), labels = paste0(seq(0,30,by=5),"%"),las=2)
  points(0:10, rtraj[b,c,"nprev",3,], type='l', lwd=2,col="purple")
@@ -817,15 +819,15 @@ bpctdown <- barplot(height = 100*diag(resDST[,,"0.5"]), beside = TRUE,
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="Varying both companion resistance prevalence\nand barrier to acquired resistance",
                     names.arg=levels, cex.lab=1, main="With DST for\nnovel DS regimen",
-                    ylim=c(-15,8), col=cols)
+                    ylim=c(-15,10), col=cols)
 arrows(bpctdown, 100*diag(resDST[,,"0.25"]), bpctdown, 100*diag(resDST[,,"0.75"]), angle=90, code=3, length=0.05)
 
 bpctdown <- barplot(height = 100*diag(resnoDST[,,"0.5"]), beside = TRUE, 
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="Varying both companion resistance prevalence\nand barrier to acquired resistance",
                     names.arg=levels, cex.lab=1, main="Without DST for\nnovel DS regimen",
-                    ylim=c(-15,8), col=cols)
-arrows(bpctdown, 100*diag(resnoDST[,,"0.25"]), bpctdown, 100*diag(resnoDST[,,"0.75"]), angle=90, code=3, length=0.05)
+                    ylim=c(-15,10), col=cols)
+arrows(bpctdown, 100*diag(resnoDST[,,"0.25"]), bpctdown, 100*diag(resnoDST[,,"0.75"]), angle=90, code=3, length=0.05, xpd=NA)
 
 
 # Projections without novel regimen #

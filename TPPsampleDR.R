@@ -1,11 +1,11 @@
-taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
-ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- "India"#commandArgs(trailingOnly=TRUE)[3]
-rDSTall <- FALSE # commandArgs(trailingOnly=TRUE)[5]
-Nsims_dr <- 20#as.numeric(commandArgs(trailingOnly=TRUE))[5]
-location <- ""
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+tname <- commandArgs(trailingOnly=TRUE)[3]
+rDSTall <- commandArgs(trailingOnly=TRUE)[5]
+Nsims_dr <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
+location <- "../scratch/"
 
-tag <- "20160201"
+tag <- "20160214"
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
 if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
