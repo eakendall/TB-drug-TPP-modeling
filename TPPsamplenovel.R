@@ -4,16 +4,13 @@ tname <- commandArgs(trailingOnly=TRUE)[3]
 targetpt <- commandArgs(trailingOnly=TRUE)[4]
 DST <- commandArgs(trailingOnly=TRUE)[5]
 pessimistic<-commandArgs(trailingOnly=TRUE)[6]
+
 location<-"../scratch/"
+tag <- "20160214p"
+Nsims_ds <- 50
 
 rDSTall <- ifelse(targetpt=="DS", TRUE, FALSE)
-
-
-tag <- "20160201"
-
-Nsims_ds <- 250
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
-
 currenttag <- paste0(tname,"_",tag)
 if(rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 

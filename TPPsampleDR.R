@@ -1,24 +1,28 @@
 taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 tname <- commandArgs(trailingOnly=TRUE)[3]
-rDSTall <- commandArgs(trailingOnly=TRUE)[5]
+rDSTall <- commandArgs(trailingOnly=TRUE)[4]
 Nsims_dr <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
 location <- "../scratch/"
 
-tag <- "20160214"
+tag <- "20160214p"
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
 if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 
 source("TPPmat.R")
 
-dsout <-read.csv(paste0(location,"DScalibration_",tname,"_",tag,".1.csv"), header=TRUE)
+dsout <- list()
+for (i in 1:25)
+{
+  dsout <- rbind(dsout, read.csv(paste0(location,"DScalibration_",tag,".",i,".csv"), header=TRUE))
+}
 
-Nsims_ds <- 250; ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
+Nsims_ds <- 50; ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
-values <- set.values()
+values <- set.values(pessimistic=pessimistic)
 mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
 if (taskid==1) saveRDS(mergedvalues, file=paste0("genericvalues_",currenttag,".RDS"))
 
@@ -54,7 +58,7 @@ for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
   for (isimdr in 1:Nsims_dr)
   {
     # sample 
-    drvalues <- sample.values(values=dsvalues, whichparset="varied_dr", LHS=drLHS, isim=isimdr)
+    drvalues <- sample.values(values=dsvalues, whichparset="varied_dr", LHS=drLHS, isim=isimdr, pessimistic=pessimistic)
     if (rDSTall==TRUE) { drvalues$varied_dr$DSTrif_n <- 1; drvalues$varied_dr$noDSTrif_p <- 0 }
     drpars <- create.pars(setup = drsetup, values = drvalues)
     

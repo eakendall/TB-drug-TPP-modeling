@@ -84,6 +84,7 @@ for (flag in c("DSDSTall_rDSTall.","DSDSTnone_rDSTall.", "DRDSTall_", "DRDSTnone
     allnovelwide[[flag]] <- rbind(allnovelwide[[flag]], read.csv(paste0(location,"TRPwideoutput_", flag, currenttag,".",i,".csv")))
     i <- i+1
   }
+  allnovelwide[[flag]] <- allnovelwide[[flag]][ !is.na(allnovelwide[[flag]][,"targetprev"]), ]
 }  
 
 

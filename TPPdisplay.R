@@ -128,7 +128,7 @@ text(contribs[,3]+0.05, b, paste0(round(contribs[,3]*100, 1),"%"))
 
 # Same for DR regimen
 ## resize plot area to wide ##
-novelwide3 <- novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr <- alldrout[1:nrow(novelwide),]
+novelwide3 <- novelwide <- allnovelwide[["DRDSTnone_"]]; drout <- droutdr <- alldrout[1:nrow(novelwide),]
 
 outcome <- c("tbdeaths") 
 r_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); y <- 10
@@ -514,7 +514,7 @@ bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,c(4),"0.5"], b
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("10%","3%","0%"), cex.lab=1, main="Without DST for\nnovel DS regimen",
                     ylim=c(-15,2), col=cols)
-arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.25"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.75"], angle=90, code=3, length=0.05)
+arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.25"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
 
 
 
@@ -550,7 +550,7 @@ bpctdown <- barplot(height = 100*aperm(r_pctdown2, c(2,1,3))[,c(4),"0.5"], besid
                     xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("15%","5%","0%"), cex.lab=1, 
                     main="Without DST for\nnovel DR regimen",
                     ylim=c(-40,2), col=cols)
-arrows(bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,4,"0.25"], bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,4,"0.75"], angle=90, code=3, length=0.05)
+arrows(bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,4,"0.25"], bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,4,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
 
 
 #sensitivity
@@ -689,9 +689,9 @@ mtext("Partial rank correlation of model parameter with the\nmortality impact of
 
 
 # plot PRCCs for no DST:
-o <- rev(rev(order(abs(prcc$barriernodst$PRCC$original)))[1:10])
-ores <- rev(rev(order(abs(prcc$barriernodst_dr$PRCC$original)))[1:10])
-display <- c(ores[!(ores %in% o)],o)
+o2 <- rev(rev(order(abs(prcc$barriernodst$PRCC$original)))[1:10])
+ores2 <- rev(rev(order(abs(prcc$barriernodst_dr$PRCC$original)))[1:10])
+display <- c(o2[!o2 %in% c(ores, o)], ores2[!ores2 %in% c(o2,ores,o)], ores[!(ores %in% o)],o)
 
 par(mfrow=c(1,2),mar=c(4,0,2,2), oma=c(0,30,3,0))
 b <- barplot(prcc$barriernodst$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
@@ -710,7 +710,6 @@ mtext("Partial rank correlation of model parameter with the\nmortality impact of
 
 
 # Trends in resistance
-## problem with main results: measuring total and drug-resistant prevalences differently; so ran separate "Resistance" simulations doing it correctly.
 
 rtallynames <- readRDS("rtallynames_20160111.RDS")
 
@@ -981,3 +980,45 @@ adh <- barplot(12*cbind(aperm(resource,c(1,3,2,4))["efficacy",1:3,,3], aperm(res
 legend(x = bres[6], y=max(12*rowSums(resource["efficacy",,1:3,3]))+10, xjust=0, yjust=0, fill=blues,
        c("Novel DS regimen","Second-line regimen","First-line regimen"), xpd=NA)
 text(bres[c(2,5,8)], -7*12, elementlabels[2:4], cex=0.9, pos=1, xpd=NA)
+
+
+#pessimistic adherence baseline scenario
+
+drDST <- numeric(0)
+i <- 1; while(file.exists(paste0(location,"DRcalibration_rDSTall.India_20160214p.",i,".csv")))
+{drDST <- rbind(drDST, read.csv(paste0(location,"DRcalibration_rDSTall.India_20160214p.",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
+drDST <- drDST[drDST[,"rrinc"]/drDST[,"inc"] > 1/tolerance*drDST[,"targetdr"] & drDST[,"rrinc"]/drDST[,"inc"] < tolerance*drDST[,"targetdr"], ]  #within 3fold if rr incident fraction target
+
+novelwide <- numeric(0); i <- 1
+while (file.exists(paste0(location,"TRPwideoutput_DSDSTall_rDSTall.India_20160214p.",i,".csv")))
+{  novelwide <- rbind(novelwide, read.csv(paste0(location,"TRPwideoutput_DSDSTall_rDSTall.India_20160214p.",i,".csv")))
+  i <- i+1 }
+  
+outcome <- c("tbdeaths") 
+
+pesdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
+dimnames(pesdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in elementnames) 
+{ pesdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drDST[ , paste0(outcome,"10")] )/
+                                       drDST[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
+  pesdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drDST[ , paste0(outcome,"10")] )/
+                                       drDST[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
+  pesdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drDST[ , paste0(outcome,"10")] )/
+                                       drDST[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
+}  
+
+par(mar=c(2,4,8,1), mfrow=c(1,1), oma=c(0,0,0,0))
+bpctdown <- barplot(height = 100*aperm(pesdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
+                    ylab="% reduction (median [IQR])",
+                    xlab="", las=2, cex.lab=1, 
+#                     ylim=c(145*pesdown[1,3,"0.5"], 2), yaxt='n',
+                    legend=c("minimal","intermediate","optimal"),
+                    args.legend=list(title="Level of varied element(s)", x="bottom",cex=0.9),
+                    space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),5)),
+                    col=cols, names.arg=rep("", length(elementnames)))
+axis(2, at=seq(-25,0,by=5), labels=paste0(seq(-25,0,by=5),"%"),las=2,cex.axis=0.8)
+mtext("Reduction in year 10 TB mortality with novel DS-TB regimens,\n under pessimistic real-world adherence assumptions", cex=1.2, line=5, side=3)
+mtext("Varied TRP element(s)", side=3, line=3)
+text(colMeans(bpctdown) ,0.5, elementlabels, cex=0.8, pos=3, srt=0, font=1, xpd=NA)
+arrows(bpctdown, aperm(100*pesdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*pesdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
+

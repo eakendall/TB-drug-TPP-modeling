@@ -210,9 +210,9 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
 
 
 
-sample.values <- function(values, whichparset, LHS, isim)
+sample.values <- function(values, whichparset, LHS, isim, pessimistic=FALSE)
 {
-  midvalues <- set.values()
+  midvalues <- set.values(pessimistic=pessimistic)
   j <- 0
   for (n in 1:length(values[[whichparset]]))
   {
@@ -259,10 +259,10 @@ setup.model <- function(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
 
 # now combine values and model setup into properly-formatted parameters
 # returns list of lists: parameters (pars, for use) and stand-alone values (in case need to change some values or setup later)
-create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
+create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE, pessimistic=FALSE)
 {
   if (missing(setup)) setup <- setup.model(DRera, treatSL, treatnovel)
-  if (missing(values)) values <- set.values() 
+  if (missing(values)) values <- set.values(pessimistic=pessimistic) 
   if (length(values)==4) pars <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]])) else pars <- values
   
   with(setup, {

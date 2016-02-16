@@ -33,7 +33,7 @@ if(!file.exists(paste0(location,"DScalibration_", currenttag, ".csv"))) { write(
 
 for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
 {
-  dsvalues <- sample.values(values=values, whichparset="varied_ds", LHS=LHS, isim=isim)
+  dsvalues <- sample.values(values=values, whichparset="varied_ds", LHS=LHS, isim=isim, pessimistic=pessimistic)
   pars <- create.pars(setup = dssetup, values = dsvalues)
   
   # optimize for desired prev and coprev 

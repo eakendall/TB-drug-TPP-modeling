@@ -169,7 +169,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
     {
       dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
       dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
-        c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * c(1-fullpars$cres, fullpars$cres) * (1-exp(-15*sum(FOI)))
+        c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
     }
     
     # return dxdt to ode, and also return tally for tracking purposes
