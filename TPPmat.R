@@ -73,7 +73,7 @@ set.values <- function(pessimistic=FALSE)
     fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen within trp
       months_s <- 6; months_r <- 20
       acqres_r <- 0
-      availability <- 0# 0.8 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
+      availability <- 0.8 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
       targetpop <- c(1,0) #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
       cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
       DSTnew <- c(1,1) #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel

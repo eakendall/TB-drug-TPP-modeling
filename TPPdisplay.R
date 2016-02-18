@@ -19,8 +19,7 @@ arrows(bpctdown[1,], -5.5, bpctdown[3,], -5.5, angle=90, code=3, length=0.1)
 # Results overview #
 
 novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds <- alldrDST[1:nrow(novelwide),]
-
-outcome <- c("tbdeaths") #can set up loop over multiple outcomes
+outcome <- "tbdeaths"
 
 traj <- array(0, dim=c(11,3,5)); dimnames(traj) <- list("t"=0:10, "level"=levels, "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (t in 0:10) for (l in levels) traj[t+1,l,] <- quantile(novelwide[,colnames(novelwide)==paste0(outcome, t, "all",l)], c(0.025,0.25,0.5,0.75,0.975))
@@ -32,6 +31,7 @@ points(c(0,10), c(median(drout[,"tbdeaths"]),median(drout[,"tbdeaths10"])), col=
 # points(c(0,10), c(median(drout[,"tbdeaths"]),median(drout[,"tbdeaths10"])+1.5), col='black', type='l',lwd=2) 
 legend("bottomleft", legend= c("Continued current standard", "Minimal novel DS regimen", "Intermediate novel DS regimen", "Optimal novel DS regimen"),
        col=c("black","deeppink","orange","green"), lty=1,lwd=2)
+
 
 final_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
 dimnames(final_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
@@ -98,7 +98,7 @@ arrows(bpctdown, aperm(100*incdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*inc
 
 
 
-
+novelwide <- allnovelwide$DSDSTall_rDSTall.
 allbut_ds <- read.csv("Allbut_DSDSTall_India_20160201.csv")
 drout <- droutds
 outcome <- "tbdeaths"
@@ -503,18 +503,18 @@ for (vary in elementnames)
 
 par(mar=c(5,5,3,1), mfrow=c(1,2), oma=c(0,0,0,0))
 
-bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,c(4),"0.5"], beside = TRUE, 
+bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,"companion","0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("10%","3%","0%"), cex.lab=1, main="With DST for\nnovel DS regimen",
                     ylim=c(-15,2), col=cols)
-arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,4,"0.25"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,4,"0.75"], angle=90, code=3, length=0.05)
+arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,"companion","0.25"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,"companion","0.75"], angle=90, code=3, length=0.05)
 
 
-bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,c(4),"0.5"], beside = TRUE, 
+bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,"companion","0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="Baseline prevalence of\ncompanion-drug resistance", names.arg=c("10%","3%","0%"), cex.lab=1, main="Without DST for\nnovel DS regimen",
                     ylim=c(-15,2), col=cols)
-arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.25"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,4,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
+arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,"companion","0.25"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,"companion","0.75"], angle=90, code=3, length=0.05, xpd=NA)
 
 
 
@@ -618,36 +618,36 @@ mtext("Partial rank correlation of model parameter with the\nmortality impact of
 #DS:
 par(mar=c(5,5,3,1), mfrow=c(1,2), oma=c(0,0,0,0))
 
-bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,c(5),"0.5"], beside = TRUE, 
+bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,"barrier","0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="Per-treatment probability\nof acquired novel resistance", names.arg=c("1/20","1/125","0"), cex.lab=1, main="With DST for\nnovel DS regimen",
                     ylim=c(-15,2), col=cols)
-arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,5,"0.25"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,5,"0.75"], angle=90, code=3, length=0.05)
+arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,"barrier","0.25"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,5,"0.75"], angle=90, code=3, length=0.05)
 
 
-bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,c(5),"0.5"], beside = TRUE, 
+bpctdown <- barplot(height = 100*aperm(final_pctdown2, c(2,1,3))[,"barrier","0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 TB mortality (median [IQR])", 
                     xlab="Per-treatment probability\nof acquired novel resistance", names.arg=c("1/20","1/125","0"), cex.lab=1, main="Without DST for\nnovel DS regimen",
                     ylim=c(-15,2), col=cols)
-arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,5,"0.25"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,5,"0.75"], angle=90, code=3, length=0.05)
+arrows(bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,5,"0.25"], bpctdown, aperm(100*final_pctdown2, c(2,1,3))[,"barrier","0.75"], angle=90, code=3, length=0.05)
 
 
 #DR:
 par(mar=c(5,5,3,1), mfrow=c(1,2), oma=c(0,0,0,0))
 
-bpctdown <- barplot(height = 100*aperm(rr_pctdown, c(2,1,3))[,c(5),"0.5"], beside = TRUE, 
+bpctdown <- barplot(height = 100*aperm(rr_pctdown, c(2,1,3))[,"barrier","0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 rifampin-resistant\nTB mortality (median [IQR])", 
                     xlab="Per-treatment probability\nof acquired novel resistance", names.arg=c("1/10","1/20","1/125"), cex.lab=1, 
                     main="With DST for\nnovel DR regimen",
                     ylim=c(-40,2), col=cols)
-arrows(bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,5,"0.25"], bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,5,"0.75"], angle=90, code=3, length=0.05)
+arrows(bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,"barrier","0.25"], bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,"barrier","0.75"], angle=90, code=3, length=0.05)
 
-bpctdown <- barplot(height = 100*aperm(r_pctdown2, c(2,1,3))[,c(5),"0.5"], beside = TRUE, 
+bpctdown <- barplot(height = 100*aperm(r_pctdown2, c(2,1,3))[,"barrier","0.5"], beside = TRUE, 
                     ylab="% reduction in year 10 rifampin-resistant\nTB mortality(median [IQR])", 
                     xlab="Per-treatment probability\nof acquired novel resistance", names.arg=c("1/10","1/20","1/125"), cex.lab=1, 
                     main="Without DST for\nnovel DR regimen",
                     ylim=c(-40,2), col=cols)
-arrows(bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,5,"0.25"], bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,5,"0.75"], angle=90, code=3, length=0.05)
+arrows(bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,"barrier","0.25"], bpctdown, aperm(100*r_pctdown2, c(2,1,3))[,"barrier","0.75"], angle=90, code=3, length=0.05)
 
 
 #sensitivity: PRCCs for barrier to resistance
@@ -877,7 +877,10 @@ arrows(inoH, 100*idown["intermediate",,"HIV","0.25"], inoH, 100*idown["intermedi
 
 # South Africa exclusions
 
-sexc <- rbind(read.csv("Exclusions_DRDSTall_SouthAfrica_20160111.idr1.csv"), read.csv("Exclusions_DRDSTall_SouthAfrica_20160111.idr2.csv"))
+sexc1 <- read.csv("Exclusions_DRDSTall_SouthAfrica_20160111.idr1.csv")
+sexc2 <- read.csv("Exclusions_DRDSTall_SouthAfrica_20160111.idr2.csv")
+colnames(sexc2) <- colnames(sexc1)
+sexc <- rbind(sexc1, sexc2)
 # sdrout <- read.csv("DRcalibration_SouthAfrica_20160111.1.csv"); 
 #   sdrout <- sdrout[sdrout[,"rrinc"]/sdrout[,"inc"] > 1/tolerance*sdrout[,"targetdr"] & sdrout[,"rrinc"]/sdrout[,"inc"] < tolerance*sdrout[,"targetdr"], ];
 #   drout <- rbind(sdrout[sdrout$idr == 1,], sdrout[sdrout$idr == 2,])
@@ -988,12 +991,13 @@ drDST <- numeric(0)
 i <- 1; while(file.exists(paste0(location,"DRcalibration_rDSTall.India_20160214p.",i,".csv")))
 {drDST <- rbind(drDST, read.csv(paste0(location,"DRcalibration_rDSTall.India_20160214p.",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
 drDST <- drDST[drDST[,"rrinc"]/drDST[,"inc"] > 1/tolerance*drDST[,"targetdr"] & drDST[,"rrinc"]/drDST[,"inc"] < tolerance*drDST[,"targetdr"], ]  #within 3fold if rr incident fraction target
+drDST <- drDST[ !is.na(drDST[,"ids"]), ]
 
 novelwide <- numeric(0); i <- 1
 while (file.exists(paste0(location,"TRPwideoutput_DSDSTall_rDSTall.India_20160214p.",i,".csv")))
 {  novelwide <- rbind(novelwide, read.csv(paste0(location,"TRPwideoutput_DSDSTall_rDSTall.India_20160214p.",i,".csv")))
   i <- i+1 }
-  
+
 outcome <- c("tbdeaths") 
 
 pesdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
@@ -1011,14 +1015,14 @@ par(mar=c(2,4,8,1), mfrow=c(1,1), oma=c(0,0,0,0))
 bpctdown <- barplot(height = 100*aperm(pesdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
                     ylab="% reduction (median [IQR])",
                     xlab="", las=2, cex.lab=1, 
-#                     ylim=c(145*pesdown[1,3,"0.5"], 2), yaxt='n',
+                   ylim=c(145*pesdown[1,3,"0.5"], 2), yaxt='n',
                     legend=c("minimal","intermediate","optimal"),
                     args.legend=list(title="Level of varied element(s)", x="bottom",cex=0.9),
                     space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),5)),
                     col=cols, names.arg=rep("", length(elementnames)))
 axis(2, at=seq(-25,0,by=5), labels=paste0(seq(-25,0,by=5),"%"),las=2,cex.axis=0.8)
-mtext("Reduction in year 10 TB mortality with novel DS-TB regimens,\n under pessimistic real-world adherence assumptions", cex=1.2, line=5, side=3)
-mtext("Varied TRP element(s)", side=3, line=3)
+mtext("Reduction in year 10 TB mortality with novel DS-TB regimens,\n with pessimistic baseline adherence assumptions\nand optimistic 25-50% improvement using novel regimen", cex=1.2, line=4, side=3)
+mtext("Varied TRP element(s)", side=3, line=2.5)
 text(colMeans(bpctdown) ,0.5, elementlabels, cex=0.8, pos=3, srt=0, font=1, xpd=NA)
 arrows(bpctdown, aperm(100*pesdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*pesdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
 
