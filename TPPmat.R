@@ -559,6 +559,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
     # estimate as an exponential the latent TB in 15yos enterting the population. Assume no latent novel drug resistance. 
     # And companion drug resistance will be appropriately assigned to each fraction at time 0, but after that it will need to continue: 
     # so keep the same ratios of c and not c among new latents after time 0, as were assigned at time zero.
+    # and all births are Hn.
     
     
     if (length(Rnames)==1)    
