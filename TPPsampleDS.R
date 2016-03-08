@@ -7,9 +7,9 @@ tname <- commandArgs(trailingOnly=TRUE)[3]
 pessimistic <- commandArgs(trailingOnly=TRUE)[4]
 location <- "../scratch/"
 
-tag <- "20160214"
+tag <- "20160304"
 if (pessimistic) tag <- paste0(tag,"p")
-Nsims_ds <- 50
+Nsims_ds <- 250
 
 source("TPPmat.R")
 values <- set.values(pessimistic=pessimistic)
@@ -69,22 +69,6 @@ vindex <- which.min(fitmat); aindex <- c(vindex - nrow(fitmat)*floor(vindex/nrow
 
 dsvalues$cal$beta <- prevmat$x[aindex[1]]; dsvalues$cal$hivrate <- exp(-prevmat$y[aindex[2]])
 if (dsvalues$cal$hivrate<0.00001) dsvalues$cal$hivrate <- 0
-
-
-#   for (tname in names(targetepis))
-#   {
-    
-  optimat[,2][optimat[,2]==0] <- 0.000001
-  prevmat <- interp(optimat[,1], -log(optimat[,2]), z=optimat[,3], nx=5000, ny=5000, extrap=F, linear=TRUE, duplicate= "mean")
-  coprevmat <- interp(optimat[,1], -log(optimat[,2]), z=optimat[,4], nx=5000, ny=5000, extrap=F, linear=TRUE, duplicate= "mean")
-  fitmat <- (prevmat$z-targetepis[[tname]][1])^2/targetepis[[tname]][1]^2 + (coprevmat$z-targetepis[[tname]][2])^2/targetepis[[tname]][2]^2
-
-  vindex <- which.min(fitmat); aindex <- c(vindex - nrow(fitmat)*floor(vindex/nrow(fitmat)), ceiling(vindex/nrow(fitmat)))
-
-  dsvalues$cal$beta <- prevmat$x[aindex[1]]; dsvalues$cal$hivrate <- exp(-prevmat$y[aindex[2]])
-  
-  if (dsvalues$cal$hivrate<0.00001) dsvalues$cal$hivrate <- 0
-
 
   print(paste0("Chose beta=", dsvalues$cal$beta, ", hivrate=", dsvalues$cal$hivrate, " for sim #",isim, " and epi of ", tname))
   

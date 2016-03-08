@@ -5,7 +5,8 @@ rDSTall <- commandArgs(trailingOnly=TRUE)[4]
 Nsims_dr <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
 location <- "../scratch/"
 
-tag <- "20160214p"
+tag <- "20160304p"
+pessimistic <- TRUE
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
 if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
@@ -13,12 +14,13 @@ if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 source("TPPmat.R")
 
 dsout <- list()
-for (i in 1:25)
+i <- 1; while(file.exists(paste0(location,"DScalibration_",tag,".",i,".csv")))
 {
   dsout <- rbind(dsout, read.csv(paste0(location,"DScalibration_",tag,".",i,".csv"), header=TRUE))
+  i <- i+1
 }
+Nsims_ds <- max(dsout$ids); ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
-Nsims_ds <- 50; ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)

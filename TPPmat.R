@@ -9,7 +9,7 @@ targetepis <- list("Brazil"=c(52, 0.17, 0.014), "India"=c(195, 0.04, 0.022), "Ph
 # will provide a list of "values" inputs for the function that implements novel regimen: 
 # each labeled by the targetpop, the DST use, the TRP element varied (with "none" as one option), and whether the varied TRP element is minimal, intermediate, or optimal
 
-set.novelvalues <- function(pessimistic=FALSE)
+set.novelvalues <- function()
 {
   selections <- list()
   selections$poor_n <- array(c(0.06, 0.03, 0, 
@@ -22,18 +22,16 @@ set.novelvalues <- function(pessimistic=FALSE)
                                     0.1, 0.05, 0.008), dim=c(3,2))
   selections$eligibility <- array(c(0.89,0,  0.95,0.9,  1,1,
                                     0.89,0,  0.95,0.9,  1,1), dim=c(2,3,2))
-  # !! can add specifics e.g. hiv or pediatric low/med/high as separate selection item
   
-  if(pessimistic)
-  {
-    selections$ltfurate_n <- array(c(0.03,0.0225,0.015,
-                                 0.02,0.015,0.01), dim=c(3,2))
   
-  } else selections$ltfurate_n <- array(c(0.01, 0.0075, 0.005,
-                                      0.01, 0.0075, 0.005), dim=c(3,2))
+  selections$ltfurate_factor <- array(c(1.0,0.75,0.5,
+                                        1.0,0.75,0.5), dim=c(3,2))
   
+  selections$availability <- array(c(0.4,0.6,0.8,
+                               0.4,0.6,0.8), dim=c(3,2))
+  selections$noDSTrif_novelfactor <- c(1, 0.5, 0) # for DR only
       
-  elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability")
+  elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability", "uptake", "riftest")
   return(list("selections"=selections, "elementnames"=elementnames))
 }
 
@@ -64,7 +62,7 @@ set.values <- function(pessimistic=FALSE)
       acqres_s <- 0.008; 
       poor_r <- 0.24 #fraction with poor outcomes of either relapse or failure/tbdeath, of those who don't acquire resistance, for each relevant initial resistance pattern, (with the below relapsepoor fraction of the poor outcomes being relapses)
       transcost_rif <- 0.3 #redeuction (from 1) in fitness for RifR strain(s)
-      DSTrif_n <- 0.3
+      DSTrif_n <- 0.2
       noDSTrif_p <- 0.3
       poor_n_cnr <- c(0.14,0.2)
       acqres_candn <- 0.1# probably of acquiring c resistance if already n resistant (in same or subsequent treatment course)
@@ -73,15 +71,16 @@ set.values <- function(pessimistic=FALSE)
     fixed <- list(); fixed <- within(fixed, { #includes those that will vary with novel regimen within trp
       months_s <- 6; months_r <- 20
       acqres_r <- 0
-      availability <- 0.8 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
+      availability <- 0.75 # Current version (editable within dxdt (nvary) scales up to this over 3 years 
       targetpop <- c(1,0) #will change for DR=(0,1), DS=(1,0), or panTB=(1,1) #actually set in samplenovel
       cres <- c(0.05,0.1) #baseline companion resistance prevalence among rif S and rif R; actually set in samplenovel.
       DSTnew <- c(1,1) #companion drugs, novel drug (doesn't depend on rif or retreatment status); actually set in samplenovel
       months_n <- 4 #actually set in samplenovel
       eligibility <- c(1,1)  #by HIV status #actually set in samplenovel
-      ltfurate_n <- varied_ds$ltfurate_sr
+      ltfurate_n <- varied_ds$ltfurate_sr # will multiply by ltfurate_factor
       poor_n <- 0.03 #will set value in samplenovel
       acqres_n <- rep(0, times=16) #will set values in samplenovel, based in part on varied_dr values above
+      noDSTrif_novelfactor <- 1 #added 20160304
     })
   })
   return(values)
@@ -89,9 +88,9 @@ set.values <- function(pessimistic=FALSE)
 
 
 #returns a set of values for a specified starting values and trp element combination
-sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, minimals=NA, HIV="both", pessimistic=FALSE)
+sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, minimals=NA, HIV="both")
 {
-  selections <- set.novelvalues(pessimistic=pessimistic)$selections
+  selections <- set.novelvalues()$selections
   elementnames <- set.novelvalues()$elementnames
   
   if (DST=="DSTall") {mergedvalues$DSTnew[1:2] <- c(1,1)} else {mergedvalues$DSTnew[1:2] <- c(0,0)}
@@ -110,13 +109,16 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
   mergedvalues$eligibility[1:2] <- selections$eligibility[ , whichrow[which(elementnames=="exclusions")], whichcol]
   if (HIV=="HIV") mergedvalues$eligibility[1] <- 1
   if (HIV=="nonHIV") mergedvalues$eligibility[2] <- mergedvalues$eligibility[1]
-  mergedvalues$ltfurate_n <- selections$ltfurate_n[whichrow[which(elementnames=="tolerability")], whichcol]
+  mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr * selections$ltfurate_factor[whichrow[which(elementnames=="tolerability")], whichcol]
+  mergedvalues$availability <- selections$availability[whichrow[which(elementnames=="uptake")], whichcol]
+  if (targetpt=="DR") mergedvalues$noDSTrif_novelfactor <- selections$noDSTrif_novelfactor[whichrow[which(elementnames=="riftest")]]
   
   return(mergedvalues) # a set of edited single-list values for use in create.pars
 }
 
 # evaluates 10-year impact for optimal and minimal for each TRP element, with others at intermediate ("typical") level, and full trajectory for variation in all TRP parameters together
-evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS", DST="DSTall", tag=currenttag,location="",rDSTall=FALSE, pes=FALSE) # uses merged but not unlisted values
+# or takes an eval matrix: m, i, and o in columns, for each row
+evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS", DST="DSTall", tag=currenttag,location="",rDSTall=FALSE, HIV="both") # uses merged but not unlisted values
 {
   if(missing(genericvalues)) {genericvalues <- readRDS(paste0("genericvalues_",tag,".RDS"))} # source of parameters that will have constant values (as saved at start of sampling)
   if(length(genericvalues[[1]][[1]]>1)) { genericvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]])) } #merge into single list if needed
@@ -125,7 +127,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
   
   if(missing(rows))  if (missing(ids) || missing(idr)) {rows <- 1:nrow(drout)} else {rows <- (1:nrow(drout))[(drout[,"ids"] %in% ids) & (drout[,"idr"] %in% idr)]}
   novelsetup <- setup.model(DRera = TRUE, treatSL = TRUE, treatnovel = TRUE)
-  elementnames <- c("all", set.novelvalues()$elementnames)
+  elementnames <- c("all", set.novelvalues()$elementnames); if (targetpt=="DS") elementnames <- elementnames[-which(elementnames=="riftest")]
   
   stateheader <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "vary","level","time", novelsetup$statenames)
   
@@ -150,7 +152,7 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
     valuevect <- unlist(drout[inew, 5+(1:length(unlist(genericvalues)))]) ; names(valuevect) <- names(unlist(genericvalues))
     if (rDSTall==TRUE) { valuevect[which(names(valuevect)=="DSTrif_n.varied_dr.DSTrif_n")] <- 1; valuevect[which(names(valuevect)=="noDSTrif_p.varied_dr.noDSTrif_p")] <- 0 }
     v <- 0; for (pname in names(genericvalues))
-    { genericvalues[[pname]] <- valuevect[v+(1:length(genericvalues[[pname]]))]; #names(genericvalues[[pname]]) <- names()
+    { genericvalues[[pname]] <- valuevect[v+(1:length(genericvalues[[pname]]))]
       v <- v + length(genericvalues[[pname]]) # move forward to start of next par vector in sampled values
     }    
     
@@ -164,12 +166,12 @@ evaltrp <- function(genericvalues, drsetup, drout, ids, idr, rows, targetpt="DS"
       print(paste0("Evaluating TRP variation in ",vary,  ",  Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
       valueset <- list()
       if (vary=="all")
-      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=elementnames[-1], pessimistic=pes)
-        valueset$i <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, pessimistic=pes)
-        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=elementnames[-1], pessimistic=pes)
+      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=elementnames[-1], HIV=HIV)
+        valueset$i <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, HIV=HIV)
+        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=elementnames[-1], HIV=HIV)
       } else 
-      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=vary, pessimistic=pes)
-        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=vary, pessimistic=pes)
+      { valueset$m <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, minimals=vary, HIV=HIV)
+        valueset$o <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, optimals=vary, HIV=HIV)
       }
       for (level in names(valueset))
       {
@@ -402,7 +404,11 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
   DSTrif_t <- numeric(2); availability_t <- numeric(1)
   
   if (missing(rvary)) { if (2 %in% fullpars$usereg) {rvary<-TRUE} else {rvary<-FALSE} }
-  if (rvary==TRUE) { if (t <= -10) {DSTrif_t <- 0*fullpars$DSTrif} else if (t <= 0 && t > -10) {DSTrif_t <- (10+t)/10 * fullpars$DSTrif} else if (t > 0) {DSTrif_t <- fullpars$DSTrif}
+  if (rvary==TRUE) 
+  { 
+    if (t <= -10) {DSTrif_t <- 0*fullpars$DSTrif} else 
+      if (t <= 0 && t > -10) {DSTrif_t <- (10+t)/10 * fullpars$DSTrif} else 
+        if (t > 0 ) {DSTrif_t <- fullpars$DSTrif + min(t/3, 1)*(fullpars$noDSTrif_novelfactor)*(1-fullpars$DSTrif)}
   } else {DSTrif_t <- fullpars$DSTrif}
   
   if (missing(nvary)) { if (3 %in% fullpars$usereg) {nvary<-TRUE} else {nvary<-FALSE} }
@@ -575,13 +581,20 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
     }
     
-    if (t>0 & length(Rnames)==8) 
-    {
-      dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
-      dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + 
-        sum(deaths) * c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * 
-        (1-exp(-15*sum(FOI)))
-    }
+    # edit: just go to R0 or Rr for now - fixes the issue. Or, assign companion in proportion to cres, not foi?
+        if (t>0 & length(Rnames)==8) 
+        {
+          dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
+          dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rc.Hn", "Ln.Rr.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rc.Hn", "Ln.Rr.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
+            rep(c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) ), each=2) * c(1-cres[1], cres[1], 1-cres[2], cres[2])/ sum(FOI) * (1-exp(-15*sum(FOI)))
+        }
+#         if (t>0 & length(Rnames)==8) 
+#     {
+#       dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
+#       dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + 
+#         sum(deaths) * c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * 
+#         (1-exp(-15*sum(FOI)))
+#     }
     
     # return dxdt to ode, and also return tally for tracking purposes
     return(list(dxdt, tallied))

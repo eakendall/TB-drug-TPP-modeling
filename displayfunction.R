@@ -1,5 +1,6 @@
 levels <- c("minimal","intermediate","optimal"); 
-elementnames <- c("all", set.novelvalues()$elementnames[c(1,4,3,5,2,6)])
+elementnames <- c("all", set.novelvalues()$elementnames[c(1,4,3,5,2,6,7,8)])
+dselementnames <- c("all", set.novelvalues()$elementnames[c(1,4,3,5,2,6,7)])
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
@@ -9,17 +10,23 @@ values <- set.values(); genericvalues <- append(append(values[[1]], values[[2]])
 
 shortelementlabels <- c("All", "% Durably Cured", "Duration", 
                    "Existing Resistance", "Barrier to Resistance", 
-                   "Exclusions", "Adherence")[c(1,2,5,4,6,3,7)]
+                   "Exclusions", "Adherence","Scalability","Increase in RR diagnosis")[c(1,2,5,4,6,3,7,8,9)]
 
 elementlabels <- c("All elements\nvaried", "% Durably Cured\n(optimal conditions)", "Regimen\nDuration", 
                    "Prevalence of\nExisting Resistance\nto Regimen", "Barrier to\nAcquired Novel\nDrug Resistance", 
-                   "Medical exclusions,\ncontraindications,\nand early\ndiscontinuations", "Adherence/Burden\nto Patient")[c(1,2,5,4,6,3,7)]
+                   "Medical exclusions,\ncontraindications,\nand early\ndiscontinuations", "Adherence/Burden\nto Patient", 
+                   "Reach of\nnovel-regimen\nscale-up\n(replacing SOC regimen)", "Associated\nexpansion of\nRR diagnosis")[c(1,2,5,4,6,3,7,8,9)]
+dselementlabels <- elementlabels[-9]
 dslabels <- c("","","", "94% cured","97% cured", "99% cured", "6 months","4 months", "2 months", 
               "10% resistant", "3% resistant", "None resistant", "1 acquired resistance per 20 treatments", "1 acquired resistance per 125 treatments", "Minimal acquired resistance",
-              "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "1.5% fewer dropouts", "3% fewer dropouts")[rep(c(1,4,3,5,2,6), each=3)+c(0,1,2)]
+              "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "1.5% fewer dropouts", "3% fewer dropouts",
+              "Reaches 50% of eligible treated patients", "Reaches 75% of eligible treated patients", "Reaches 100% of eligible treated patients", 
+              "","","")[rep(c(1,4,3,5,2,6,7,8), each=3)+c(0,1,2)]
 drlabels <- c("","","", "76% cured","94% cured", "97% cured", "20 months","9 months", "6 months", 
               "15% resistant", "5% resistant", "None resistant", "1 acquired resistance per 10 treatments", "1 acquired resistance per 20 treatments", "1 acquired resistance per 125 treatments",
-              "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "3% fewer dropouts", "6% fewer dropouts")[rep(c(1,4,3,5,2,6), each=3)+c(0,1,2)]
+              "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "3% fewer dropouts", "6% fewer dropouts",
+              "Reaches 50% of eligible treated patients", "Reaches 75% of eligible treated patients", "Reaches 100% of eligible treated patients",
+              "No increase in RR diagnosis", "Allows 50% reduction in RR under-diagnosis", "Allows universal RR diagnosis")[rep(c(1,4,3,5,2,6), each=3)+c(0,1,2)]
 outcomenames <- list("tbdeaths"="% reduction, TB mortality", "rrdeaths" = "% reduction, rifampin-resistant TB mortality", 
                      "panronsets"="Incidence of TB resistant to both all-oral regimens", "nDSTs"= "DSTs performed for novel regimen")
 scenarionames <- list("DSDSTall"="with","DSDSTnone"="without", "DRDSTall"="with","DRDSTnone"="without")
@@ -69,10 +76,10 @@ i <- 1; while(file.exists(paste0(location,"DRcalibration_rDSTall.",currenttag,".
 alldrDST <- alldrDST[alldrDST[,"rrinc"]/alldrDST[,"inc"] > 1/tolerance*alldrDST[,"targetdr"] & alldrDST[,"rrinc"]/alldrDST[,"inc"] < tolerance*alldrDST[,"targetdr"], ]  #within 3fold if rr incident fraction target
 
 
-trajdrout <- numeric(0)
-i <- 1; while(file.exists(paste0(location,"DRtraj_",currenttag,".",i,".csv")))
-{trajdrout <- rbind(trajdrout, read.csv(paste0(location,"DRtraj_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
-trajdrout <- trajdrout[trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] > 1/tolerance*trajdrout[,"targetdr"] & trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] < tolerance*trajdrout[,"targetdr"], ]  #within 3fold if rr incident fraction target
+# trajdrout <- numeric(0)
+# i <- 1; while(file.exists(paste0(location,"DRtraj_",currenttag,".",i,".csv")))
+# {trajdrout <- rbind(trajdrout, read.csv(paste0(location,"DRtraj_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
+# trajdrout <- trajdrout[trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] > 1/tolerance*trajdrout[,"targetdr"] & trajdrout[,"X10rrinc"]/trajdrout[,"X10inc"] < tolerance*trajdrout[,"targetdr"], ]  #within 3fold if rr incident fraction target
 
 
 allnovelwide <- list()
