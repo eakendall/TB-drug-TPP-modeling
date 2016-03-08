@@ -60,7 +60,7 @@ dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
 novelsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
 values <- set.values()
-mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
+genericvalues <- mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- set.novelvalues()$elementnames
 
@@ -108,7 +108,7 @@ for (inew in 1:nrow(drout))
   {
     print(paste0("Evaluating TRP scenario ",s," for Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
 
-    minimals==""; optimals==""
+    minimals<-""; optimals<-""
     if (s=="baseline") { minimals = c("efficacy", "duration", "tolerability", "scalability") }
     if (s=="efficacyint") { minimals = c("duration", "tolerability", "scalability") }
     if (s=="barrierlow") { minimals = c("efficacy", "duration", "tolerability", "scalability", "barrier") }
