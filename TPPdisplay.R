@@ -1,6 +1,6 @@
 source("TPPmat.R")
 
-currenttag <- "India_20160304p"; tolerance <- 1.5; location=""
+currenttag <- "India_20160309p"; tolerance <- 1.5; location=""
 targetepi <- "India"
 
 source("displayfunction.R")
@@ -18,7 +18,7 @@ arrows(bpctdown[1,], -5.5, bpctdown[3,], -5.5, angle=90, code=3, length=0.1)
 
 # Results overview #
 
-novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds <- alldrDST[1:nrow(novelwide),]
+novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds <- alldrDST #[1:nrow(novelwide),]
 outcome <- "tbdeaths"
 
 traj <- array(0, dim=c(11,3,5)); dimnames(traj) <- list("t"=0:10, "level"=levels, "q"=c(0.025,0.25,0.5,0.75,0.975))
@@ -96,9 +96,24 @@ arrows(bpctdown, aperm(100*incdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*inc
 # arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
 # calculate contribution of each element to total novel regimen impact
 
-
-
 novelwide <- allnovelwide$DSDSTall_rDSTall.
+
+dscombos <- numeric(0)
+i <- 1; while(file.exists(paste0(location,"TRPcombos_DSDSTall_rDSTall.",currenttag,".",i,".csv")))
+{dscombos <- rbind(dscombos, read.csv(paste0(location,"TRPcombos_DSDSTall_rDSTall.",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0read.csv(paste0())
+outcome <- "tbdeaths"
+
+drDST <- alldrDST[1:nrow(dscombos),]
+
+summary((drDST$tbdeaths10 - dscombos[,grep("^tbdeaths",colnames(dscombos))])/drDST$tbdeaths10)[3,]
+summary((alldrDST$tbdeaths10 - allnovelwide$DSDSTall_rDSTall.$tbdeaths10allminimal)/alldrDST$tbdeaths10)
+summary((alldrDST$tbdeaths10 - allnovelwide$DSDSTall_rDSTall.$tbdeaths10alloptimal)/alldrDST$tbdeaths10)
+
+a <- numeric(0); for (i in 1:length(grep("^tbdeaths",colnames(dscombos)))) a[i] <- median((drDST$tbdeaths10 - dscombos[,grep("^tbdeaths",colnames(dscombos))[i]])/drDST$tbdeaths10)
+a[length(a)+1] <- median(((alldrDST$tbdeaths10 - allnovelwide$DSDSTall_rDSTall.$tbdeaths10alloptimal)/alldrDST$tbdeaths10))
+names(a) <- c(colnames(dscombos)[grep("^tbdeaths",colnames(dscombos))], "all optimal")
+par(mar=c(5,15,3,3)); b<-barplot(a, las=2, horiz=T, xlab="mortality reduction")
+text(x=0.01, y=b[1], "efficacy =SOC, duration=SOC, tolerability=SOC,\nresistance and exclusions intermediate, uptake minimal (50%)", pos=4, cex=0.8)
 
 allbut_ds <- numeric(0); i<- 1 
 while(file.exists(paste0("Allbut_DSDSTall_India_20160304p.",i,".csv"))) { allbut_ds <- rbind(allbut_ds, read.csv(paste0("Allbut_DSDSTall_India_20160304p.",i,".csv"))); i <- i+1 }
@@ -160,12 +175,12 @@ text(0.2, b[4], "'All minimal' baseline here is a regimen with SOC efficacy, dur
 
 # Same for DR regimen
 ## resize plot area to wide ##
-novelwide3 <- novelwide <- allnovelwide[["DRDSTnone_"]]; drout <- droutdr <- alldrout[1:nrow(novelwide),]
+novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr <- alldrout#[1:nrow(novelwide),]
 
 outcome <- c("tbdeaths") 
-r_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); y <- 10
-dimnames(r_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (vary in elementnames) 
+r_pctdown <- array(0,dim=c( length(drelementnames) , 3 , 5 )); y <- 10
+dimnames(r_pctdown) <- list("vary"=drelementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in drelementnames) 
 { r_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, y, vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
                                    drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
   r_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, y,"allintermediate")] - drout[ , paste0(outcome,"10")] )/
@@ -175,9 +190,9 @@ for (vary in elementnames)
 }  
 
 outcome <- c("rrdeaths"); y <- 10
-rr_pctdown <- array(0,dim=c( length(elementnames) , 3 , 5 )); 
-dimnames(rr_pctdown) <- list("vary"=elementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (vary in elementnames) 
+rr_pctdown <- array(0,dim=c( length(drelementnames) , 3 , 5 )); 
+dimnames(rr_pctdown) <- list("vary"=drelementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in drelementnames) 
 { rr_pctdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, y, vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
                                    drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
   rr_pctdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, y,"allintermediate")] - drout[ , paste0(outcome,"10")] )/
@@ -195,7 +210,7 @@ bpctdown <- barplot(height = 100*aperm(r_pctdown, c(2,1,3))[,,"0.5"], beside = T
                     ylim=c(1,0)*ylow, yaxt='n',
                     legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x=bpctdown[2,7], y=-3,cex=0.8),
                     space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),5)),
-                    col=cols, names.arg=rep("", length(elementnames)))
+                    col=cols, names.arg=rep("", length(drelementnames)))
 axis(2, at=c(-5,0), labels=paste0(c(5,0),"%"),las=2,cex.axis=0.8)
 # text((bpctdown+0.4)[,2], -0.1, drlabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
 text(colMeans(bpctdown) ,ylow, shortelementlabels, cex=0.8, pos=4, srt=90, font=2, xpd=NA)

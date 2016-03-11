@@ -13,7 +13,7 @@ set.novelvalues <- function()
 {
   selections <- list()
   selections$poor_n <- array(c(0.06, 0.03, 0, 
-                               0.24, 0.06, 0.03), dim=c(3,2))
+                               0.24, 0.12, 0.06), dim=c(3,2))
   selections$months_n <- array(c(6, 4, 2, 
                                  20, 9, 6), dim=c(3,2))
   selections$cres <- array(c(0.1,0.1,  0.03,0.03,  0,0, 
@@ -27,9 +27,9 @@ set.novelvalues <- function()
   selections$ltfurate_factor <- array(c(1.0,0.75,0.5,
                                         1.0,0.75,0.5), dim=c(3,2))
   
-  selections$availability <- array(c(0.4,0.6,0.8,
-                               0.4,0.6,0.8), dim=c(3,2))
-  selections$noDSTrif_novelfactor <- c(1, 0.5, 0) # for DR only
+  selections$availability <- array(c(0.5,0.75,1,
+                               0.5,0.75,1), dim=c(3,2))
+  selections$rifdx_increase <- c(0, 0.5, 1) # for DR only
       
   elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability", "uptake", "riftest")
   return(list("selections"=selections, "elementnames"=elementnames))
@@ -80,7 +80,7 @@ set.values <- function(pessimistic=FALSE)
       ltfurate_n <- varied_ds$ltfurate_sr # will multiply by ltfurate_factor
       poor_n <- 0.03 #will set value in samplenovel
       acqres_n <- rep(0, times=16) #will set values in samplenovel, based in part on varied_dr values above
-      noDSTrif_novelfactor <- 1 #added 20160304
+      rifdx_increase <- 0 #added 20160304, 0 means no improved dx, 1 means underdiagnosis is eliminated (universal rif DST implemented); reduces new and rerx underdx by same %
     })
   })
   return(values)
@@ -111,7 +111,7 @@ sampleTRP <- function(mergedvalues, targetpt="DS", DST="DSTall", optimals=NA, mi
   if (HIV=="nonHIV") mergedvalues$eligibility[2] <- mergedvalues$eligibility[1]
   mergedvalues$ltfurate_n <- mergedvalues$ltfurate_sr * selections$ltfurate_factor[whichrow[which(elementnames=="tolerability")], whichcol]
   mergedvalues$availability <- selections$availability[whichrow[which(elementnames=="uptake")], whichcol]
-  if (targetpt=="DR") mergedvalues$noDSTrif_novelfactor <- selections$noDSTrif_novelfactor[whichrow[which(elementnames=="riftest")]]
+  if (targetpt=="DR") mergedvalues$rifdx_increase <- selections$rifdx_increase[whichrow[which(elementnames=="riftest")]]
   
   return(mergedvalues) # a set of edited single-list values for use in create.pars
 }
@@ -289,8 +289,7 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
       
       names(eligibility) <- Hnames
       ltfurate <- c(ltfurate_sr, ltfurate_sr, ltfurate_n); names(ltfurate) <- regimens
-      
-      
+    
       #translate above parameters into outcome arrays (shouldn't need to edit this part unless model structure changes):
       poormat <- array(rbind(
         c(rep(poor_s_rifs, max(1,4*treatnovel)), rep((1-nonpoor_s_rifr), DRera*max(1,4*treatnovel))),
@@ -348,19 +347,28 @@ makemat <- function(pars)
     
     # once on effective treatment, progress through treatment to either relapse or cure, including a monthly rate of loss to follow up 
     # this function determines whether relapse or cure depending on efficacy of regimen and fraction completed. Assuming losses occur in the middle of each time period on average.
-    relapsefracs <- function(period) # use relapse %s at 2, 4, and 6 months (defined in pars) for a 6 month regimen, and interpolate linearly 2--4 and 4--6 to get relapse % after any fraction of treatment course
+    relapsefracs <- function(period) 
+      # use relapse %s at 2, 4, and 6 months (defined in pars) for a 6 month regimen, and 100% relapse at 0, 
+      # and interpolate linearly 0--2, 2--4, and 4--6 to get relapse % after any fraction of treatment course. 
+      # also fixed x scaling in interpolatation (divided  difference in fractions completed, by 1/3)
     {
       fraction_completed <- (sum(Tperiod.lengths[(1:length(Tperiod.lengths))<period])+1/2*Tperiod.lengths[period])/durations
+      relapsemat <- relapsemat/(1-failmat) # added 20160308
       relapse <- array(0, dim=c(length(Rnames),3)); dimnames(relapse) <- list(Rnames, regimens)
-      relapse[,fraction_completed < 1/3] <- 1 
+      # edited 20160308:
+      relapse[,fraction_completed < 1/3] <- (t(relapsemat)*relapse246[1])[, fraction_completed < 1/3] # probability of relapse at 1/3 completed
+      relapse[,fraction_completed < 1/3][relapse[,fraction_completed < 1/3]>1] <- 1 # drop to 1 if calculated prob of relapse at 1/3 is >1 at this stage
+      relapse[,fraction_completed < 1/3] <- 1 - t(t(1-relapse)*(fraction_completed/(1/3)))[,fraction_completed < 1/3] # interpolate from 0 to fraction_completed
+      
       relapse[,fraction_completed >= 1/3 & fraction_completed < 2/3] <- 
-        (t((relapsemat) * (relapse246[2] + (relapse246[1]-relapse246[2])*(2/3-fraction_completed))))[, fraction_completed >= 1/3 & fraction_completed < 2/3]
+        (t((relapsemat) * (relapse246[2] + (relapse246[1]-relapse246[2])*((2/3-fraction_completed)/(1/3)))))[, fraction_completed >= 1/3 & fraction_completed < 2/3]
       relapse[,fraction_completed >= 2/3 & fraction_completed < 1] <- 
-        (t((relapsemat) * (relapse246[3] + (relapse246[2]-relapse246[3])*(1-fraction_completed))))[, fraction_completed >= 2/3 & fraction_completed < 1]
+        (t((relapsemat) * (relapse246[3] + (relapse246[2]-relapse246[3])*((1-fraction_completed)/(1/3)))))[, fraction_completed >= 2/3 & fraction_completed < 1]
       relapse[,fraction_completed >= 1] <- t(relapsemat)[, fraction_completed >= 1]
       relapse[relapse>1] <- 1 #if sum exceeds 100%, set to 100% relapse
       return(relapse) 
     }
+    
     
     
     for (jh in 1:length(Hnames))
@@ -369,7 +377,7 @@ makemat <- function(pars)
       {
         periods <- paste0("T", reg, 1:Tperiods)
         jt <- 1
-        while (sum(Tperiod.lengths[1:jt]) < durations[reg]-0.0001)
+        while (sum(Tperiod.lengths[1:jt]) < durations[reg]-0.0001) # subtraction here is just to avoid machine error
         {
           relapses <- relapsefracs(period=jt)
           mat[periods[jt],c(periods[jt+1],"R"),jr,jr,jh,jh] <- # move on; or discontinue and relapse 
@@ -378,7 +386,7 @@ makemat <- function(pars)
             mat[periods[jt],"C",jr,"R0",jh,jh] + 1/Tperiod.lengths[jt]* (1-(1-ltfurate[reg])^(12*Tperiod.lengths[jt])) * (1-relapses[jr, reg])
           jt <- jt + 1
         }
-        if (jt <= Tperiods) # run one more 
+        if (jt <= Tperiods) # run one more, all going either to relapse or cure
         {
           relapses <- relapsefracs(period=jt)
           mat[periods[jt],"R",jr,jr,jh,jh] <- 
@@ -408,7 +416,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
   { 
     if (t <= -10) {DSTrif_t <- 0*fullpars$DSTrif} else 
       if (t <= 0 && t > -10) {DSTrif_t <- (10+t)/10 * fullpars$DSTrif} else 
-        if (t > 0 ) {DSTrif_t <- fullpars$DSTrif + min(t/3, 1)*(fullpars$noDSTrif_novelfactor)*(1-fullpars$DSTrif)}
+        if (t > 0 ) {DSTrif_t <- fullpars$DSTrif + min(t/3, 1)*(fullpars$rifdx_increase)*(1-fullpars$DSTrif)}
   } else {DSTrif_t <- fullpars$DSTrif}
   
   if (missing(nvary)) { if (3 %in% fullpars$usereg) {nvary<-TRUE} else {nvary<-FALSE} }

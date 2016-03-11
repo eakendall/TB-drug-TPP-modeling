@@ -2,7 +2,7 @@
 # # can have an impact alone, if the efficacy doesn't improve (assuming noninferiority efficacy target.)
 # 
 # # For some characteristics (resistance related), the minimal target is worse than the SOC regimen. 
-# # And for others (exclusions, scalability, and companion resistance if DST is being done), the
+# # And for others (exclusions, uptake, and companion resistance if DST is being done), the
 # # variations describe the fraction of patients who get the novel rather than SOC regimen (so only 
 # # matters if other characteristics are better than SOC.)
 # 
@@ -13,32 +13,59 @@
 #  duration minimal (~SOC)
 #  tolerability minimal (~SOC)
 #  exclusions intermediate, HIV="nonHIV" (5% excluded, regardless of HIV status)
-#  scalability minimal (only 50% of eligible patients get it)
+#  uptake minimal (only 50% of eligible patients get it)
 #  
 #  # And I'll model improvements to optimal (or for efficacy, intermediate; and in the case of barrier, companion, and exclusions, also worsening to minimal),
 #  # and I'll model scenarios where improvements in tolerability and duration occur alone and
-#  # where improvement from minimal to optimal in either tolerability or duration increase scalability by 25%,
-#  # (and improvement to maximal in both tolerability and duration increases scalability by 50% to optimal or 100%)
+#  # where improvement from minimal to optimal in either tolerability or duration increase uptake by 25%,
+#  # (and improvement to maximal in both tolerability and duration increases uptake by 50% to optimal or 100%)
 # 
 #  so the scenarios modeled will be:
-#   baseline (minimals = c("efficacy", "duration", "tolerability", "scalability"))
-#   efficacyint (minimals = c("duration", "tolerability", "scalability"))
-#   barrierlow (minimals = c("efficacy", "duration", "tolerability", "scalability", "barrier"))
-#   barrierhigh (minimals = c("efficacy", "duration", "tolerability", "scalability"), optimals= "barrier")
-#   companionlow (minimals = c("efficacy", "duration", "tolerability", "scalability", "companion"))
-#   companionhigh (minimals = c("efficacy", "duration", "tolerability", "scalability"), optimals= "companion")
-#   tolerabilityhighalone (minimals = c("efficacy", "duration", "scalability"), optimals="tolerability")
+#   baseline (minimals = c("efficacy", "duration", "tolerability", "uptake"))
+#   efficacyint (minimals = c("duration", "tolerability", "uptake"))
+#   barrierlow (minimals = c("efficacy", "duration", "tolerability", "uptake", "barrier"))
+#   barrierhigh (minimals = c("efficacy", "duration", "tolerability", "uptake"), optimals= "barrier")
+#   companionlow (minimals = c("efficacy", "duration", "tolerability", "uptake", "companion"))
+#   companionhigh (minimals = c("efficacy", "duration", "tolerability", "uptake"), optimals= "companion")
+#   tolerabilityhighalone (minimals = c("efficacy", "duration", "uptake"), optimals="tolerability")
 #   tolerabilityhighwithscaleup (minimals = c("efficacy", "duration"), optimals="tolerability")
-#   durationshortalone (minimals = c("efficacy", "tolerability", "scalability"), optimals="duration")
+#   durationshortalone (minimals = c("efficacy", "tolerability", "uptake"), optimals="duration")
 #   durationshortwithscaleup (minimals = c("efficacy", "tolerability"), optimals="duration")
-#   durationandtolerabilityalone (minimals = c("efficacy", "scalability"), optimals=c("duration", "tolerability"))
-#   durationandtolerabilitywithscaleup  (minimals = c"efficacy", optimals=c("duration", "tolerability", "scalability"))
-#   exclusionslow (minimals = c("efficacy", "duration", "tolerability", "scalability", "exclusions"))
-#   exclusionshigh (minimals = c("efficacy", "duration", "tolerability", "scalability"), optimals= "exclusions")
-#   scalabilityhigh (minimals = c("efficacy", "duration", "tolerability"), optimals= "scalability")
-#   
+#   durationandtolerabilityalone (minimals = c("efficacy", "uptake"), optimals=c("duration", "tolerability"))
+#   durationandtolerabilitywithscaleup  (minimals = c"efficacy", optimals=c("duration", "tolerability", "uptake"))
+#   exclusionslow (minimals = c("efficacy", "duration", "tolerability", "uptake", "exclusions"))
+#   exclusionshigh (minimals = c("efficacy", "duration", "tolerability", "uptake"), optimals= "exclusions")
+#   uptakehigh (minimals = c("efficacy", "duration", "tolerability"), optimals= "uptake")
 # ,  all with HIV="nonHIV"
 #  
+# # For DR, we want the baseline to instead include intermediate efficacy (now edited to be < standard 1stline regimen), intermediate duration (9 mo),
+# intermediate uptake (won't make this our primary variable for increasing reach), but *** minimal riftest ***, and otherwise same.
+#  # And I'll model improvements of each characteristic to optimal, 
+#  # and in the case of barrier, companion, exclusions, efficacy, and duration (without change in scaleup), also worsening to minimal. 
+#  # and I'll model scenarios where improvements in tolerability and duration occur alone and
+#  # where improvement from minimal to optimal in either tolerability or duration reduce RR underdiagnosis by 50% (riftest to intermediate),
+#  # (and improvement to optimal in both tolerability and duration increases riftest to optimal (100%))
+# 
+# so the DR scenarios modeled will be:
+#   baseline (minimals = c("tolerability", "riftest"))
+#   efficacymin (minimals = c("efficacy", "tolerability", "riftest"))
+#   efficacyopt (minimals = c("tolerability", "riftest"), optimals="efficacy)
+#   barrierlow (minimals = c("tolerability", "riftest", "barrier"))
+#   barrierhigh (minimals = c("tolerability", "riftest"), optimals= "barrier")
+#   companionlow (minimals = c("tolerability", "riftest", "companion"))
+#   companionhigh (minimals = c("tolerability", "riftest"), optimals= "companion")
+#   tolerabilityhighalone (minimals = c("riftest"), optimals="tolerability")
+#   tolerabilityhighwithscaleup (minimals = "", optimals="tolerability")
+#   durationlong (minimals = c("riftest", "duration"), optimals="")
+#   durationshortalone (minimals = c("riftest"), optimals="duration")
+#   durationshortwithscaleup (minimals = "", optimals="duration")
+#   durationandtolerabilityalone (minimals = "riftest", optimals=c("duration", "tolerability"))
+#   durationandtolerabilitywithscaleup  (minimals = "", optimals=c("duration", "tolerability", "riftest"))
+#   exclusionslow (minimals = c("tolerability", "riftest", "exclusions"))
+#   exclusionshigh (minimals = c("tolerability", "riftest"), optimals= "exclusions")
+#   uptakehigh (minimals = c("tolerability"), optimals= "riftest")
+#   
+# ,  all with HIV="nonHIV"
 
 taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1] 
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2] 
@@ -47,7 +74,7 @@ targetpt <- commandArgs(trailingOnly=TRUE)[4]
 DST <- commandArgs(trailingOnly=TRUE)[5]
 
 location<-"../scratch/"
-tag <- "20160304p"; Nsims_ds <- 250
+tag <- "20160309p"; Nsims_ds <- 250
 
 rDSTall <- ifelse(targetpt=="DS", TRUE, FALSE)
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
@@ -77,9 +104,11 @@ drout <- drout[drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & 
 if (targetpt=="DS") scenarios <- c("baseline", "efficacyint", "barrierlow", "barrierhigh", "companionlow", "companionhigh", 
                "tolerabilityhighalone", "tolerabilityhighwithscaleup","durationshortalone", "durationshortwithscaleup", 
                "durationandtolerabilityalone", "durationandtolerabilitywithscaleup", 
-               "exclusionslow", "exclusionshigh", "scalabilityhigh")
-if (targetpt=="DR") stop("DR scenarios not yet defined!")
-
+               "exclusionslow", "exclusionshigh", "uptakehigh")
+if (targetpt=="DR") scenarios <- c("baseline", "efficacymin", "efficacyopt", "barrierlow", "barrierhigh", "companionlow", "companionhigh", 
+                                   "tolerabilityhighalone", "tolerabilityhighwithscaleup","durationlong", "durationshortalone", "durationshortwithscaleup", 
+                                   "durationandtolerabilityalone", "durationandtolerabilitywithscaleup", 
+                                   "exclusionslow", "exclusionshigh", "uptakehigh")
 
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
 header <- append(header, paste0( rep(tallynames, times=length(scenarios)), "10",
@@ -109,22 +138,46 @@ for (inew in 1:nrow(drout))
     print(paste0("Evaluating TRP scenario ",s," for Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
 
     minimals<-""; optimals<-""
-    if (s=="baseline") { minimals = c("efficacy", "duration", "tolerability", "scalability") }
-    if (s=="efficacyint") { minimals = c("duration", "tolerability", "scalability") }
-    if (s=="barrierlow") { minimals = c("efficacy", "duration", "tolerability", "scalability", "barrier") }
-    if (s=="barrierhigh") { minimals = c("efficacy", "duration", "tolerability", "scalability"); optimals= "barrier"}
-    if (s=="companionlow") { minimals = c("efficacy", "duration", "tolerability", "scalability", "companion") }
-    if (s=="companionhigh") { minimals = c("efficacy", "duration", "tolerability", "scalability"); optimals= "companion" }
-    if (s=="tolerabilityhighalone")  { minimals = c("efficacy", "duration", "scalability"); optimals="tolerability" }
-    if (s=="tolerabilityhighwithscaleup") { minimals = c("efficacy", "duration"); optimals="tolerability" }
-    if (s=="durationshortalone") { minimals = c("efficacy", "tolerability", "scalability"); optimals="duration" }
-    if (s=="durationshortwithscaleup") { minimals = c("efficacy", "tolerability"); optimals="duration" }
-    if (s=="durationandtolerabilityalone") {minimals = c("efficacy", "scalability"); optimals=c("duration", "tolerability") }
-    if (s=="durationandtolerabilitywithscaleup")  { minimals = "efficacy"; optimals=c("duration", "tolerability", "scalability") }
-    if (s=="exclusionslow") { minimals = c("efficacy", "duration", "tolerability", "scalability", "exclusions") }
-    if (s=="exclusionshigh") { minimals = c("efficacy", "duration", "tolerability", "scalability"); optimals= "exclusions" }
-    if (s=="scalabilityhigh") { minimals = c("efficacy", "duration", "tolerability"); optimals= "scalability" }
-    
+
+    if (targetpt=="DS")
+    {
+      if (s=="baseline") { minimals = c("efficacy", "duration", "tolerability", "uptake") }
+      if (s=="efficacyint") { minimals = c("duration", "tolerability", "uptake") }
+      if (s=="barrierlow") { minimals = c("efficacy", "duration", "tolerability", "uptake", "barrier") }
+      if (s=="barrierhigh") { minimals = c("efficacy", "duration", "tolerability", "uptake"); optimals= "barrier"}
+      if (s=="companionlow") { minimals = c("efficacy", "duration", "tolerability", "uptake", "companion") }
+      if (s=="companionhigh") { minimals = c("efficacy", "duration", "tolerability", "uptake"); optimals= "companion" }
+      if (s=="tolerabilityhighalone")  { minimals = c("efficacy", "duration", "uptake"); optimals="tolerability" }
+      if (s=="tolerabilityhighwithscaleup") { minimals = c("efficacy", "duration"); optimals="tolerability" }
+      if (s=="durationshortalone") { minimals = c("efficacy", "tolerability", "uptake"); optimals="duration" }
+      if (s=="durationshortwithscaleup") { minimals = c("efficacy", "tolerability"); optimals="duration" }
+      if (s=="durationandtolerabilityalone") {minimals = c("efficacy", "uptake"); optimals=c("duration", "tolerability") }
+      if (s=="durationandtolerabilitywithscaleup")  { minimals = "efficacy"; optimals=c("duration", "tolerability", "uptake") }
+      if (s=="exclusionslow") { minimals = c("efficacy", "duration", "tolerability", "uptake", "exclusions") }
+      if (s=="exclusionshigh") { minimals = c("efficacy", "duration", "tolerability", "uptake"); optimals= "exclusions" }
+      if (s=="uptakehigh") { minimals = c("efficacy", "duration", "tolerability"); optimals= "uptake" }
+    }
+    if (targetpt=="DR")
+    {
+      if (s=="baseline") { minimals = c("tolerability", "riftest") }
+      if (s=="efficacymin") { minimals = c("efficacy", "tolerability", "riftest") }
+      if (s=="efficacyopt") { minimals = c("tolerability", "riftest"); optimals="efficacy" }
+      if (s=="barrierlow") { minimals = c("tolerability", "riftest", "barrier") }
+      if (s=="barrierhigh") { minimals = c("tolerability", "riftest"); optimals= "barrier" }
+      if (s=="companionlow") { minimals = c("tolerability", "riftest", "companion") }
+      if (s=="companionhigh") { minimals = c("tolerability", "riftest"); optimals= "companion" }
+      if (s=="tolerabilityhighalone") { minimals = "riftest"; optimals="tolerability" }
+      if (s=="tolerabilityhighwithscaleup") { minimals = ""; optimals="tolerability" }
+      if (s=="durationlong") { minimals = c("riftest", "duration"); optimals="" }
+      if (s=="durationshortalone") { minimals = "riftest"; optimals="duration" }
+      if (s=="durationshortwithscaleup") { minimals = ""; optimals="duration" }
+      if (s=="durationandtolerabilityalone") { minimals = "riftest"; optimals=c("duration", "tolerability") }
+      if (s=="durationandtolerabilitywithscaleup")  { minimals = ""; optimals=c("duration", "tolerability", "riftest") }
+      if (s=="exclusionslow") { minimals = c("tolerability", "riftest", "exclusions") }
+      if (s=="exclusionshigh") { minimals = c("tolerability", "riftest"); optimals= "exclusions" }
+      if (s=="uptakehigh") { minimals = "tolerability"; optimals= "riftest" }  
+    }
+
     valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
                           minimals=minimals, optimals=optimals, HIV="nonHIV")
   

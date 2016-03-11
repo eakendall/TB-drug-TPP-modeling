@@ -1,6 +1,7 @@
 levels <- c("minimal","intermediate","optimal"); 
 elementnames <- c("all", set.novelvalues()$elementnames[c(1,4,3,5,2,6,7,8)])
 dselementnames <- c("all", set.novelvalues()$elementnames[c(1,4,3,5,2,6,7)])
+drelementnames <- c("all", set.novelvalues()$elementnames[c(1,4,3,5,2,6,8)])
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 drsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=FALSE)
@@ -17,6 +18,7 @@ elementlabels <- c("All elements\nvaried", "% Durably Cured\n(optimal conditions
                    "Medical exclusions,\ncontraindications,\nand early\ndiscontinuations", "Adherence/Burden\nto Patient", 
                    "Reach of\nnovel-regimen\nscale-up\n(replacing SOC regimen)", "Associated\nexpansion of\nRR diagnosis")[c(1,2,5,4,6,3,7,8,9)]
 dselementlabels <- elementlabels[-9]
+drelementlabels <- elementlabels[-8]
 dslabels <- c("","","", "94% cured","97% cured", "99% cured", "6 months","4 months", "2 months", 
               "10% resistant", "3% resistant", "None resistant", "1 acquired resistance per 20 treatments", "1 acquired resistance per 125 treatments", "Minimal acquired resistance",
               "Excludes 100% HIV; 11% non-HIV", "Excludes 10% HIV; 5% non-HIV", "No exclusions", "Same as standard of care", "1.5% fewer dropouts", "3% fewer dropouts",

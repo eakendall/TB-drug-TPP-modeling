@@ -5,7 +5,7 @@ targetpt <- commandArgs(trailingOnly=TRUE)[4]
 DST <- commandArgs(trailingOnly=TRUE)[5]
 
 location<-"../scratch/"
-tag <- "20160304p"; Nsims_ds <- 250
+tag <- "20160309p"; Nsims_ds <- 250
 
 rDSTall <- ifelse(targetpt=="DS", TRUE, FALSE)
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
@@ -31,6 +31,5 @@ currenttag <- paste0(currenttag,".",taskid)
 drout <- alldrout[alldrout$ids %in% (ilimits[taskid]+1):ilimits[taskid+1],]
 tolerance <- 1.5
 drout <- drout[drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & drout[,"rrinc"]/drout[,"inc"] < tolerance*drout[,"targetdr"], ]  #within 3fold if rr incident fraction target
-# if (fixavail) drout$fixed.availability <- 0.8
 
 evaltrp(genericvalues = mergedvalues, drsetup = drsetup, drout=drout, targetpt=targetpt, DST=DST, tag=currenttag, rDSTall=rDSTall, location=location) # can also specify ids and idr to run just a subset of drout
