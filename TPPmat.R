@@ -35,7 +35,6 @@ set.novelvalues <- function()
   return(list("selections"=selections, "elementnames"=elementnames))
 }
 
-
 set.values <- function(pessimistic=FALSE)
 {
   values <- list()
@@ -336,9 +335,9 @@ makemat <- function(pars)
       for (jh in Hnames) {  
         mat["Ln","An",jr, jr, jh, jh] <- mat["Ln","An",jr, jr, jh, jh] + reactrate[jh]; 
         mat["Lp","Ap",jr, jr, jh, jh] <- mat["Lp","Ap",jr, jr, jh, jh] + reactrate[jh]  #reactivation, at hiv-dependent rate:
-        diag(mat[,,jr,jr,jh,jh]) <- diag(mat[,,jr,jr,jh,jh]) + mort[jh]
-        diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) <- diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) + tbmort[jh]
-        mat["R","Ap",jr,jr,jh,jh] <- mat["R","Ap",jr,jr,jh,jh] + relapserate
+        diag(mat[,,jr,jr,jh,jh]) <- diag(mat[,,jr,jr,jh,jh]) + mort[jh] #death
+        diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) <- diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) + tbmort[jh] #death
+        mat["R","Ap",jr,jr,jh,jh] <- mat["R","Ap",jr,jr,jh,jh] + relapserate #relapse
       }
     }
     
@@ -346,6 +345,8 @@ makemat <- function(pars)
     ## TB diagnosis and treatment initiation happen in dxdt (to allow time-varying treatment availability)
     
     # once on effective treatment, progress through treatment to either relapse or cure, including a monthly rate of loss to follow up 
+    # if on ineffective treatment (Ti), restart treatment after 2 months
+    
     # this function determines whether relapse or cure depending on efficacy of regimen and fraction completed. Assuming losses occur in the middle of each time period on average.
     relapsefracs <- function(period) 
       # use relapse %s at 2, 4, and 6 months (defined in pars) for a 6 month regimen, and 100% relapse at 0, 
@@ -368,8 +369,6 @@ makemat <- function(pars)
       relapse[relapse>1] <- 1 #if sum exceeds 100%, set to 100% relapse
       return(relapse) 
     }
-    
-    
     
     for (jh in 1:length(Hnames))
     {
@@ -469,6 +468,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         for (nreg in usereg)
         {
           startrate <- (1-initialloss[nreg])*dxrate[it, jh] #initial loss to follow up remains active; this allows it to differ by regimen (or allows us to turn off a regimen e.g. have no alternative to the novel regimen)
+          
           #acquired resistance moves to pending relapse for *new* strain
           mat[it, "R", , , jh, jh]  <- 
             mat[it, "R", , , jh, jh] + startrate * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
@@ -479,16 +479,40 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
             diag(mat[it, "Ti", , , jh, jh]) <- 
               diag(mat[it, "Ti", , , jh, jh]) + startrate * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
-              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + startrate * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
+              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + startrate * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)
           } else #if only the standard regimen is an option, diag and rowSums functions cause errors
           {
             mat[it, "Ti", 1,1, jh, jh] <- 
               mat[it, "Ti", 1,1, jh, jh] + startrate * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
-              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  startrate * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
+              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  startrate * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)            
           }
         }
       }
+      
+      ### need to restart treatment for those on ineffective treatment (Ti). Can assume a fixed rate, median 4mo to restart/switch.
+      for (nreg in usereg)
+      {
+        restartrate <- 3
+        
+        #acquired resistance moves to pending relapse for *new* strain
+        mat["Ti", "R", , , jh, jh]  <- 
+          mat["Ti", "R", , , jh, jh] + restartrate * startmat["Ap",Rnames,nreg] * acqresmat[,,nreg]
+        
+        #of those who don't acquire resistance (1-rowSums(acqresmat)), will split between Ti (failmat) and T1 for the selected (startmat) regimen
+        if (length(Rnames)>1)
+        {
+          # deleted here the lines for going to inefective treatment, since they'll just stay there (but a diagonal mat entry would be misinterpreted as a death)
+  
+          diag(mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
+            diag(mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + restartrate * startmat["Ap", Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)
+        } else #if only the standard regimen is an option, diag and rowSums functions cause errors
+        {
+          mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
+            mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  restartrate * startmat["Ap", Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)            
+        }
+      }
+      
     }
     
     
