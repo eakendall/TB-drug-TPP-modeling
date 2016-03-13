@@ -345,11 +345,12 @@ makemat <- function(pars)
     ## TB diagnosis and treatment initiation happen in dxdt (to allow time-varying treatment availability)
     
     # once on effective treatment, progress through treatment to either relapse or cure, including a monthly rate of loss to follow up 
-    # if on ineffective treatment (Ti), restart treatment after 2 months
+    # if on ineffective treatment (Ti), restart treatment after ~4 months
     
     # this function determines whether relapse or cure depending on efficacy of regimen and fraction completed. Assuming losses occur in the middle of each time period on average.
     relapsefracs <- function(period) 
-      # use relapse %s at 2, 4, and 6 months (defined in pars) for a 6 month regimen, and 100% relapse at 0, 
+  
+      #       # use relapse %s at 2, 4, and 6 months (defined in pars) for a 6 month regimen, and 100% relapse at 0, 
       # and interpolate linearly 0--2, 2--4, and 4--6 to get relapse % after any fraction of treatment course. 
       # also fixed x scaling in interpolatation (divided  difference in fractions completed, by 1/3)
     {
@@ -376,23 +377,27 @@ makemat <- function(pars)
       {
         periods <- paste0("T", reg, 1:Tperiods)
         jt <- 1
-        while (sum(Tperiod.lengths[1:jt]) < durations[reg]-0.0001) # subtraction here is just to avoid machine error
+        while (sum(Tperiod.lengths[1:jt]) < durations[reg]-0.0001) # while treatment is incomplete; subtraction here is just to avoid machine error
         {
-          relapses <- relapsefracs(period=jt)
+          relapses <- relapsefracs(period=jt) # relapse if ltfu during period
           mat[periods[jt],c(periods[jt+1],"R"),jr,jr,jh,jh] <- # move on; or discontinue and relapse 
             mat[periods[jt],c(periods[jt+1],"R"),jr,jr,jh,jh] + 1/Tperiod.lengths[jt]* c( (1-ltfurate[reg])^(12*Tperiod.lengths[jt]), (1-(1-ltfurate[reg])^(12*Tperiod.lengths[jt]))*relapses[jr, reg])
           mat[periods[jt],"C",jr,"R0",jh,jh] <- # discontinue and cured (goes back to no resistance)
             mat[periods[jt],"C",jr,"R0",jh,jh] + 1/Tperiod.lengths[jt]* (1-(1-ltfurate[reg])^(12*Tperiod.lengths[jt])) * (1-relapses[jr, reg])
           jt <- jt + 1
         }
-        if (jt <= Tperiods) # run one more, all going either to relapse or cure
-        {
-          relapses <- relapsefracs(period=jt)
-          mat[periods[jt],"R",jr,jr,jh,jh] <- 
-            mat[periods[jt],"R",jr,jr,jh,jh] + 1/Tperiod.lengths[jt]*relapses[jr, reg]
-          mat[periods[jt],"C",jr,"R0",jh,jh] <- 
-            mat[periods[jt],"C",jr,"R0",jh,jh] + 1/Tperiod.lengths[jt]*(1-relapses[jr, reg])
-        }
+        # unless the regimen is longer than max modeled duration, which should give an error,
+        if (jt > Tperiods) stop("Error: Treatment course is longer than maximum modeled duration")
+        # run one more for the last period of planned treatment. We need to still model loss to follow up for the last period. but those not lost will go either to relapse or cure
+        relapses <- relapsefracs(period=jt) # relapses if ltfu durnig period; need to refine this if want durations that don't match tperiodlengths.
+        relapses_end <- t(relapsemat) # relapses if complete treatment
+        mat[periods[jt],"R",jr,jr,jh,jh] <- # can be due to loss to follow up, or due to completion but relapse
+          mat[periods[jt],"R",jr,jr,jh,jh] + 
+          1/Tperiod.lengths[jt]* ( (1-(1-ltfurate[reg])^(12*Tperiod.lengths[jt]))*relapses[jr, reg] + # relapse after LTFU in past period
+                                     ((1-ltfurate[reg])^(12*Tperiod.lengths[jt]))*relapses_end[jr,reg] ) # relapse after treatment completion
+        mat[periods[jt],"C",jr,"R0",jh,jh] <- 
+          1/Tperiod.lengths[jt]* ( (1-(1-ltfurate[reg])^(12*Tperiod.lengths[jt])) * (1-relapses[jr, reg]) + # cure after LTFU
+                                      ((1-ltfurate[reg])^(12*Tperiod.lengths[jt]))*(1-relapses_end[jr,reg]) ) # cure after treatment completion
       }
     }
     return(mat)
