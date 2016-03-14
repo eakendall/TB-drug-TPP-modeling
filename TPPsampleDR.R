@@ -5,7 +5,7 @@ rDSTall <- commandArgs(trailingOnly=TRUE)[4]
 Nsims_dr <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
 location <- "../scratch/"
 
-tag <- "20160304p"
+tag <- "20160313p"
 pessimistic <- TRUE
 
 currenttag <- paste0(tname,"_",tag,".",taskid)

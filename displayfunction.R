@@ -9,14 +9,14 @@ novelsetup <- setup.model(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 values <- set.values(); genericvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
 
-shortelementlabels <- c("All", "% Durably Cured", "Duration", 
+shortelementlabels <- c("All", "Efficacy", "Duration", 
                    "Existing Resistance", "Barrier to Resistance", 
                    "Exclusions", "Adherence","Scalability","Increase in RR diagnosis")[c(1,2,5,4,6,3,7,8,9)]
 
-elementlabels <- c("All elements\nvaried", "% Durably Cured\n(optimal conditions)", "Regimen\nDuration", 
+elementlabels <- c("All elements\nvaried", "Efficacy\n(% durably cured,\nif susceptible and\ncomplete treatment)", "Regimen\nDuration", 
                    "Prevalence of\nExisting Resistance\nto Regimen", "Barrier to\nAcquired Novel\nDrug Resistance", 
-                   "Medical exclusions,\ncontraindications,\nand early\ndiscontinuations", "Adherence/Burden\nto Patient", 
-                   "Reach of\nnovel-regimen\nscale-up\n(replacing SOC regimen)", "Associated\nexpansion of\nRR diagnosis")[c(1,2,5,4,6,3,7,8,9)]
+                   "Medical exclusions,\ncontraindications,\nand adverse reactions", "Adherence/\nTolerability", 
+                   "Reach of novel\nregimen scale-up\n(to replace\nSOC regimen)", "Associated\nexpansion of\nRR diagnosis\nand treatment")[c(1,2,5,4,6,3,7,8,9)]
 dselementlabels <- elementlabels[-9]
 drelementlabels <- elementlabels[-8]
 dslabels <- c("","","", "94% cured","97% cured", "99% cured", "6 months","4 months", "2 months", 
@@ -85,7 +85,7 @@ alldrDST <- alldrDST[alldrDST[,"rrinc"]/alldrDST[,"inc"] > 1/tolerance*alldrDST[
 
 
 allnovelwide <- list()
-for (flag in c("DSDSTall_rDSTall.","DSDSTnone_rDSTall.", "DRDSTall_", "DRDSTnone_")) #for (targetepi in names(targetepis))
+for (flag in c("DSDSTall_rDSTall.","DRDSTall_", "DSDSTnone_rDSTall.", "DRDSTnone_")) #for (targetepi in names(targetepis))
 {
   i <- 1; allnovelwide[[flag]] <- numeric(0)
   while (file.exists(paste0(location,"TRPwideoutput_", flag, currenttag,".",i,".csv")))

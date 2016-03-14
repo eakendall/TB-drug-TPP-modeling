@@ -7,9 +7,9 @@ tname <- commandArgs(trailingOnly=TRUE)[3]
 pessimistic <- commandArgs(trailingOnly=TRUE)[4]
 location <- "../scratch/"
 
-tag <- "20160304"
+tag <- "20160313"
 if (pessimistic) tag <- paste0(tag,"p")
-Nsims_ds <- 250
+Nsims_ds <- 50
 
 source("TPPmat.R")
 values <- set.values(pessimistic=pessimistic)

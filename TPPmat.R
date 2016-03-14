@@ -618,21 +618,13 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
     }
     
-    # edit: just go to R0 or Rr for now - fixes the issue. Or, assign companion in proportion to cres, not foi?
-        if (t>0 & length(Rnames)==8) 
+    if (t>0 & length(Rnames)==8) 
         {
           dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
           dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rc.Hn", "Ln.Rr.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rc.Hn", "Ln.Rr.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
             rep(c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) ), each=2) * c(1-cres[1], cres[1], 1-cres[2], cres[2])/ sum(FOI) * (1-exp(-15*sum(FOI)))
         }
-#         if (t>0 & length(Rnames)==8) 
-#     {
-#       dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
-#       dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + 
-#         sum(deaths) * c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * 
-#         (1-exp(-15*sum(FOI)))
-#     }
-    
+
     # return dxdt to ode, and also return tally for tracking purposes
     return(list(dxdt, tallied))
   }

@@ -4,25 +4,30 @@
 # and maybe for DS and DR regimen (but will do just DS first)
 
 
-taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1] #the idr's we want to run
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 tname <- commandArgs(trailingOnly=TRUE)[2]
-targetpt <- commandArgs(trailingOnly=TRUE)[3]
+targetpt <- commandArgs(trailingOnly=TRUE)[3] 
 DST <- commandArgs(trailingOnly=TRUE)[4]
-rDSTall <- commandArgs(trailingOnly=TRUE)[5]
-location<-"../scratch/"
 
-tag <- "20160201"
+location<-"../scratch/"
+tag <- "20160313p"
 currenttag <- paste0(tname,"_",tag)
+rDSTall <- ifelse(targetpt=="DS", TRUE, FALSE)
 if (rDSTall == TRUE) currenttag <- paste0("rDSTall.",currenttag)
-tasktag <- paste0(currenttag,".idr",taskid)
+tasktag <- paste0(currenttag,".",taskid)
 source("TPPmat.R")
+
 
 dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
 {
   DSTrif_t <- numeric(2); availability_t <- numeric(1)
   
   if (missing(rvary)) { if (2 %in% fullpars$usereg) {rvary<-TRUE} else {rvary<-FALSE} }
-  if (rvary==TRUE) { if (t <= -10) {DSTrif_t <- 0*fullpars$DSTrif} else if (t <= 0 && t > -10) {DSTrif_t <- (10+t)/10 * fullpars$DSTrif} else if (t > 0) {DSTrif_t <- fullpars$DSTrif}
+  if (rvary==TRUE) 
+  { 
+    if (t <= -10) {DSTrif_t <- 0*fullpars$DSTrif} else 
+      if (t <= 0 && t > -10) {DSTrif_t <- (10+t)/10 * fullpars$DSTrif} else 
+        if (t > 0 ) {DSTrif_t <- fullpars$DSTrif + min(t/3, 1)*(fullpars$rifdx_increase)*(1-fullpars$DSTrif)}
   } else {DSTrif_t <- fullpars$DSTrif}
   
   if (missing(nvary)) { if (3 %in% fullpars$usereg) {nvary<-TRUE} else {nvary<-FALSE} }
@@ -75,6 +80,7 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         for (nreg in usereg)
         {
           startrate <- (1-initialloss[nreg])*dxrate[it, jh] #initial loss to follow up remains active; this allows it to differ by regimen (or allows us to turn off a regimen e.g. have no alternative to the novel regimen)
+          
           #acquired resistance moves to pending relapse for *new* strain
           mat[it, "R", , , jh, jh]  <- 
             mat[it, "R", , , jh, jh] + startrate * startmat[it,Rnames,nreg] * acqresmat[,,nreg]
@@ -85,27 +91,48 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
             diag(mat[it, "Ti", , , jh, jh]) <- 
               diag(mat[it, "Ti", , , jh, jh]) + startrate * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
-              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + startrate * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)
+              diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + startrate * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)
           } else #if only the standard regimen is an option, diag and rowSums functions cause errors
           {
             mat[it, "Ti", 1,1, jh, jh] <- 
               mat[it, "Ti", 1,1, jh, jh] + startrate * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
-              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  startrate * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse if they complete at least 2 months)            
+              mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  startrate * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)            
           }
         }
       }
+      
+      ### need to restart treatment for those on ineffective treatment (Ti). Can assume a fixed rate, median 4mo to restart/switch.
+      for (nreg in usereg)
+      {
+        restartrate <- 3
+        
+        #acquired resistance moves to pending relapse for *new* strain
+        mat["Ti", "R", , , jh, jh]  <- 
+          mat["Ti", "R", , , jh, jh] + restartrate * startmat["Ap",Rnames,nreg] * acqresmat[,,nreg]
+        
+        #of those who don't acquire resistance (1-rowSums(acqresmat)), will split between Ti (failmat) and T1 for the selected (startmat) regimen
+        if (length(Rnames)>1)
+        {
+          # deleted here the lines for going to inefective treatment, since they'll just stay there (but a diagonal mat entry would be misinterpreted as a death)
+          
+          diag(mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
+            diag(mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + restartrate * startmat["Ap", Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)
+        } else #if only the standard regimen is an option, diag and rowSums functions cause errors
+        {
+          mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
+            mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  restartrate * startmat["Ap", Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)            
+        }
+      }
+      
     }
-    
     
     ########### transform mat
     newmat <- aperm(mat, c(1,3,5,2,4,6)) # this will translate into a 2d matrix more easily
     squaremat <- array(newmat, dim=c(length(Tnames)*length(Rnames)*length(Hnames), length(Tnames)*length(Rnames)*length(Hnames))) #2d state1 to state2 transmition matrix
     dimnames(squaremat) <- list(statenames, statenames)
     
-    
     ########## tally how much each current state contributes to outcomes of interest (then will multiply by state and append to output)
-    
     outcomes <- c("aprev", "rprev", "cprev", "nprev", "novelprev", "rnovelprev", "onsets", "ronsets", "nonsets", "tbdeaths", "rrdeaths")
     tally <- array(0,dim=c(length(Tnames)*length(Rnames)*length(Hnames), length(outcomes))); dimnames(tally) <- list(statenames, outcomes)
     
@@ -139,16 +166,12 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
     
     tallied <- t(tally) %*% state ; names(tallied) <- outcomes; 
     
-    ## combine state vector and change matrix to get dxdt
+    
     dxdt <- numeric(length(state))
     deaths <- state*c(diag(squaremat)); diag(squaremat) <- 0 #store deaths elsewhere
     dxdt <- dxdt + t(squaremat) %*% state - rowSums(squaremat*state) - deaths #ins minus outs minus deaths
     
-    #   births:
-    # assume relatively flat total and dr tb foi over the past 15 years (as this will be true by time 0 apart from <50% overestimating DR exposure), and 
-    # estimate as an exponential the latent TB in 15yos enterting the population. Assume no latent novel drug resistance. 
-    # And companion drug resistance will be appropriately assigned to each fraction at time 0, but after that it will need to continue: 
-    # so keep the same ratios of c and not c among new latents after time 0, as were assigned at time zero.
+    
     
     
     if (length(Rnames)==1)    
@@ -164,15 +187,14 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
         c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
     }
     
-    
     if (t>0 & length(Rnames)==8) 
     {
       dxdt[statenames=="S.R0.Hn"] <- dxdt[statenames=="S.R0.Hn"] + sum(deaths) * exp(-15*sum(FOI))
-      dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rr.Hn", "Ln.Rc.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
-        c( sum(FOI[c(1,3)]), sum(FOI[c(5,7)]), sum(FOI[c(2,4)]), sum(FOI[c(6,8)]) )/ sum(FOI) * (1-exp(-15*sum(FOI)))
+      dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rc.Hn", "Ln.Rr.Hn", "Ln.Rrc.Hn")] <- dxdt[statenames %in% c("Ln.R0.Hn", "Ln.Rc.Hn", "Ln.Rr.Hn", "Ln.Rrc.Hn")] + sum(deaths) * 
+        rep(c( sum(FOI[grep("R[0cn]+", names(FOI))]), sum(FOI[grep("Rr+", names(FOI))]) ), each=2) * c(1-cres[1], cres[1], 1-cres[2], cres[2])/ sum(FOI) * (1-exp(-15*sum(FOI)))
     }
     
-    # return dxdt to ode, and also return tally for tracking purposes
+    
     return(list(dxdt, tallied))
   }
   )
@@ -186,12 +208,10 @@ values <- set.values()
 genericvalues <- mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
 rtallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- c("all",set.novelvalues()$elementnames)
+if (targetpt=="DS") elementnames <- elementnames[-which(elementnames=="riftest")]
 
-alldrout <- numeric(0)
-i <- 1; while(file.exists(paste0(location,"DRcalibration_",currenttag,".",i,".csv")))
-{alldrout <- rbind(alldrout, read.csv(paste0(location,"DRcalibration_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
 
-drout <- alldrout[alldrout$idr==taskid,]
+drout <- read.csv(paste0(location,"DRcalibration_",tasktag,".csv"), header = TRUE)
 tolerance <- 1.5
 drout <- drout[drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & drout[,"rrinc"]/drout[,"inc"] < tolerance*drout[,"targetdr"], ] 
 

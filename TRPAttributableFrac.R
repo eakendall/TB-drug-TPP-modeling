@@ -11,7 +11,7 @@ DST <- commandArgs(trailingOnly=TRUE)[5]
 baseline <- commandArgs(trailingOnly=TRUE)[6] # minimal or optimal (which all are we comparing to as we vary one at a time?)
 
 location<-"../scratch/"
-tag <- "20160304p" # note: for this tag I'm not going to add rDSTall to file names except for DRcal/traj
+tag <- "20160313p" # note: for this tag I'm not going to add rDSTall to file names except for DRcal/traj
 currenttag <- paste0(tname,"_",tag)
 if (targetpt=="DS") rDSTall <- TRUE else rDSTall <- FALSE #commandArgs(trailingOnly=TRUE)[5]
 drtag <- ifelse(rDSTall == TRUE, paste0("rDSTall.",currenttag), currenttag)
@@ -26,6 +26,7 @@ genericvalues <- mergedvalues <- append(append(values[[1]], values[[2]]), append
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- c("all",set.novelvalues()$elementnames)
 if(targetpt=="DS") elementnames <- elementnames[-which(elementnames=="riftest")]
+if(targetpt=="DR") elementnames <- elementnames[-which(elementnames=="uptake")]
 
 alldrout <- numeric(0)
 i <- 1; while(file.exists(paste0(location,"DRcalibration_",drtag,".",i,".csv")))
@@ -71,10 +72,10 @@ for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
     print(paste0("Evaluating TRP optimal for all ",baseline," except ",elementnames[element]," for Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,tasktag))
     if (baseline=="minimal") valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
                           optimals=elementnames[element], 
-                          minimals=elementnames[-c(1,element)])
+                          minimals=elementnames[-c(1,element)], HIV="nonHIV")
     if (baseline=="optimal") valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
                                                minimals=elementnames[element], 
-                                               optimals=elementnames[-c(1,element)])
+                                               optimals=elementnames[-c(1,element)], HIV="nonHIV")
     
     s_cr <- valueset$cres[1]; r_cr <- valueset$cres[2]
     novelstate <- newstate
