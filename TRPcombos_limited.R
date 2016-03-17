@@ -58,18 +58,18 @@ drout <- drout[drout[,"rrinc"]/drout[,"inc"] > 1/tolerance*drout[,"targetdr"] & 
 #   tolerability high/high with increased uptake/riftest
 #   non-HIV exclusions optimal/optimal with increased uptake/riftest
 #   (all with intermediate barrier and companion)
-scenarios <- c("em_dm_tm_xm_si_", 
-                  "em_do_tm_xm_si_", "em_do_tm_xm_so_", 
-                  "em_dm_to_xm_si_", "em_dm_to_xm_so_", 
-                  "em_dm_tm_xo_si_", "em_dm_tm_xo_so_",
-               "ei_dm_tm_xm_si_", 
-                 "ei_do_tm_xm_si_", "ei_do_tm_xm_so_", 
-                 "ei_dm_to_xm_si_", "ei_dm_to_xm_so_", 
-                 "ei_dm_tm_xo_si_", "ei_dm_tm_xo_so_",
-               "eo_dm_tm_xm_si_", 
-                 "eo_do_tm_xm_si_", "eo_do_tm_xm_so_", 
-                 "eo_dm_to_xm_si_", "eo_dm_to_xm_so_", 
-                 "eo_dm_tm_xo_si_", "eo_dm_tm_xo_so_")
+scenarios <- c("em_dm_tm_xm_sm_","em_dm_tm_xm_si_","em_dm_tm_xm_so_", 
+                 "em_do_tm_xm_sm_", "em_do_tm_xm_si_", "em_do_tm_xm_so_", 
+                 "em_dm_to_xm_sm_", "em_dm_to_xm_si_", "em_dm_to_xm_so_", 
+                 "em_dm_tm_xo_sm_", "em_dm_tm_xo_si_", "em_dm_tm_xo_so_",
+               "ei_dm_tm_xm_sm_", "ei_dm_tm_xm_si_", "ei_dm_tm_xm_so_", 
+                 "ei_do_tm_xm_sm_","ei_do_tm_xm_si_", "ei_do_tm_xm_so_", 
+                 "ei_dm_to_xm_sm_", "ei_dm_to_xm_si_", "ei_dm_to_xm_so_", 
+                 "ei_dm_tm_xo_sm_","ei_dm_tm_xo_si_", "ei_dm_tm_xo_so_",
+               "eo_dm_tm_xm_sm_","eo_dm_tm_xm_si_", "eo_dm_tm_xm_so_",
+                 "eo_do_tm_xm_sm_","eo_do_tm_xm_si_", "eo_do_tm_xm_so_", 
+                 "eo_dm_to_xm_sm_","eo_dm_to_xm_si_", "eo_dm_to_xm_so_", 
+                  "eo_dm_tm_xo_sm_","eo_dm_tm_xo_si_", "eo_dm_tm_xo_so_")
 
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
 header <- append(header, paste0( rep(tallynames, times=length(scenarios)), "10",
@@ -98,20 +98,20 @@ for (inew in 1:nrow(drout))
   {
     print(paste0("Evaluating TRP scenario ",s," for Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,currenttag))
 
-    minimals<-""; optimals<-""
+    minimals<-character(); optimals<-character()
 
-    if (pmatch("em_",s, nomatch=0)==1) minimals <- c(minimals, "efficacy")
-    if (pmatch("eo_",s, nomatch=0)==1) optimals <- c(optimals, "efficacy")
-    if (pmatch("dm_",s, nomatch=0)==1) minimals <- c(minimals, "duration")
-    if (pmatch("do_",s, nomatch=0)==1) optimals <- c(optimals, "duration")
-    if (pmatch("tm_",s, nomatch=0)==1) minimals <- c(minimals, "tolerability")
-    if (pmatch("to_",s, nomatch=0)==1) optimals <- c(optimals, "tolerability")
-    if (pmatch("xm_",s, nomatch=0)==1) minimals <- c(minimals, "exclusions")
-    if (pmatch("xo_",s, nomatch=0)==1) optimals <- c(optimals, "exclusions")
-    if (pmatch("sm_",s, nomatch=0)==1 & targetpt=="DS") minimals <- c(minimals, "uptake")
-    if (pmatch("so_",s, nomatch=0)==1 & targetpt=="DS") optimals <- c(optimals, "uptake")
-    if (pmatch("sm_",s, nomatch=0)==1 & targetpt=="DR") minimals <- c(minimals, "riftest")
-    if (pmatch("so_",s, nomatch=0)==1 & targetpt=="DR") optimals <- c(optimals, "riftest")
+    if (grepl("em_",s)) minimals <- c(minimals, "efficacy")
+    if (grepl("eo_",s)) optimals <- c(optimals, "efficacy")
+    if (grepl("dm_",s)) minimals <- c(minimals, "duration")
+    if (grepl("do_",s)) optimals <- c(optimals, "duration")
+    if (grepl("tm_",s)) minimals <- c(minimals, "tolerability")
+    if (grepl("to_",s)) optimals <- c(optimals, "tolerability")
+    if (grepl("xm_",s)) minimals <- c(minimals, "exclusions")
+    if (grepl("xo_",s)) optimals <- c(optimals, "exclusions")
+    if (grepl("sm_",s) & targetpt=="DS") minimals <- c(minimals, "uptake")
+    if (grepl("so_",s) & targetpt=="DS") optimals <- c(optimals, "uptake")
+    if (grepl("sm_",s) & targetpt=="DR") minimals <- c(minimals, "riftest")
+    if (grepl("so_",s) & targetpt=="DR") optimals <- c(optimals, "riftest")
     
     valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
                           minimals=minimals, optimals=optimals, HIV="nonHIV")
