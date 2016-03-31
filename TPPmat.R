@@ -6,8 +6,9 @@ library("stringr")
 
 targetepis <- list("Brazil"=c(52, 0.17, 0.014), "India"=c(195, 0.04, 0.022), "Philippines"=c(417, 0.002, 0.02), "SouthAfrica"=c(696, 0.61, 0.018)) # tb prev, HIV coprev, rrinc/inc
 
-# will provide a list of "values" inputs for the function that implements novel regimen: 
-# each labeled by the targetpop, the DST use, the TRP element varied (with "none" as one option), and whether the varied TRP element is minimal, intermediate, or optimal
+# I will provide a list of "values" inputs for the function that implements novel regimen: 
+# each labeled by the targetpop, the DST use, the TRP element varied (with "none" as one option), and whether the varied TRP element is minimal, intermediate, or optimal. 
+# The function that evaluates novel regimen impact will take that list and generate a TRP from these values:
 
 set.novelvalues <- function()
 {
@@ -305,7 +306,6 @@ create.pars <- function(setup, values, DRera=TRUE, treatSL=TRUE, treatnovel=TRUE
                                acqresmat[5:8,5:8,"n"] <- array(unlist(acqres_n), dim=c(4,4)) }
       acqresmat[acqresmat>1] <- 1
       
-      
       durations <- c(months_s, months_r, months_n)/12; names(durations) <- regimens #by regimen
     })
     pars <- c(pars,setup)
@@ -420,7 +420,11 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
   { 
     if (t <= -10) {DSTrif_t <- 0*fullpars$DSTrif} else 
       if (t <= 0 && t > -10) {DSTrif_t <- (10+t)/10 * fullpars$DSTrif} else 
-        if (t > 0 ) {DSTrif_t <- fullpars$DSTrif + min(t/3, 1)*(fullpars$rifdx_increase)*(1-fullpars$DSTrif)}
+        if (t > 0 ) {
+          # At baseline, assume that over the next 10 years, rif DST scaleup continues at its current linear pace in new patients, and underDST in retreatment is halved. (And same scaleup pace continues beyond that until 100% is reached, though I don't plan to run the model for that long)
+          # A new regimen can increase scaleup more quickly and increase the final coverage, to up to 100% (closes bothnew and retreatment gaps by factor rifdx_increase)
+          DSTrif_t[1] <- min( 1, max( (10+t)/10*fullpars$DSTrif[1], min(t/3, 1)*(fullpars$rifdx_increase)*(1-fullpars$DSTrif[1]) ) ) 
+          DSTrif_t[2] <- max( fullpars$DSTrif[2] + min(t/20,1)*(1-fullpars$DSTrif[2]) , fullpars$DSTrif[2] + min(t/3, 1)*(fullpars$rifdx_increase)*(1-fullpars$DSTrif[2]) ) }
   } else {DSTrif_t <- fullpars$DSTrif}
   
   if (missing(nvary)) { if (3 %in% fullpars$usereg) {nvary<-TRUE} else {nvary<-FALSE} }

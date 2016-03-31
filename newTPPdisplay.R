@@ -398,10 +398,11 @@ text(drmax[,5]+0.05, b, paste0(round(drmax[,3]*100, 1),"%"))
 
 
 ## 2x2 Manuscript Figure: DS/DR, min/max baselines
-##!! need to re-run with fixed (intermediate) scale-up variables
-# And at baseline, assume rif DST gap is halved over the next 10 years
-# And soften "minimal" barrier to resistance parameters?
-# And include trajectories/ save all times for at least all and efficacy
+##!! need to re-run with fixed (intermediate) scale-up variables - have fixed TRPattribfrac to do this with commented if (DR/DS) lines near top
+# And at baseline, assume that over the next 10 years, rif DST scaleup continues at same pace in new patients and underDST in retreatment is halved; a new regimen can make that happen faster and can also increase the final coverage.
+# And ? soften "minimal" barrier to resistance parameters? - no, kept the same, will make clear minimum is a "worst case" with DST and reduces efficacy
+# And include trajectories/ save all times for at least all and efficacy  - done, TRPattribfrac now saves all times
+# and get intermediates for min amd opt - need to write extra script if I want to plot this
 # 
 # And think about how I'm going to do sensitivity analyses: PRCCs, then one-way in subset of sims? And just one-way for scaleup variables with novel regimen.)
 

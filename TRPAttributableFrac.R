@@ -9,6 +9,7 @@ tname <- commandArgs(trailingOnly=TRUE)[3]
 targetpt <- commandArgs(trailingOnly=TRUE)[4]
 DST <- commandArgs(trailingOnly=TRUE)[5]
 baseline <- commandArgs(trailingOnly=TRUE)[6] # minimal or optimal (which all are we comparing to as we vary one at a time?)
+saveintermediate <- TRUE
 
 location<-"../scratch/"
 tag <- "20160313p" # note: for this tag I'm not going to add rDSTall to file names except for DRcal/traj
@@ -25,8 +26,9 @@ values <- set.values()
 genericvalues <- mergedvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
 tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 elementnames <- c("all",set.novelvalues()$elementnames)
-if(targetpt=="DS") elementnames <- elementnames[-which(elementnames=="riftest")]
-if(targetpt=="DR") elementnames <- elementnames[-which(elementnames=="uptake")]
+elementnames <- elementnames[-c(which(elementnames=="riftest"), which(elementnames=="uptake"))]
+# if(targetpt=="DS") elementnames <- elementnames[-which(elementnames=="riftest")]
+# if(targetpt=="DR") elementnames <- elementnames[-which(elementnames=="uptake")]
 
 alldrout <- numeric(0)
 i <- 1; while(file.exists(paste0(location,"DRcalibration_",drtag,".",i,".csv")))
@@ -38,17 +40,18 @@ drout <- alldrout[alldrout[,"rrinc"]/alldrout[,"inc"] > 1/tolerance*alldrout[,"t
 ilimits <- ceiling(seq(0,nrow(drout), length=ntasks+1))
 
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
-if (baseline=="optimal") header <- append(header, paste0( rep(tallynames, times=length(elementnames)-1), "10allbut",
-                         rep(elementnames[2:length(elementnames)], each=length(tallynames)) ) )
-if (baseline=="minimal") header <- append(header, paste0( rep(tallynames, times=length(elementnames)-1), "10only",
-                                                          rep(elementnames[2:length(elementnames)], each=length(tallynames)) ) )
-
+if (baseline=="optimal") header <- append(header, paste0( rep(tallynames, times=11*length(elementnames)-1), rep(0:10, each=length(tallynames)), "allbut",
+                         rep(elementnames[2:length(elementnames)], each=11*length(tallynames)) ) )
+if (baseline=="minimal") header <- append(header, paste0( rep(tallynames, times=11*length(elementnames)-1), rep(0:10, each=length(tallynames)), "only",
+                                                          rep(elementnames[2:length(elementnames)], each=11*length(tallynames)) ) )
 
 if (baseline=="optimal")
   {if(!file.exists(paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
+   if (saveintermediate) if(!file.exists(paste0(location,"IntAllbut","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"IntAllbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
   }
 if (baseline=="minimal")
   {if(!file.exists(paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
+   if (saveintermediate) if(!file.exists(paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
   }
 
 for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
@@ -66,16 +69,25 @@ for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
   newstate[drsetup$statenames] <- unlist(state)
   
   iresult <- numeric(0) #will become full row of results for this dr row (inew), for all elements and levels
+  if (saveintermediate) iiresult <- numeric(0)
 
   for (element in 2:length(elementnames))
   {
     print(paste0("Evaluating TRP optimal for all ",baseline," except ",elementnames[element]," for Simulation #", inew," of ",nrow(drout)," for ",targetpt,DST,tasktag))
-    if (baseline=="minimal") valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
+    if (baseline=="minimal")
+    { valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
                           optimals=elementnames[element], 
                           minimals=elementnames[-c(1,element)], HIV="nonHIV")
-    if (baseline=="optimal") valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
+        if (saveintermediate) ivalueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
+                                                     minimals=elementnames[-c(1,element)], HIV="nonHIV")
+    }
+    if (baseline=="optimal") 
+    { valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
                                                minimals=elementnames[element], 
                                                optimals=elementnames[-c(1,element)], HIV="nonHIV")
+      if (saveintermediate) ivalueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
+                                                   optimals=elementnames[-c(1,element)], HIV="nonHIV")
+    }
     
     s_cr <- valueset$cres[1]; r_cr <- valueset$cres[2]
     novelstate <- newstate
@@ -96,10 +108,46 @@ for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
       
     parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
       
-    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")[11,]
+    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
       
-    iresult <- append(iresult, outset[tallynames])
+    iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
+    
+    if (saveintermediate)
+    {
+      if (element==which(elementnames=="companion"))
+      {
+        s_cr <- ivalueset$cres[1]; r_cr <- ivalueset$cres[2]
+        novelstate <- newstate
+        for (name in novelsetup$statenames) if (length(grep("^S", name))==0 & length(grep("^C", name))==0 )
+        {  
+          if (length(grep("+c+",name))==1 )
+          {
+            if (length(grep("+.Rr+", name))==1 ) 
+            {    novelstate[name] <- r_cr * newstate[str_replace(string = name, pattern = "c", replacement = "")]
+            } else novelstate[name] <- s_cr * max(newstate[str_replace(string = name, pattern = "c", replacement = "")], newstate[str_replace(string = name, pattern = "c", replacement = "0")], na.rm = TRUE)
+          } else 
+          {
+            if (length(grep("+.Rr+", name))==1 )
+            { novelstate[name] <- (1-r_cr) * newstate[name]
+            } else novelstate[name] <- (1-s_cr) * newstate[name]
+          }
+        }
+      }
+      iparset <- create.pars(setup = novelsetup, values = ivalueset, T, T, T)
+      ioutset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=iparset$fullpars, do.tally=TRUE, method="adams")
+      iiresult <- append(iiresult, as.vector(t(ioutset[,tallynames]))) 
+    }
+      
   }
-if (baseline=="optimal")  write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
-if (baseline=="minimal")  write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+    
+  if (baseline=="optimal")  
+  {
+    write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+    if (saveintermediate) write(unlist(c(iter, valuevect, iiresult)), file=paste0(location,"IntAllbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+  }
+  if (baseline=="minimal")  
+  {
+    write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+    if (saveintermediate) write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+  }
 }
