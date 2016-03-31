@@ -9,7 +9,7 @@ location <- "../scratch/"
 
 tag <- "20160313"
 if (pessimistic) tag <- paste0(tag,"p")
-Nsims_ds <- 50
+Nsims_ds <- 500
 
 source("TPPmat.R")
 values <- set.values(pessimistic=pessimistic)
@@ -18,6 +18,12 @@ Nsamplepars_ds <- length(unlist(values$varied_ds)); ilimits <- ceiling(seq(0,Nsi
 
 if(exists(paste0(location,"LHS_",tag,".RDS"))) LHS <- readRDS(paste0(location,"LHS_",tag,".RDS")) else 
   {LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0(location,"LHS_",tag,".RDS"))}
+
+if (Nsims_ds > nrow(LHS)) 
+{ 
+  oldLHS <- LHS; LHS <- augmentLHS(LHS, Nsims_ds - nrow(LHS)); saveRDS(LHS, file=paste0(location,"LHS_",tag,".RDS")); saveRDS(oldLHS, file=paste0(location,"oldLHS_",nrow(oldLHS),"_",tag,".RDS"))  }
+  ilimits <- ceiling(seq(nrow(oldLHS),Nsims_ds, length=ntasks+1)); print(ilimits)
+}
 
 currenttag <- paste0(tag,".",taskid)
 
