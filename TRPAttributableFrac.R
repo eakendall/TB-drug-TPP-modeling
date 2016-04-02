@@ -40,9 +40,9 @@ drout <- alldrout[alldrout[,"rrinc"]/alldrout[,"inc"] > 1/tolerance*alldrout[,"t
 ilimits <- ceiling(seq(0,nrow(drout), length=ntasks+1))
 
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
-if (baseline=="optimal") header <- append(header, paste0( rep(tallynames, times=11*length(elementnames)-1), rep(0:10, each=length(tallynames)), "allbut",
+if (baseline=="optimal") header <- append(header, paste0( rep(tallynames, times=11*(length(elementnames)-1)), rep(0:10, each=length(tallynames)), "allbut",
                          rep(elementnames[2:length(elementnames)], each=11*length(tallynames)) ) )
-if (baseline=="minimal") header <- append(header, paste0( rep(tallynames, times=11*length(elementnames)-1), rep(0:10, each=length(tallynames)), "only",
+if (baseline=="minimal") header <- append(header, paste0( rep(tallynames, times=11*(length(elementnames)-1)), rep(0:10, each=length(tallynames)), "only",
                                                           rep(elementnames[2:length(elementnames)], each=11*length(tallynames)) ) )
 
 if (baseline=="optimal")
@@ -148,6 +148,6 @@ for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
   if (baseline=="minimal")  
   {
     write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
-    if (saveintermediate) write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+    if (saveintermediate) write(unlist(c(iter, valuevect, iiresult)), file=paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
   }
 }

@@ -3,7 +3,7 @@ source("TPPmat.R")
 currenttag <- "India_20160313p"; tolerance <- 1.5; location=""
 targetepi <- "India"
 
-source("displayfunction.R")
+source("loaddata.R")
 
 
 ###############################
@@ -147,51 +147,25 @@ legend("bottomright", c("With limited (50%) uptake of novel DS regimen", "With u
        angle=20, density = c(30,100), fill = c("black","black"), bty='n', cex=1.2)
 
 
-## DR combos
-novelwide <- allnovelwide$DRDSTall_
-drcombos <- numeric(0)
-i <- 1; while(file.exists(paste0(location,"TRPcombos_DRDSTall_",currenttag,".",i,".csv")))
-{drcombos <- rbind(drcombos, read.csv(paste0(location,"TRPcombos_DRDSTall_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0read.csv(paste0())
-outcome <- "rrdeaths"
-drout <- alldrout
-a <- numeric(0); for (i in 1:length(grep("^rrdeaths",colnames(drcombos)))) a[i] <- median((drcombos[,grep("^rrdeaths",colnames(drcombos))[i]]- drout$rrdeaths10 )/drout$rrdeaths10)
-a[length(a)+1] <- median(((allnovelwide$DRDSTall_$rrdeaths10alloptimal - alldrout$rrdeaths10 )/alldrout$rrdeaths10))
-names(a) <- c(colnames(drcombos)[grep("^rrdeaths",colnames(drcombos))], "all optimal")
-par(mar=c(3,5,3,3)); 
-bcols <- c("gray",topo.colors(3))
-# b<-barplot(a[c(c(1,6,4,2,7,5,3)+7*rep(c(0,1,2), each=7), length(a))], las=2, ylab="mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6),1),
-#            col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3), bcols[5]), angle=20, density=c( rep( c(rep(40,4), rep(100,3)), times=3), 100) ,
-#            ylim=c(-0.2,0.02), xaxt='n')
-b<-barplot(a[c(c(1,10,7,4,12,9,6)+12*rep(c(0,1,2), each=7))], las=2, ylab="RR TB mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6)),
-           col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3)), angle=20, density=c( rep( c(rep(30,4), rep(100,3)), times=3), 100) ,
-           ylim=c(-0.7,0.02), xaxt='n',  cex.lab=1.2,
-           main="Impact of select characteristic combinations,\nwith and without associated increased RR detection and treatment")
-text(x=b[c(4,11,18)], y=0.02, c("Current efficacy", "Intermediate efficacy", "Optimal efficacy"), xpd=NA)
-legend("bottomleft", c("Baseline ~ standard of care", "Increased eligibility", "Improved adherence", "Shortened duration"),
-       fill=bcols[1:4], xpd=NA, bty="n")
-legend("bottomright", c("With current RR diagnosis and treatment coverage", "With universal RR diagnosis and treatment"), 
-        angle=20, density = c(30,100), fill = c("black","black"), bty='n')
-
 
 
 # Minimum and maximal baselines
+## novelwide's allminimal and alloptimal include variation in scaleup, so "allbut" ends up making extra difference because it also includes loss of optimal scaleup. so use allminopt runs instead.
 
-only_ds <- numeric(0); i<- 1 
-while(file.exists(paste0("Only_DSDSTall_India_20160313p.",i,".csv"))) { only_ds <- rbind(only_ds, read.csv(paste0("Only_DSDSTall_India_20160313p.",i,".csv"))); i <- i+1 }
 novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds
 outcome <- "tbdeaths"
 
-dsmin <- array(0,dim=c(7,5)); dimnames(dsmin) <- list("element"=dselementnames[-1], "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (vary in dselementnames[2:8])
+dsmin <- array(0,dim=c(6,5)); dimnames(dsmin) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in dselementnames[2:7])
 {
   dsmin[vary,] <- quantile( 
-    ( (only_ds[ , paste0(outcome, "10only",vary)] - novelwide[ , paste0(outcome, "10allminimal")]) ) /
-      (novelwide[ , paste0(outcome, "10alloptimal")] - novelwide[ , paste0(outcome, "10allminimal")]) , c(0.025,0.25,0.5,0.75,0.975) )
+     (drout[ , paste0(outcome, "10")] - only_ds[ , paste0(outcome, "10only",vary)] ) /
+      (drout[ , paste0(outcome, "10")] - allminopt_ds[ , paste0(outcome, "allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
 
 par(mar=c(1,1,3,1), mfrow=c(1,1)) 
 b <- barplot(dsmin[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n',
-             legend.text=shortelementlabels[-c(1,9)], col=rainbow(7), args.legend=list(x="topright", cex=1), xlim=c(-0.2,1))
+             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(7), args.legend=list(x="topright", cex=1), xlim=c(-0.2,1))
 mtext("Fraction of total mortality benefit of all-optimal novel DS regimen (median [95% UR]) that is
       attainable by improving only a single characteristic from minimal to optimal level", side=3, line=1, font=2, cex=1, xpd=NA)
 text(dsmin[,5]+0.05, b, paste0(round(dsmin[,3]*100, 1),"%"))
@@ -203,32 +177,52 @@ text(0.45, b[2], "'All minimal' baseline here is a regimen with
       that reaches only 50% of eligible patients,
       and that has low barrier to resistance.", pos=4)
 
+novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds
+outcome <- "tbdeaths"
+intdsmin <- array(0,dim=c(6,5)); dimnames(intdsmin) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in dselementnames[2:7])
+{
+  intdsmin[vary,] <- quantile( 
+    (drout[ , paste0(outcome, "10")] - intonly_ds[ , paste0(outcome, "10only",vary)] ) /
+      (drout[ , paste0(outcome, "10")] - allminopt_ds[ , paste0(outcome, "allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )}
+
 novelwide <- allnovelwide$DSDSTall_rDSTall.
-allbut_ds <- numeric(0); i<- 1 
-while(file.exists(paste0("Allbut_DSDSTall_India_20160313p.",i,".csv"))) { allbut_ds <- rbind(allbut_ds, read.csv(paste0("Allbut_DSDSTall_India_20160313p.",i,".csv"))); i <- i+1 }
-drout <- droutds
+drout <- alldrDST
 outcome <- "tbdeaths"
 
-dsmax <- array(0,dim=c(7,5)); dimnames(dsmax) <- list("element"=dselementnames[-1], "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (vary in dselementnames[2:8])
+dsmax <- array(0,dim=c(6,5)); dimnames(dsmax) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in dselementnames[2:7])
 {
   dsmax[vary,] <- quantile( 
-      ( novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]  - 
-        (allbut_ds[ , paste0(outcome, "10allbut",vary)] - drout[ , paste0(outcome,"10")]) ) /
-          (novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+      1- ( allbut_ds[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+          (allminopt_ds[ , paste0(outcome, "allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
-# dsmax["all",] <- quantile( 
-#   ( novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]  - 
-#       (novelwide[ , paste0(outcome, "10allminimal")] - drout[ , paste0(outcome,"10")] ) )/
-#     (novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
 
 par(mar=c(1,1,3,1), mfrow=c(1,1)) 
 b <- barplot(dsmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             legend.text=shortelementlabels[-c(1,9)], col=rainbow(7), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
+             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(7), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
 mtext("Fraction of an all-optimal novel DS regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its minimal value", side=3, line=1, font=2, cex=1.1, xpd=NA)
 arrows(dsmax[,"0.025"], b, dsmax[,"0.975"], b, angle=90, code=3, length=0.05)
 text(dsmax[,5]+0.05, b, paste0(round(dsmax[,3]*100, 1),"%"))
 
+novelwide <- allnovelwide$DSDSTall_rDSTall.
+drout <- droutds
+outcome <- "tbdeaths"
+
+intdsmax <- array(0,dim=c(6,5)); dimnames(intdsmax) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in dselementnames[2:7])
+{
+  intdsmax[vary,] <- quantile( 
+    1- ( intallbut_ds[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+      (allminopt_ds[ , paste0(outcome, "allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+}
+
+par(mar=c(1,1,3,1), mfrow=c(1,1)) 
+b <- barplot(intdsmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
+             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(7), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
+mtext("Fraction of an all-optimal novel DS regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its intermediate value", side=3, line=1, font=2, cex=1.1, xpd=NA)
+arrows(intdsmax[,"0.025"], b, intdsmax[,"0.975"], b, angle=90, code=3, length=0.05)
+text(intdsmax[,5]+0.05, b, paste0(round(intdsmax[,3]*100, 1),"%"))
 
 
 # Same for DR regimen
@@ -260,7 +254,6 @@ for (vary in drelementnames)
                                    drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
 }  
 
-
 par(mar=c(2,4,2,1), mfrow=c(1,2), oma=c(0,0,2,0))
 ylow=300*r_pctdown[1,3,"0.5"]
 bpctdown <- barplot(height = 100*aperm(r_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
@@ -290,6 +283,30 @@ arrows(bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*
 
 mtext("Reduction in year 10 TB mortality with novel DR-TB regimen,\n compared to projection under current standard of care",side=3,outer=TRUE, cex=1.4, line=-1, xpd=NA) 
 
+## DR combos
+novelwide <- allnovelwide$DRDSTall_
+drcombos <- numeric(0)
+i <- 1; while(file.exists(paste0(location,"TRPcombos_DRDSTall_",currenttag,".",i,".csv")))
+{drcombos <- rbind(drcombos, read.csv(paste0(location,"TRPcombos_DRDSTall_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0read.csv(paste0())
+outcome <- "rrdeaths"
+drout <- alldrout
+a <- numeric(0); for (i in 1:length(grep("^rrdeaths",colnames(drcombos)))) a[i] <- median((drcombos[,grep("^rrdeaths",colnames(drcombos))[i]]- drout$rrdeaths10 )/drout$rrdeaths10)
+a[length(a)+1] <- median(((allnovelwide$DRDSTall_$rrdeaths10alloptimal - alldrout$rrdeaths10 )/alldrout$rrdeaths10))
+names(a) <- c(colnames(drcombos)[grep("^rrdeaths",colnames(drcombos))], "all optimal")
+par(mar=c(3,5,3,3)); 
+bcols <- c("gray",topo.colors(3))
+# b<-barplot(a[c(c(1,6,4,2,7,5,3)+7*rep(c(0,1,2), each=7), length(a))], las=2, ylab="mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6),1),
+#            col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3), bcols[5]), angle=20, density=c( rep( c(rep(40,4), rep(100,3)), times=3), 100) ,
+#            ylim=c(-0.2,0.02), xaxt='n')
+b<-barplot(a[c(c(1,10,7,4,12,9,6)+12*rep(c(0,1,2), each=7))], las=2, ylab="RR TB mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6)),
+           col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3)), angle=20, density=c( rep( c(rep(30,4), rep(100,3)), times=3), 100) ,
+           ylim=c(-0.7,0.02), xaxt='n',  cex.lab=1.2,
+           main="Impact of select characteristic combinations,\nwith and without associated increased RR detection and treatment")
+text(x=b[c(4,11,18)], y=0.02, c("Current efficacy", "Intermediate efficacy", "Optimal efficacy"), xpd=NA)
+legend("bottomleft", c("Baseline ~ standard of care", "Increased eligibility", "Improved adherence", "Shortened duration"),
+       fill=bcols[1:4], xpd=NA, bty="n")
+legend("bottomright", c("With current RR diagnosis and treatment coverage", "With universal RR diagnosis and treatment"), 
+       angle=20, density = c(30,100), fill = c("black","black"), bty='n')
 
 
 # Union abstract version
@@ -342,22 +359,20 @@ rr_pctdown[,,2:4]
 
 
 # RR regimen minimal and maximla baselines
-only_dr <- numeric(0); i<- 1 
-while(file.exists(paste0("Only_DRDSTall_India_20160313p.",i,".csv"))) { only_dr <- rbind(only_dr, read.csv(paste0("Only_DRDSTall_India_20160313p.",i,".csv"))); i <- i+1 }
-novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr
+novelwide <- allnovelwide[["DRDSTall_"]]; drout <- alldrout
 outcome <- "rrdeaths"
 
-drmin <- array(0,dim=c(7,5)); dimnames(drmin) <- list("element"=drelementnames[-1], "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (vary in drelementnames[2:8])
+drmin <- array(0,dim=c(6,5)); dimnames(drmin) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in drelementnames[2:7])
 {
   drmin[vary,] <- quantile( 
-    ( (only_dr[ , paste0(outcome, "10only",vary)] - novelwide[ , paste0(outcome, "10allminimal")]) ) /
-      (novelwide[ , paste0(outcome, "10alloptimal")] - novelwide[ , paste0(outcome, "10allminimal")]) , c(0.025,0.25,0.5,0.75,0.975) )
+    (drout[ , paste0(outcome, "10")] - only_dr[ , paste0(outcome, "10only",vary)] ) /
+      (drout[ , paste0(outcome, "10")] - allminopt_dr[ , paste0(outcome, "allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
 
 par(mar=c(1,1,3,1), mfrow=c(1,1)) 
 b <- barplot(drmin[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n',
-             legend.text=shortelementlabels[-c(1,8)], col=rainbow(7), args.legend=list(x="topright", cex=0.8), xlim=c(0,1))
+             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(7), args.legend=list(x="topright", cex=0.8), xlim=c(0,1))
 mtext("Fraction of total RR TB mortality benefit of all-optimal novel RR TB regimen that is attainable by improving 
       only a single characteristic from minimal to optimal level (median [95% uncertainty range])", side=3, line=1, font=2, cex=1, xpd=NA)
 text(drmin[,5]+0.05, b, paste0(round(drmin[,3]*100, 1),"%"))
@@ -370,35 +385,52 @@ text(0.35, b[3], "'All minimal' baseline here is a regimen with
      and that is associated with continued
      current RR TB treatment coverage levels", pos=4)
 
-allbut_dr <- numeric(0); i<- 1 
-while(file.exists(paste0("Allbut_DRDSTall_India_20160313p.",i,".csv"))) { allbut_dr <- rbind(allbut_dr, read.csv(paste0("Allbut_DRDSTall_India_20160313p.",i,".csv"))); i <- i+1 }
 novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr
 outcome <- "rrdeaths"
 
-drmax <- array(0,dim=c(7,5)); dimnames(drmax) <- list("element"=drelementnames[-1], "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (vary in drelementnames[2:8])
+intdrmin <- array(0,dim=c(6,5)); dimnames(intdrmin) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in drelementnames[2:7])
+{
+  intdrmin[vary,] <- quantile( 
+    (drout[ , paste0(outcome, "10")] - intonly_dr[ , paste0(outcome, "10only",vary)] ) /
+      (drout[ , paste0(outcome, "10")] - allminopt_dr[ , paste0(outcome, "allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
+}
+
+novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr
+outcome <- "rrdeaths"
+
+drmax <- array(0,dim=c(6,5)); dimnames(drmax) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in drelementnames[2:7])
 {
   drmax[vary,] <- quantile( 
-    ( novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]  - 
-        (allbut_dr[ , paste0(outcome, "10allbut",vary)] - drout[ , paste0(outcome,"10")]) ) /
-      (novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+    1- ( allbut_dr[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+      (allminopt_dr[ , paste0(outcome, "allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
-# drmax["all",] <- quantile( 
-#   ( novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]  - 
-#       (novelwide[ , paste0(outcome, "10allminimal")] - drout[ , paste0(outcome,"10")] ) )/
-#     (novelwide[ , paste0(outcome, "10alloptimal")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
-# 
 
 par(mar=c(1,1,3,1), mfrow=c(1,1)) 
 b <- barplot(drmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             legend.text=shortelementlabels[-c(1,9)], col=rainbow(7), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
+             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(7), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
 mtext("Fraction of an all-optimal novel DR regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its minimal value", side=3, line=1, font=2, cex=1.1, xpd=NA)
 arrows(drmax[,"0.025"], b, drmax[,"0.975"], b, angle=90, code=3, length=0.05)
 text(drmax[,5]+0.05, b, paste0(round(drmax[,3]*100, 1),"%"))
 
+intdrmax <- array(0,dim=c(6,5)); dimnames(intdrmax) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (vary in drelementnames[2:7])
+{
+  intdrmax[vary,] <- quantile( 
+    1- ( intallbut_dr[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+      (allminopt_dr[ , paste0(outcome, "allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+}
+
+par(mar=c(1,1,3,1), mfrow=c(1,1)) 
+b <- barplot(intdrmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
+             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(7), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
+mtext("Fraction of an all-optimal novel DR regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its intermediate value", side=3, line=1, font=2, cex=1.1, xpd=NA)
+arrows(intdrmax[,"0.025"], b, intdrmax[,"0.975"], b, angle=90, code=3, length=0.05)
+text(intdrmax[,5], b, paste0(round(intdrmax[,3]*100, 1),"%"))
 
 ## 2x2 Manuscript Figure: DS/DR, min/max baselines
-##!! need to re-run with fixed (intermediate) scale-up variables - have fixed TRPattribfrac to do this with commented if (DR/DS) lines near top
+#  with fixed (intermediate) scale-up variables - have fixed TRPattribfrac to do this with commented if (DR/DS) lines near top
 # And at baseline, assume that over the next 10 years, rif DST scaleup continues at same pace in new patients and underDST in retreatment is halved; a new regimen can make that happen faster and can also increase the final coverage.
 # And ? soften "minimal" barrier to resistance parameters? - no, kept the same, will make clear minimum is a "worst case" with DST and reduces efficacy
 # And include trajectories/ save all times for at least all and efficacy  - done, TRPattribfrac now saves all times
@@ -442,20 +474,31 @@ text(-0.4, mean(b),"D", font=2, cex=1.5)
 ###########
 # Trajectories figure
 # there's no "median trajectory" so I'll have to take the median for each intervention and each time point separately
-# which makes it hard to do too many, but i'll take a representative subset, save fewer time points, and smooth
+
+outcome <- "tbdeaths"
 times <- seq(0,10,by=1); ls <- c("allmin", "onlyeff", "allbuteff", "allopt")
 traj <- array(0, dim=c(length(times),4,5)); dimnames(traj) <- list("t"=times, "level"=ls, "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (t in times) for (l in ls) traj[t+1,l,] <- quantile(novelwide[,colnames(novelwide)==paste0(outcome, t, "all",l)], c(0.025,0.25,0.5,0.75,0.975))
-# par(mar=c(4,4,1,1), mfrow=c(2,1))
-plot(0:10, traj[,"minimal","0.5"], ylim=c(0,targetepis[[targetepi]][1]/4), type='l', col="deeppink", xlab="Years after introduction", ylab="Annual TB mortality",lwd=2)
-points(0:10, traj[,"intermediate","0.5"], type='l', col='orange',lwd=2)
-points(0:10, traj[,"optimal","0.5"], type='l', col='green',lwd=2)
-points(c(0,10), c(median(drout[,"tbdeaths"]),median(drout[,"tbdeaths10"])), col='black', type='l',lwd=2) 
-# points(c(0,10), c(median(drout[,"tbdeaths"]),median(drout[,"tbdeaths10"])+1.5), col='black', type='l',lwd=2) 
-legend("bottomleft", legend= c("Continued current standard", "Minimal novel DS regimen", "Intermediate novel DS regimen", "Optimal novel DS regimen"),
-       col=c("black","deeppink","orange","green"), lty=1,lwd=2)
+for (t in times) 
+{
+  traj[t+1,"allmin",] <- quantile(novelwide[,colnames(novelwide)==paste0(outcome, t, "allminimal")], c(0.025,0.25,0.5,0.75,0.975))
+  traj[t+1,"allopt",] <- quantile(novelwide[,colnames(novelwide)==paste0(outcome, t, "alloptimal")], c(0.025,0.25,0.5,0.75,0.975))
+  traj[t+1,"onlyeff",] <- quantile(only_ds[,colnames(novelwide)==paste0(outcome, t, "onlyefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+  traj[t+1,"allbuteff",] <- quantile(allbut_ds[,colnames(novelwide)==paste0(outcome, t, "allbutefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+}
+par(mar=c(4,4,3,1), mfrow=c(1,1))
+plot(0:10, traj[,"allmin","0.5"], ylim=c(0,targetepis[[targetepi]][1]/6), type='l', xlab="Years after novel RS TB regimen's introduction", ylab="Annual TB mortality, median projection",
+     lwd=2, col="red",lty=1, bty='l')
+points(0:10, traj[,"onlyeff","0.5"], type='l', col='red',lwd=2, lty=2)
+points(0:10, traj[,"allbuteff","0.5"], type='l', col='green',lwd=2, lty=2)
+points(0:10, traj[,"allopt","0.5"], type='l', col='green',lwd=2, lty=1)
+segments(x0=10, y0=20, y1=35, lty=3, col="black", lwd=1); text(10,18,"Primary analyses\nperformed 10 years\nafter novel regimen's\nintroduction", pos=2)
 
+legend(x=0.5,y=2,xjust=0,yjust=0, legend= c("Regimen minimal in all characteristics", "Improved efficacy only", "All characteristics improved except efficacy", "All regimen characteristics improved"),
+       col=c("red","red","green","green"), lty=c(1,2,2,1),lwd=2)
 
+arrows(9, traj["9","onlyeff","0.5"], 9, traj["9","allmin","0.5"], angle=45, code=3, length=0.05); text (8,29,"Figure 2A")
+arrows(8.5, mean(traj[c("8","9"),"onlyeff","0.5"]), 8.5, mean(traj[c("8","9"),"allmin","0.5"]), angle=45, code=3, length=0.05); text (7.5,27,"Figure 2B")
+# add curved arrows after generating figure?
 
 
 
