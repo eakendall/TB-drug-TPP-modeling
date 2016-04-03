@@ -30,7 +30,7 @@ drout <- alldrout[alldrout[,"rrinc"]/alldrout[,"inc"] > 1/tolerance*alldrout[,"t
 ilimits <- ceiling(seq(0,nrow(drout), length=ntasks+1))
 
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
-header <- append(header, paste0( rep(tallynames, times=2), rep(c("allmin", "allopt"), each=length(tallynames)) ) )
+header <- append(header, paste0( rep(tallynames, times=2*11), rep(0:10,each=length(tallynames)), rep(c("allmin", "allopt"), each=11*length(tallynames)) ) )
 
 if(!file.exists(paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
 
@@ -57,7 +57,7 @@ for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
     if (level=="minimal") m <- elementnames[2:7] else m <- NA
     if (level=="optimal") o <- elementnames[2:7] else o <- NA
     valueset <- sampleTRP(mergedvalues = genericvalues, targetpt = targetpt, DST = DST, 
-                                                   minimals=m, optimals=o )
+                                                   minimals=m, optimals=o , HIV="nonHIV")
     
     s_cr <- valueset$cres[1]; r_cr <- valueset$cres[2]
     novelstate <- newstate
@@ -78,9 +78,9 @@ for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
     
     parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
     
-    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")[11,]
+    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
     
-    iresult <- append(iresult, outset[tallynames])
+    iresult <- append(iresult, as.vector(t(outset[,tallynames])))
   }
   write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
 }

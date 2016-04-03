@@ -10,8 +10,8 @@ tallynames <- colnames(equilib()$log)[-(1:(length(dssetup$statenames)+1))]
 values <- set.values(); genericvalues <- append(append(values[[1]], values[[2]]), append(values[[3]], values[[4]]))
 
 shortelementlabels <- c("All", "Efficacy", "Duration", 
-                   "Existing Resistance", "Barrier to Resistance", 
-                   "Exclusions", "Adherence","Scalability","Increase in RR diagnosis")[c(1,2,5,4,6,3,7,8,9)]
+                   "Pre-Existing Resistance", "Barrier to Resistance", 
+                   "Medical Contraindications", "Tolerability/Adherence","Scalability","Increase in RR diagnosis")[c(1,2,5,4,6,3,7,8,9)]
 
 elementlabels <- c("All elements\nvaried", "Efficacy\n(% durably cured,\nif susceptible and\ncomplete treatment)", "Regimen\nDuration", 
                    "Prevalence of\nExisting Resistance\nto Regimen", "Barrier to\nAcquired Novel\nDrug Resistance", 
@@ -71,7 +71,7 @@ blues <- c("blue","lightblue","darkblue")
 # i <- 1; while(file.exists(paste0(location,"DRcalibration_",currenttag,".",i,".csv")))
 #   {alldrout <- rbind(alldrout, read.csv(paste0(location,"DRcalibration_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
 # alldrout <- alldrout[alldrout[,"rrinc"]/alldrout[,"inc"] > 1/tolerance*alldrout[,"targetdr"] & alldrout[,"rrinc"]/alldrout[,"inc"] < tolerance*alldrout[,"targetdr"], ]  #within 3fold if rr incident fraction target
-# 
+
 # alldrDST <- numeric(0)
 # i <- 1; while(file.exists(paste0(location,"DRcalibration_rDSTall.",currenttag,".",i,".csv")))
 # {alldrDST <- rbind(alldrDST, read.csv(paste0(location,"DRcalibration_rDSTall.",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0

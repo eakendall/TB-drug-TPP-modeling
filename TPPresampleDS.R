@@ -4,21 +4,23 @@
 
 taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- "Philippines"#commandArgs(trailingOnly=TRUE)[3]
-location <- ""
+tname <- "SouthAfrica"#commandArgs(trailingOnly=TRUE)[3]
+location <- ""#"../scratch/"
 
-tag <- "20160201"
+tag <- "20160313p"
+pessimistic <- TRUE
 currenttag <- paste0(tname,"_",tag,".",taskid)
 
-Nsims_ds <- 250
+# LHS <- readRDS(paste0("LHS_",tag,".RDS"))
+# LHS <- readRDS(paste0("oldLHS_50_",tag,".RDS"))
+Nsims_ds <- 50
 
 source("TPPmat.R")
 
 values <- set.values()
+genericvalues <- values
 
 ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1)); print(ilimits)
-
-LHS <- readRDS("LHS_20160105.RDS")
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)
 
@@ -30,22 +32,41 @@ dsheader <- c("ids",  "targetprev","targetcoprev","targetdr",
               dssetup$statenames, tallynames) 
 if(!file.exists(paste0(location,"DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0(location,"DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
 
+dsout <- list(); i <- 1; while(file.exists(paste0("DScalibration_20160313p.",i,".csv"))) {dsout <- rbind(dsout, read.csv(paste0("DScalibration_20160313p.",i,".csv"))); i <- i+1}
+
 for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
 {
-  dsvalues <- sample.values(values=values, whichparset="varied_ds", LHS=LHS, isim=isim)
+  valuevect <- dsout[which(dsout$ids==isim),names(unlist(genericvalues))]
+  dsvalues <- genericvalues
+  v <- 0; for (setname in names(genericvalues)) for (pname in names(genericvalues[[setname]]))
+  { 
+    dsvalues[[setname]][[pname]] <- unlist(valuevect[v+(1:length(dsvalues[[setname]][[pname]]))]); #names(genericvalues[[pname]]) <- names()
+    v <- v + length(dsvalues[[setname]][[pname]]) # move forward to start of next par vector in sampled values
+  }    
+  
+#   dsvalues <- 
+#     sample.values(values=values, whichparset="varied_ds", LHS=LHS, isim=isim, pessimistic=pessimistic)
   pars <- create.pars(setup = dssetup, values = dsvalues)
   
-  optimat <- readRDS(paste0(location,"optimats 20160111/optimat",isim,".RDS"))
+  optimat <- readRDS(paste0(location,"optimats",tag,"/optimat",isim,".RDS"))
   
-  optimat[,2][optimat[,2]==0] <- 0.000001
-  prevmat <- interp(optimat[,1], -log(optimat[,2]), z=optimat[,3], nx=5000, ny=5000, extrap=F, linear=TRUE, duplicate= "mean")
-  coprevmat <- interp(optimat[,1], -log(optimat[,2]), z=optimat[,4], nx=5000, ny=5000, extrap=F, linear=TRUE, duplicate= "mean")
-  fitmat <- (prevmat$z-targetepis[[tname]][1])^2/targetepis[[tname]][1]^2 + (coprevmat$z-targetepis[[tname]][2])^2/targetepis[[tname]][2]^2
+  if (tname == "Philippines")
+  {  
+    usethese <- optimat[optimat[,2]==0&optimat[,3]>100,]
+    colnames(usethese) <- c("b","h","prev","coprev")
+    model <- lm(b ~ prev, data=data.frame(usethese))
+    dsvalues$cal$hivrate <- 0; dsvalues$cal$beta <- as.numeric(model$coefficients[1] + model$coefficients[2]*targetepis[[tname]][1])
+  } else
+  if (tname != "Philippines")
+  { optimat[,2][optimat[,2]==0] <- 0.000001
+    prevmat <- interp(optimat[,1], -log(optimat[,2]), z=optimat[,3], nx=5000, ny=5000, extrap=F, linear=TRUE, duplicate= "mean")
+    coprevmat <- interp(optimat[,1], -log(optimat[,2]), z=optimat[,4], nx=5000, ny=5000, extrap=F, linear=TRUE, duplicate= "mean")
+    fitmat <- (prevmat$z-targetepis[[tname]][1])^2/targetepis[[tname]][1]^2 + (coprevmat$z-targetepis[[tname]][2])^2/targetepis[[tname]][2]^2
   
-  vindex <- which.min(fitmat); aindex <- c(vindex - nrow(fitmat)*floor(vindex/nrow(fitmat)), ceiling(vindex/nrow(fitmat)))
+    vindex <- which.min(fitmat); aindex <- c(vindex - nrow(fitmat)*floor(vindex/nrow(fitmat)), ceiling(vindex/nrow(fitmat)))
   
-  dsvalues$cal$beta <- prevmat$x[aindex[1]]; dsvalues$cal$hivrate <- exp(-prevmat$y[aindex[2]])
-  if (dsvalues$cal$hivrate<0.00001) dsvalues$cal$hivrate <- 0
+    dsvalues$cal$beta <- prevmat$x[aindex[1]]; dsvalues$cal$hivrate <- exp(-prevmat$y[aindex[2]])
+  }
   
   print(paste0("Chose beta=", dsvalues$cal$beta, ", hivrate=", dsvalues$cal$hivrate, " for sim #",isim, " and epi of ", tname))
   
