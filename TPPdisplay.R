@@ -511,9 +511,10 @@ text(-0.4, mean(b),"D", font=2, cex=1.5)
 legend(x=-1.1,y=mean(b)*3.5,,xpd=NA, cex=1, legend=c(shortelementlabels[-c(1,8,9)],"Minimal vs. intermediate value","Intermediate vs. optimal value"), fill=c(rainbow(6),"black","black"), density=c(rep(200,6),25, 200))
 
 
-## FIGURE 3 ##
 
 ###########
+## FIGURE 3 ##
+
 # Trajectories figure
 # there's no "median trajectory" so I'll have to take the median for each intervention and each time point separately
 # need to use a min and opt with int scaleup, so will redo to save these at all time points and reload on 4/2
@@ -521,14 +522,15 @@ legend(x=-1.1,y=mean(b)*3.5,,xpd=NA, cex=1, legend=c(shortelementlabels[-c(1,8,9
 
 novelwide <- novelwide3
 outcome <- "rrdeaths"
-times <- seq(0,10,by=1); ls <- c("allmin", "onlyeff", "allbuteff", "allopt")
-traj <- array(0, dim=c(length(times),4,5)); dimnames(traj) <- list("t"=times, "level"=ls, "q"=c(0.025,0.25,0.5,0.75,0.975))
+times <- seq(0,10,by=1); ls <- c("allmin", "onlyeff", "allbuteff", "allopt", "baseline")
+traj <- array(0, dim=c(length(times),5,5)); dimnames(traj) <- list("t"=times, "level"=ls, "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (t in times) 
 {
   traj[t+1,"allmin",] <- quantile(allminopt_dr[,colnames(allminopt_dr)==paste0(outcome, t, "allmin")], c(0.025,0.25,0.5,0.75,0.975))
   traj[t+1,"allopt",] <- quantile(allminopt_dr[,colnames(allminopt_dr)==paste0(outcome, t, "allopt")], c(0.025,0.25,0.5,0.75,0.975))
   traj[t+1,"onlyeff",] <- quantile(only_dr[,colnames(only_dr)==paste0(outcome, t, "onlyefficacy")], c(0.025,0.25,0.5,0.75,0.975))
   traj[t+1,"allbuteff",] <- quantile(allbut_dr[,colnames(allbut_dr)==paste0(outcome, t, "allbutefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+  traj[t+1, "baseline",] <- quantile(drtraj[, colnames(drtraj)==paste0("X",t,outcome)], c(0.025,0.25,0.5,0.75,0.975))
 #   traj[t+1,"onlyeff",] <- quantile(only_dr[,colnames(only_dr)==paste0(outcome, t, "onlyefficacy")], c(0.025,0.25,0.5,0.75,0.975))
 #   traj[t+1,"allbuteff",] <- quantile(allbut_dr[,colnames(allbut_dr)==paste0(outcome, t, "allbutefficacy")], c(0.025,0.25,0.5,0.75,0.975))
 }
@@ -539,11 +541,12 @@ plot(0:10, traj[,"allmin","0.5"], ylim=c(0,1.4), type='l', xlab="Years after nov
 points(0:10, traj[,"onlyeff","0.5"], type='l', col='red',lwd=2, lty=2)
 points(0:10, traj[,"allbuteff","0.5"], type='l', col='green',lwd=2, lty=2)
 points(0:10, traj[,"allopt","0.5"], type='l', col='green',lwd=2, lty=1)
+points(0:10, traj[,"baseline","0.5"], type='l', col='black',lwd=2, lty=1)
 # segments(x0=10, y0=20, y1=35, lty=3, col="black", lwd=1); text(10,18,"Primary analyses\nperformed 10 years\nafter novel regimen's\nintroduction", pos=2)
 segments(x0=10, y0=0.5, y1=1.5, lty=3, col="black", lwd=1); text(10,0.5,"Primary analyses\nperformed 10 years\nafter novel regimen's\nintroduction", pos=2)
 
-legend(x=0.2,y=0.01,xjust=0,yjust=0, legend= c("RR TB regimen minimal for all characteristics", "Improved efficacy only", "All characteristics improved except efficacy", "All characteristics improved"),
-       col=c("red","red","green","green"), lty=c(1,2,2,1),lwd=2, cex=1)
+legend(x=0.2,y=0.01,xjust=0,yjust=0, legend= c("Current-care projections", "RR TB regimen minimal for all characteristics", "Improved efficacy only", "All characteristics improved except efficacy", "All characteristics improved"),
+       col=c("black","red","red","green","green"), lty=c(1,1,2,2,1),lwd=2, cex=1)
 
 arrows(9, traj["9","allbuteff","0.5"], 9, traj["9","allopt","0.5"], angle=45, code=3, length=0.1); 
           text (9,mean(traj["9",c("allopt","onlyeff"),"0.5"]),"Figure 2C", pos=2)
@@ -721,20 +724,84 @@ mtext("Partial rank correlation of model parameters with the\nmortality impact o
 
 
 # sensitivity analysis: PRCCs for each parameter
-prcc$duration <- pcc(X = novelwide1[,41:74], y= (allminopt[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ (novelwide1[,"tbdeaths10allminimal"] - novelwide1[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"tbdeaths10durationminimal"] - novelwide3[,"tbdeaths10durationoptimal"] )/ (novelwide3[,"tbdeaths10allminimal"] - novelwide3[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$duration <- pcc(X = novelwide1[,41:74], y= (allminopt[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ (novelwide1[,"tbdeaths10allminimal"] - novelwide1[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"tbdeaths10durationminimal"] - novelwide3[,"tbdeaths10durationoptimal"] )/ (novelwide3[,"tbdeaths10allminimal"] - novelwide3[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$duration <- pcc(X = novelwide1[,41:74], y= (allminopt[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ (novelwide1[,"tbdeaths10allminimal"] - novelwide1[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"tbdeaths10durationminimal"] - novelwide3[,"tbdeaths10durationoptimal"] )/ (novelwide3[,"tbdeaths10allminimal"] - novelwide3[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$duration <- pcc(X = novelwide1[,41:74], y= (allminopt[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ (novelwide1[,"tbdeaths10allminimal"] - novelwide1[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"tbdeaths10durationminimal"] - novelwide3[,"tbdeaths10durationoptimal"] )/ (novelwide3[,"tbdeaths10allminimal"] - novelwide3[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$duration <- pcc(X = novelwide1[,41:74], y= (allminopt[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ (novelwide1[,"tbdeaths10allminimal"] - novelwide1[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"tbdeaths10durationminimal"] - novelwide3[,"tbdeaths10durationoptimal"] )/ (novelwide3[,"tbdeaths10allminimal"] - novelwide3[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$duration <- pcc(X = novelwide1[,41:74], y= (allminopt[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ (novelwide1[,"tbdeaths10allminimal"] - novelwide1[,"tbdeaths10alloptimal"] ), rank=TRUE)
-prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"tbdeaths10durationminimal"] - novelwide3[,"tbdeaths10durationoptimal"] )/ (novelwide3[,"tbdeaths10allminimal"] - novelwide3[,"tbdeaths10alloptimal"] ), rank=TRUE)
+# for the size of the range of % mortality reduction for an otherwise-intermeidate novel regimen as one parameter varied
+prcc$duration <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10durationminimal"] - novelwide3[,"rrdeaths10durationoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$efficacy <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10efficacyminimal"] - novelwide1[,"tbdeaths10efficacyoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$efficacyres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10efficacyminimal"] - novelwide3[,"rrdeaths10efficacyoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$barrier <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10barrierminimal"] - novelwide1[,"tbdeaths10barrieroptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$barrierres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10barrierminimal"] - novelwide3[,"rrdeaths10barrieroptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$companion <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10companionminimal"] - novelwide1[,"tbdeaths10companionoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$companionres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10companionminimal"] - novelwide3[,"rrdeaths10companionoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$tolerability <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10tolerabilityminimal"] - novelwide1[,"tbdeaths10tolerabilityoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$tolerabilityres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10tolerabilityminimal"] - novelwide3[,"rrdeaths10tolerabilityoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$exclusions <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10exclusionsminimal"] - novelwide1[,"tbdeaths10exclusionsoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$exclusionsres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10exclusionsminimal"] - novelwide3[,"rrdeaths10exclusionsoptimal"] )/alldrout[,"rrdeaths10"], rank=TRUE)
 
-# plot PRCCs:
+# plot top PRCCs for each, as a heat map? !!
+# select top 3 for each (for max 18 total for each of DS and DR), and list each, with tornadoes for the same 3 DS shown in previous figure (efficacy, duration, and ? companion (would need to change fig 4 to match))
+o <- ores <- list(); for (e in elementnames[2:7] )
+{o[[e]] <- rev(rev(order(abs(prcc[[e]]$PRCC$original)))[1:4])
+ores[[e]] <- rev(rev(order(abs(prcc[[paste0(e,"res")]]$PRCC$original)))[1:4])
+}
+display <- unique(unlist(o)) #c(ores[!(ores %in% o)],o)
+displayres <- unique(unlist(ores)) #c(ores[!(ores %in% o)],o)
+displayall <- rev(unique(c(display,displayres)))
+
+
+require('fields'); require('RColorBrewer')
+par(mfrow=c(1,2), oma=c(7,13,0,0), mar=c(4,0,2,2))
+icol <- c(rev(brewer.pal(9,"Oranges")),"white",brewer.pal(9,"Blues"))
+image(z=t(cbind(paramsigns*prcc$efficacy$PRCC$original, paramsigns*prcc$duration$PRCC$original, paramsigns*prcc$tolerability$PRCC$original, 
+                paramsigns*prcc$barrier$PRCC$original, paramsigns*prcc$companion$PRCC$original, paramsigns*prcc$exclusions$PRCC$original)[displayall,]), zlim=c(-1,1), col=icol,
+        xaxt='n', yaxt='n',main="Novel RS TB regimen")
+axis(at = (0:5)/5,labels=c("Efficacy","Duration","Tolerability","Barrier to\nresistance","Preexisting\nresistance","Contra-\nindications"), 
+     side=1, las=2, font=2)
+axis(at=seq(0,1, length=length(displayall)), labels=brokenlongparamnames[displayall], cex.axis=0.9, side=2, xpd=NA, las=1)
+box("plot")
+
+image(z=t(cbind(paramsigns*prcc$efficacyres$PRCC$original, paramsigns*prcc$durationres$PRCC$original, paramsigns*prcc$tolerabilityres$PRCC$original, 
+                paramsigns*prcc$barrierres$PRCC$original, paramsigns*prcc$companionres$PRCC$original, paramsigns*prcc$exclusionsres$PRCC$original)[displayall,]), zlim=c(-1,1), col=icol,
+      xaxt='n', yaxt='n', main="Novel RR TB regimen")
+axis(at = (0:5)/5,labels=c("Efficacy","Duration","Tolerability","Barrier to\nresistance","Preexisting\nresistance","Contra-\nindications"), 
+     side=1, las=2, font=2)
+box("plot")
+
+par(oma=c( 0,0,0,1))# reset margin to be much smaller.
+image.plot( legend.only=TRUE, zlim=c(-1,1), col=icol, horizontal=TRUE, legend.lab ="PRCC") # image.plot tricked into  plotting in margin of old setting 
+set.panel() # reset plotting device
+
+
+
+par(mfrow=c(1,6),mar=c(4,2,2,1), oma=c(0,5,2,0))
+b <- barplot(prcc$efficacy$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
+             names.arg=longparamnames[display], 
+             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
+             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of efficacy", cex.main=1 )
+axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
+b <- barplot(prcc$duration$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
+             names.arg=longparamnames[display], 
+             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
+             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of efficacy", cex.main=1 )
+
+
+axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
+axis(2, labels=longparamnames[display],at=b, las=1, cex.axis=0.8, cex.lab=2, outer = TRUE, tick = FALSE, xpd=NA)
+mtext("Parameter (varied +-50% around median estimate", side=2,line=24, outer=TRUE)
+b <- barplot(prcc$companion$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
+             names.arg=longparamnames[display], 
+             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
+             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of preexisting resistance", cex.main=1 )
+axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
+b <- barplot(prcc$duration$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
+             names.arg=longparamnames[display], 
+             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
+             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of duration", cex.main=1 )
+axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
+mtext("Partial rank correlation of model parameter with the mortality impact of regimen duration", side=3,cex=1.2,outer=TRUE)
+
+
+# full duration PRCC plot:
 o <- rev(rev(order(abs(prcc$duration$PRCC$original)))[1:10])
 ores <- rev(rev(order(abs(prcc$durationres$PRCC$original)))[1:10])
 display <- c(ores[!(ores %in% o)],o)

@@ -13,13 +13,14 @@ if (rDSTall==TRUE) currenttag <- paste0("rDSTall.",currenttag)
 
 source("TPPmat.R")
 
-if (tname != "India") dstag <- paste0(tname,"_",tag)
+if (tname != "India") dstag <- paste0(tname,"_",tag) else dstag <- tag
 dsout <- list()
 i <- 1; while(file.exists(paste0(location,"DScalibration_",dstag,".",i,".csv")))
 {
   dsout <- rbind(dsout, read.csv(paste0(location,"DScalibration_",dstag,".",i,".csv"), header=TRUE))
   i <- i+1
 }
+dsout <- dsout[order(dsout$ids),]
 Nsims_ds <- max(dsout$ids); ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
 

@@ -567,9 +567,11 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       tally[grep("^R",statenames),"relapses"] <- 
         apply(squaremat[grep("^R",statenames),  grep("^A",statenames)], 1, sum)
       
-      tally[c(grep("^A", statenames), grep("^Ti", statenames)), "tbdeaths"] <- rep(tbmort, each=(length(c(grep("^A", statenames), grep("^Ti", statenames)))/2))
-      
-      tally[c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)), "rrdeaths"] <- rep(tbmort, each=(length(c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)))/2))
+      tally[c(grep("^A.*Hn", statenames), grep("^Ti.*Hn", statenames)), "tbdeaths"] <- tbmort[1]
+      tally[c(grep("^A.*Hp", statenames), grep("^Ti.*Hp", statenames)), "tbdeaths"] <- tbmort[2]
+
+      tally[c(grep("^A.[.]Rr.*Hn", statenames), grep("^Ti[.]Rr.*Hn", statenames)), "rrdeaths"] <- tbmort[1]
+      tally[c(grep("^A.[.]Rr.*Hp", statenames), grep("^Ti[.]Rr.*Hp", statenames)), "rrdeaths"] <- tbmort[2]
       
       tally[c(grep("^A.{1,10}Hp$", statenames), grep("^T.{1,10}Hp$", statenames)), "hivtoo"] <- 1 # will later divide by prev        
       
@@ -578,14 +580,21 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       tally[grep("^A", statenames),"rDSTs"] <- 
         apply( squaremat[ grep("^A", statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * DSTrif_t, 1, sum) #alternates between An and Ap, so alternate DST coverage
       
-      tally[grep("^A.[.]R[0cn]",statenames),"nDSTs"] <- # if not rif R
-        apply( squaremat[ grep("^A.[.]R[0cn]",statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * 
-                 targetpop[1] * availability * max(DSTnew) * rep(eligibility, each=length(grep("^A.[.]R[0cn]",statenames))/2) , 1, sum )
+      tally[grep("^A.[.]R[0cn].*Hn",statenames),"nDSTs"] <- # if not rif R
+        apply( squaremat[ grep("^A.[.]R[0cn].*Hn",statenames), c(grep("^T.*Hn",statenames),grep("^R.*Hn",statenames)) ] * 
+                 targetpop[1] * availability * max(DSTnew) * eligibility[1] , 1, sum )
+      tally[grep("^A.[.]R[0cn].*Hp",statenames),"nDSTs"] <- # if not rif R
+        apply( squaremat[ grep("^A.[.]R[0cn].*Hp",statenames), c(grep("^T.*Hp",statenames),grep("^R.*Hp",statenames)) ] * 
+                 targetpop[1] * availability * max(DSTnew) * eligibility[2], 1, sum )
+      
       if (length(grep("^A.[.]Rr",statenames))>0)
       {
-        tally[grep("^A.[.]Rr",statenames),"nDSTs"] <- # if rif R 
-          apply( squaremat[ grep("^A.[.]Rr",statenames), c(grep("^T",statenames),grep("^R",statenames)) ] * 
-                   ( (1-DSTrif)*targetpop[1] + DSTrif*targetpop[2] ) * availability * max(DSTnew) * rep(eligibility, each=length(grep("^A.[.]Rr",statenames))/2) , 1, sum )
+        tally[grep("^A.[.]Rr.*Hn",statenames),"nDSTs"] <- # if rif R 
+          apply( squaremat[ grep("^A.[.]Rr.*Hn",statenames), c(grep("^T.*Hn",statenames),grep("^R.*Hn",statenames)) ] * 
+                   ( (1-DSTrif)*targetpop[1] + DSTrif*targetpop[2] ) * availability * max(DSTnew) * eligibility[1] , 1, sum )
+        tally[grep("^A.[.]Rr.*Hp",statenames),"nDSTs"] <- # if rif R 
+          apply( squaremat[ grep("^A.[.]Rr.*Hp",statenames), c(grep("^T.*Hp",statenames),grep("^R.*Hp",statenames)) ] * 
+                   ( (1-DSTrif)*targetpop[1] + DSTrif*targetpop[2] ) * availability * max(DSTnew) * eligibility[2] , 1, sum )
       }
       
       tally[grep("^Ts", statenames), "rxtime_s"] <- rep(1, length(grep("^Ts", statenames))) #doesn't include ineffective (Ti) months

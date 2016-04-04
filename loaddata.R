@@ -59,6 +59,56 @@ longparamnames <- c("Increase in acquired novel drug resistance if resistant to 
                     "Transmission coefficient (calibrated to target prevalence)",
                     "HIV infection rate (calibrated to target coprevalence)")
                     
+paramsigns <- c(1,
+                1,
+                1,1,
+                -1,1,
+                -1,
+                -1,
+                1,
+                1,
+                -1,
+                1,
+                1,
+                1,1,
+                1,1,
+                1,1,
+                1,
+                -1,
+                1,1,
+                1,1,
+                1,1,
+                1,1,
+                1,
+                1,
+                1,
+                1,
+                1)
+brokenlongparamnames <- c("Increase in acquired novel drug resistance if resistant to companion drug", 
+                    "Probability of also acquiring companion drug resistance if acquiring novel drug resistance",
+                    "Increase in poor outcomes if companion-drug resistant", "Increase in poor outcomes if novel-drug resistant", 
+                    "Fraction of RR detected,\nretreatment patients", "Fraction of RR detected,\nnew patients",
+                    "Transmissibility of\nresistant strains",
+                    "Efficacy of standard\nRR regimen",
+                    "Probability of acquiring RR\non standard RS regimen",
+                    "Efficacy of standard RS\nregimen against RR TB",
+                    "Transmissibility of novel-drug\nresistant strains",
+                    "Extra relapse from nonadherence,\n if 1/3 of treatment taken",
+                    "Extra relapse from nonadherence,\n if 2/3 of treatment taken",
+                    "Pre-treatment loss to follow up", "Monthly loss to follow up,\nstandard regimens",
+                    "New TB diagnosis rate, HIV-", "TB re-diagnosis rate, HIV-",
+                    "TB diagnosis rate,\nnew HIV+ patients", "TB diagnosis rate,\nretreatment HIV+ patients",
+                    "Relapse as proportion of\nthose not cured",
+                    "Efficacy of standard\nDS regimen",
+                    "TB mortality rate, HIV-", "TB mortality rate, HIV+",
+                    "Fraction progressing\nrapidly, HIV-", "Fraction progressing\nrapidly, HIV+",
+                    "TB reactivation rate, HIV-", "TB reactivation, HIV+",
+                    "Baseline mortality rate, HIV-", "Baseline mortality rate, HIV+",
+                    "Reduction in rapid progression\nif had prior latent infection",
+                    "Rate of relapse after treatment",
+                    "Rate of spontaneous resolution (HIV- only)",
+                    "Transmission coefficient (calibrated to target prevalence)",
+                    "HIV infection rate (calibrated to target coprevalence)")
 
 
 cols <- c("pink", "beige","palegreen")
@@ -89,6 +139,13 @@ redo_drout <- redo_alldrout[redo_alldrout[,"rrinc"]/redo_alldrout[,"inc"] > 1/to
 
 alldrout <- redo_drout
 alldrDST <- redo_drDST
+
+
+drtraj <- numeric(0)
+i <- 1; while(file.exists(paste0(location,"DRtraj_redo_",currenttag,".",i,".csv")))
+{drtraj <- rbind(drtraj, read.csv(paste0(location,"DRtraj_redo_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0
+drtraj <- drtraj[drtraj[,"X0rrinc"]/drtraj[,"X0inc"] > 1/tolerance*drtraj[,"targetdr"] & drtraj[,"X0rrinc"]/drtraj[,"X0inc"] < tolerance*drtraj[,"targetdr"], ]  #within 3fold if rr incident fraction target
+
 
 
 allnovelwide <- list()
