@@ -1,25 +1,22 @@
 source("TPPmat.R")
 
-currenttag <- "India_20160313p"; tolerance <- 1.5; location=""
-targetepi <- "India"
+currenttag <- "India_20160419p"; tolerance <- 1.5; location=""
 
 source("loaddata.R")
 
 
 ###############################
-par(mar=c(3,6,7,1), mfrow=c(1,1),oma=c(0,0,0,0))
-bpctdown <- barplot(height = array(-c(1,3,5,2,3,4), dim=c(3,2)), beside = TRUE, 
-                    ylab="Impact of novel regimen\n(mortality reduction)", ylim=c(-6,0), yaxt='n',
-                    xlab="", las=1, cex.lab=1.5, 
-                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x=8, y= 2.2, cex=1.2),
-                    col=cols, names.arg=c("Over full range\n of possible novel regimens","Varying only\nspecified characteristic"), cex.names=1.1)
-arrows(bpctdown[1,], -5.5, bpctdown[3,], -5.5, angle=90, code=3, length=0.1)
-
-
-
+# par(mar=c(3,6,7,1), mfrow=c(1,1),oma=c(0,0,0,0))
+# bpctdown <- barplot(height = array(-c(1,3,5,2,3,4), dim=c(3,2)), beside = TRUE, 
+#                     ylab="Impact of novel regimen\n(mortality reduction)", ylim=c(-6,0), yaxt='n',
+#                     xlab="", las=1, cex.lab=1.5, 
+#                     legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x=8, y= 2.2, cex=1.2),
+#                     col=cols, names.arg=c("Over full range\n of possible novel regimens","Varying only\nspecified characteristic"), cex.names=1.1)
+# arrows(bpctdown[1,], -5.5, bpctdown[3,], -5.5, angle=90, code=3, length=0.1)
+# 
 # Results overview #
 
-novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds <- alldrDST #[1:nrow(novelwide),]
+novelwide <- novelwide1; drout <- droutds <- alldrDST #[1:nrow(novelwide),]
 outcome <- "tbdeaths"
 
 traj <- array(0, dim=c(11,3,5)); dimnames(traj) <- list("t"=0:10, "level"=levels, "q"=c(0.025,0.25,0.5,0.75,0.975))
@@ -33,7 +30,6 @@ points(c(0,10), c(median(drout[,"tbdeaths"]),median(drout[,"tbdeaths10"])), col=
 legend("bottomleft", legend= c("Continued current standard", "Minimal novel DS regimen", "Intermediate novel DS regimen", "Optimal novel DS regimen"),
        col=c("black","deeppink","orange","green"), lty=1,lwd=2)
 
-
 final_pctdown <- array(0,dim=c( length(dselementnames) , 3 , 5 )); 
 dimnames(final_pctdown) <- list("vary"=dselementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in dselementnames) 
@@ -45,7 +41,7 @@ for (vary in dselementnames)
                                        drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
 }  
 
-par(mar=c(2,4,8,1), mfrow=c(1,1), oma=c(0,0,0,0))
+par(mar=c(2,4,4,1), mfrow=c(1,1), oma=c(0,0,0,0))
 bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
                     ylab="% reduction (median [IQR])",
                     xlab="", las=2, cex.lab=1, 
@@ -55,107 +51,63 @@ bpctdown <- barplot(height = 100*aperm(final_pctdown, c(2,1,3))[,,"0.5"], beside
                     space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),6)),
                     col=cols, names.arg=rep("", length(dselementnames)))
 axis(2, at=seq(-25,0,by=5), labels=paste0(seq(-25,0,by=5),"%"),las=2,cex.axis=0.8)
-mtext("Reduction in year 10 TB mortality with a novel DS-TB regimen,\n compared to projection under current standard of care", cex=1.2, line=5, side=3)
-mtext("Varied TRP element(s)", side=3, line=3)
+mtext("Impact of novel RS TB regimens", cex=1.2, side=3, line=2)
+# mtext("Reduction in year 10 TB mortality with a novel DS-TB regimen,\n compared to projection under current standard of care", cex=1.2, line=5, side=3)
+# mtext("Varied TRP element(s)", side=3, line=3)
 # text((bpctdown+0.4)[,2], -0.5, dslabels[4:6] ,cex=0.9, pos=2, srt=90, col="black", font=2) 
 text(colMeans(bpctdown) ,0.5, dselementlabels, cex=0.8, pos=3, srt=0, font=1, xpd=NA)
 arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
 # arrows(bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.025"], bpctdown, aperm(100*final_pctdown, c(2,1,3))[,,"0.975"], angle=90, code=3, length=0.05)
 # calculate contribution of each element to total novel regimen impact
 
-# # box version
-# int <- final_pctdown["all",2,"0.5"]; min <- final_pctdown[,1,"0.5"] - int; opt <- final_pctdown[,3,"0.5"] - int
-# par(mar=c(3,3,3,12))
-# boxes <- barplot(100*(min-int), offset=100*int, ylim=100*1.2*c(min(opt),max(min)),
-#                 ylab="% Change in TB mortality",
-#                 col=cols[1], names=dselementnames)
-# barplot(100*(opt-int), offset=100*int, col=cols[3], add=TRUE)
-# abline(h=0,lty=2); text(boxes[8]+1,0.5,"Baseline projection under\ncontinuing current care", xpd=NA, pos=4)
-# abline(h=100*int,lty=2); text(boxes[8]+1,100*int+0.5,"Estimated impact of novel\nregimen meeting all\nintermediate targets", xpd=NA, pos=4)
-# legend("bottomright", c("Characteristic(s) kept at minimal level", "Characteristic(s) improved to optimal level"),
-#        fill=cols[c(1,3)], xjust=0)
 
-## incidence outcome
-
-outcome <- c("inc") #can set up loop over multiple outcomes
-
-incdown <- array(0,dim=c( length(dselementnames) , 3 , 5 )); 
-dimnames(incdown) <- list("vary"=dselementnames, "level"=c("minimal", "intermediate", "optimal"), "q"=c(0.025,0.25,0.5,0.75,0.975))
-for (vary in dselementnames) 
-{ incdown[vary,1,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"minimal")] - drout[ , paste0(outcome,"10")] )/
-                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
-  incdown[vary,2,] <- quantile((novelwide[ , paste0(outcome, "10allintermediate")] - drout[ , paste0(outcome,"10")] )/
-                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
-  incdown[vary,3,] <- quantile((novelwide[ , paste0(outcome, "10", vary,"optimal")] - drout[ , paste0(outcome,"10")] )/
-                                       drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
-}  
-
-par(mar=c(2,4,8,1), mfrow=c(1,1), oma=c(0,0,0,0))
-bpctdown <- barplot(height = 100*aperm(incdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
-                    ylab="% reduction (median [IQR])",
-                    xlab="", las=2, cex.lab=1, 
-                    ylim=c(150*incdown[1,3,"0.5"], 2), yaxt='n',
-                    legend=c("minimal","intermediate","optimal"),
-                    args.legend=list(title="Level of varied element(s)", x="bottom",cex=0.9),
-                    space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),6)),
-                    col=cols, names.arg=rep("", length(dselementnames)))
-axis(2, at=seq(-12,0,by=2), labels=paste0(seq(-12,0,by=2),"%"),las=2,cex.axis=0.8)
-mtext(expression(paste("Reduction in year 10 TB ",bold("incidence")," with a novel DS-TB regimen,")), cex=1.2, line=5, side=3)
-mtext("compared to projection under current standard of care", cex=1.2, line=4, side=3)
-mtext("Varied TRP element(s)", side=3, line=2)
-text(colMeans(bpctdown) ,0.5, dselementlabels, cex=0.8, pos=3, srt=0, font=1, xpd=NA)
-arrows(bpctdown, aperm(100*incdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*incdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
-
+## incidence outcome, intermediate baseline
 
 # DS combos
 
-novelwide <- allnovelwide$DSDSTall_rDSTall.
-dscombos <- numeric(0)
-i <- 1; while(file.exists(paste0(location,"TRPcombos_DSDSTall_rDSTall.",currenttag,".",i,".csv")))
-{dscombos <- rbind(dscombos, read.csv(paste0(location,"TRPcombos_DSDSTall_rDSTall.",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0read.csv(paste0())
-outcome <- "tbdeaths"
-drDST <- alldrDST
-
-scenarionames <- c("em_dm_tm_xm_sm_","em_dm_tm_xm_si_","em_dm_tm_xm_so_", 
-                   "em_do_tm_xm_sm_", "em_do_tm_xm_si_", "em_do_tm_xm_so_", 
-                   "em_dm_to_xm_sm_", "em_dm_to_xm_si_", "em_dm_to_xm_so_", 
-                   "em_dm_tm_xo_sm_", "em_dm_tm_xo_si_", "em_dm_tm_xo_so_",
-                   
-                   "ei_dm_tm_xm_sm_", "ei_dm_tm_xm_si_", "ei_dm_tm_xm_so_", 
-                   "ei_do_tm_xm_sm_","ei_do_tm_xm_si_", "ei_do_tm_xm_so_", 
-                   "ei_dm_to_xm_sm_", "ei_dm_to_xm_si_", "ei_dm_to_xm_so_", 
-                   "ei_dm_tm_xo_sm_","ei_dm_tm_xo_si_", "ei_dm_tm_xo_so_",
-                   
-                   "eo_dm_tm_xm_sm_","eo_dm_tm_xm_si_", "eo_dm_tm_xm_so_",
-                   "eo_do_tm_xm_sm_","eo_do_tm_xm_si_", "eo_do_tm_xm_so_", 
-                   "eo_dm_to_xm_sm_","eo_dm_to_xm_si_", "eo_dm_to_xm_so_", 
-                   "eo_dm_tm_xo_sm_","eo_dm_tm_xo_si_", "eo_dm_tm_xo_so_")
-
-a <- numeric(0); for (i in 1:length(grep("^tbdeaths",colnames(dscombos)))) a[i] <- median((dscombos[,grep("^tbdeaths",colnames(dscombos))[i]]- drDST$tbdeaths10 )/drDST$tbdeaths10)
-a[length(a)+1] <- median(((allnovelwide$DSDSTall_rDSTall.$tbdeaths10alloptimal - alldrDST$tbdeaths10 )/alldrDST$tbdeaths10))
-names(a) <- c(colnames(dscombos)[grep("^tbdeaths",colnames(dscombos))], "all optimal")
-par(mar=c(3,5,3,3)); 
-bcols <- c("gray",topo.colors(3))
-b<-barplot(a[c(c(1,10,7,4,12,9,6)+12*rep(c(0,1,2), each=7))], las=2, ylab="TB mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6)),
-           col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3)), angle=20, density=c( rep( c(rep(30,4), rep(100,3)), times=3), 100) ,
-           ylim=c(-0.16,0.02), xaxt='n', cex.lab=1.2,
-           main="Impact of select characteristic combinations,\nwith and without associated increased novel regimen uptake")
-text(x=b[c(4,11,18)], y=0.01, c("Current efficacy", "Intermediate efficacy", "Optimal efficacy"), cex=1.2)
-legend("bottomleft", c("Baseline ~ standard of care", "Increased eligibility", "Improved adherence", "Shortened duration"),
-       fill=bcols[1:4], xpd=NA, bty="n", cex=1.2)
-legend("bottomright", c("With limited (50%) uptake of novel DS regimen", "With universal uptake of novel DS regimen"), 
-       angle=20, density = c(30,100), fill = c("black","black"), bty='n', cex=1.2)
-
-
-
+# novelwide <- allnovelwide$DSDSTall_rDSTall.
+# dscombos <- numeric(0)
+# i <- 1; while(file.exists(paste0(location,"TRPcombos_DSDSTall_rDSTall.",currenttag,".",i,".csv")))
+# {dscombos <- rbind(dscombos, read.csv(paste0(location,"TRPcombos_DSDSTall_rDSTall.",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0read.csv(paste0())
+# outcome <- "tbdeaths"
+# drDST <- alldrDST
+# 
+# # paste from updated sensitivity version
+# scenarionames <- c("em_dm_tm_xm_sm_","em_dm_tm_xm_si_","em_dm_tm_xm_so_", 
+#                    "em_do_tm_xm_sm_", "em_do_tm_xm_si_", "em_do_tm_xm_so_", 
+#                    "em_dm_to_xm_sm_", "em_dm_to_xm_si_", "em_dm_to_xm_so_", 
+#                    "em_dm_tm_xo_sm_", "em_dm_tm_xo_si_", "em_dm_tm_xo_so_",
+#                    
+#                    "ei_dm_tm_xm_sm_", "ei_dm_tm_xm_si_", "ei_dm_tm_xm_so_", 
+#                    "ei_do_tm_xm_sm_","ei_do_tm_xm_si_", "ei_do_tm_xm_so_", 
+#                    "ei_dm_to_xm_sm_", "ei_dm_to_xm_si_", "ei_dm_to_xm_so_", 
+#                    "ei_dm_tm_xo_sm_","ei_dm_tm_xo_si_", "ei_dm_tm_xo_so_",
+#                    
+#                    "eo_dm_tm_xm_sm_","eo_dm_tm_xm_si_", "eo_dm_tm_xm_so_",
+#                    "eo_do_tm_xm_sm_","eo_do_tm_xm_si_", "eo_do_tm_xm_so_", 
+#                    "eo_dm_to_xm_sm_","eo_dm_to_xm_si_", "eo_dm_to_xm_so_", 
+#                    "eo_dm_tm_xo_sm_","eo_dm_tm_xo_si_", "eo_dm_tm_xo_so_")
+# 
+# a <- numeric(0); for (i in 1:length(grep("^tbdeaths",colnames(dscombos)))) a[i] <- median((dscombos[,grep("^tbdeaths",colnames(dscombos))[i]]- drDST$tbdeaths10 )/drDST$tbdeaths10)
+# a[length(a)+1] <- median(((allnovelwide$DSDSTall_rDSTall.$tbdeaths10alloptimal - alldrDST$tbdeaths10 )/alldrDST$tbdeaths10))
+# names(a) <- c(colnames(dscombos)[grep("^tbdeaths",colnames(dscombos))], "all optimal")
+# par(mar=c(3,5,3,3)); 
+# bcols <- c("gray",topo.colors(3))
+# b<-barplot(a[c(c(1,10,7,4,12,9,6)+12*rep(c(0,1,2), each=7))], las=2, ylab="TB mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6)),
+#            col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3)), angle=20, density=c( rep( c(rep(30,4), rep(100,3)), times=3), 100) ,
+#            ylim=c(-0.16,0.02), xaxt='n', cex.lab=1.2,
+#            main="Impact of select characteristic combinations,\nwith and without associated increased novel regimen uptake")
+# text(x=b[c(4,11,18)], y=0.01, c("Current efficacy", "Intermediate efficacy", "Optimal efficacy"), cex=1.2)
+# legend("bottomleft", c("Baseline ~ standard of care", "Increased eligibility", "Improved adherence", "Shortened duration"),
+#        fill=bcols[1:4], xpd=NA, bty="n", cex=1.2)
+# legend("bottomright", c("With limited (50%) uptake of novel DS regimen", "With universal uptake of novel DS regimen"), 
+#        angle=20, density = c(30,100), fill = c("black","black"), bty='n', cex=1.2)
 
 # Minimum and maximal baselines
 ## novelwide's allminimal and alloptimal include variation in scaleup, so "allbut" ends up making extra difference because it also includes loss of optimal scaleup. so use allminopt runs instead.
 
-novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds
+drout <- alldrDST
 outcome <- "tbdeaths"
-
-###!! or should I benchmark to drout[,paste0(outcome,"10")] instead of allminopt_ds[ , paste0(outcome, "allmin")]? I think here benchmarking to an all-minimal regimen makes sense.
 
 dsmin <- array(0,dim=c(6,5)); dimnames(dsmin) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in dselementnames[2:7])
@@ -165,22 +117,6 @@ for (vary in dselementnames[2:7])
       (allminopt_ds[ , paste0(outcome, "10allmin")] - allminopt_ds[ , paste0(outcome, "10allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
 
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(dsmin[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n',
-             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(6), args.legend=list(x="topright", cex=1), xlim=c(-0.2,1))
-mtext("Fraction of total mortality benefit of all-optimal novel DS regimen (median [95% UR]) that is
-      attainable by improving only a single characteristic from minimal to optimal level", side=3, line=1, font=2, cex=1, xpd=NA)
-text(dsmin[,5]+0.05, b, paste0(round(dsmin[,3]*100, 1),"%"))
-arrows(dsmin[,"0.025"], b, dsmin[,"0.975"], b, angle=90, code=3, length=0.05)
-text(0.45, b[2], "'All minimal' baseline here is a regimen with 
-      ~ standard-of-care efficacy, duration, and tolerability,
-      that excludes 10% due to resistance, that excludes
-      10% of patients for medical reasons,
-      that reaches only 50% of eligible patients,
-      and that has low barrier to resistance.", pos=4)
-
-novelwide <- allnovelwide[["DSDSTall_rDSTall."]]; drout <- droutds
-outcome <- "tbdeaths"
 intdsmin <- array(0,dim=c(6,5)); dimnames(intdsmin) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in dselementnames[2:7])
 {
@@ -189,60 +125,37 @@ for (vary in dselementnames[2:7])
       (allminopt_ds[ , paste0(outcome, "10allmin")] - allminopt_ds[ , paste0(outcome, "10allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }  
 
-novelwide <- allnovelwide$DSDSTall_rDSTall.
-drout <- alldrDST
-outcome <- "tbdeaths"
-
 dsmax <- array(0,dim=c(6,5)); dimnames(dsmax) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in dselementnames[2:7])
 {
   dsmax[vary,] <- quantile( 
-      1- ( allbut_ds[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
-          (allminopt_ds[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+#       1- ( allbut_ds[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+#           (allminopt_ds[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+    1- ( allbut_ds[ , paste0(outcome, "10allbut",vary)] -  allminopt_ds[ , paste0(outcome,"10allmin")]) /
+      (allminopt_ds[ , paste0(outcome, "10allopt")] - allminopt_ds[ , paste0(outcome,"10allmin")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
-
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(dsmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(6), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
-mtext("Fraction of an all-optimal novel DS regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its minimal value", side=3, line=1, font=2, cex=1.1, xpd=NA)
-arrows(dsmax[,"0.025"], b, dsmax[,"0.975"], b, angle=90, code=3, length=0.05)
-text(dsmax[,5]+0.05, b, paste0(round(dsmax[,3]*100, 1),"%"))
-
-novelwide <- allnovelwide$DSDSTall_rDSTall.
-drout <- droutds
-outcome <- "tbdeaths"
 
 intdsmax <- array(0,dim=c(6,5)); dimnames(intdsmax) <- list("element"=dselementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in dselementnames[2:7])
 {
   intdsmax[vary,] <- quantile( 
-    1- ( intallbut_ds[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
-      (allminopt_ds[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+#     1- ( intallbut_ds[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+#       (allminopt_ds[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+    1- ( intallbut_ds[ , paste0(outcome, "10allbut",vary)] -  allminopt_ds[ , paste0(outcome,"10allmin")]) /
+      (allminopt_ds[ , paste0(outcome, "10allopt")] - allminopt_ds[ , paste0(outcome,"10allmin")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
-
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(intdsmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(6), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
-mtext("Fraction of an all-optimal novel DS regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its intermediate value", side=3, line=1, font=2, cex=1.1, xpd=NA)
-arrows(intdsmax[,"0.025"], b, intdsmax[,"0.975"], b, angle=90, code=3, length=0.05)
-text(intdsmax[,5]+0.05, b, paste0(round(intdsmax[,3]*100, 1),"%"))
 
 alldsmin <- array(0,dim=c(12,6)); for (i in 1:6) alldsmin[((1:2)+(2*(i-1))),i] <- rbind(intdsmin[,3], dsmin[,3]-intdsmin[,3])[,i]
 alldsmax <- array(0,dim=c(12,6)); for (i in 1:6) alldsmax[((1:2)+(2*(i-1))),i] <- rbind(intdsmax[,3], dsmax[,3]-intdsmax[,3])[,i]
 
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(alldsmax, horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             col=rep(rainbow(6),each=2), density=c(200,25))
-legend(x="topright", cex=1, legend=c(shortelementlabels[-c(1,8,9)],"Reduced to intermediate","Reduced to minimal"), fill=c(rainbow(6),"black","black"), density=c(rep(200,7),25))
-mtext("Fraction of an all-optimal novel DS regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to the intermediate or minimal target", side=3, line=1, font=2, cex=1.1, xpd=NA)
-# arrows(intdsmax[,"0.025"], b, intdsmax[,"0.975"], b, angle=90, code=3, length=0.05)
-arrows(dsmax[,"0.025"], b, dsmax[,"0.975"], b, angle=90, code=3, length=0.05)
-text(dsmax[,5]+0.05, b, paste0(round(dsmax[,3]*100, 1),"%"))
+
+
+
 
 # Same for DR regimen
 
 ## resize plot area to wide ##
-novelwide <- novelwide3 <- allnovelwide[["DRDSTall_"]]; drout <- droutdr <- alldrout#[1:nrow(novelwide),]
+novelwide <- novelwide3; drout <- droutdr <- alldrout#[1:nrow(novelwide),]
 
 outcome <- c("tbdeaths") 
 r_pctdown <- array(0,dim=c( length(drelementnames) , 3 , 5 )); y <- 10
@@ -268,19 +181,19 @@ for (vary in drelementnames)
                                    drout[ , paste0(outcome,"10")], c(0.025,0.25,0.5,0.75,0.975))
 }  
 
-par(mar=c(2,4,2,1), mfrow=c(1,2), oma=c(0,0,2,0))
-ylow=300*r_pctdown[1,3,"0.5"]
-bpctdown <- barplot(height = 100*aperm(r_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
-                    ylab="% reduction, total TB mortality (median [IQR])", 
-                    main="", xlab="", las=2, cex.lab=1, 
-                    ylim=c(1,0)*ylow, yaxt='n',
-                    legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x=bpctdown[2,7], y=-3,cex=0.8),
-                    space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),6)),
-                    col=cols, names.arg=rep("", length(drelementnames)))
-axis(2, at=c(-5,0), labels=paste0(c(5,0),"%"),las=2,cex.axis=0.8)
-text(colMeans(bpctdown) ,ylow, shortelementlabels[c(1:7,9)], cex=0.8, pos=4, srt=90, font=2, xpd=NA)
-mtext("Varied TRP element(s)", side=1, line=1, xpd=NA, cex=0.8)
-arrows(bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
+# par(mar=c(2,4,2,1), mfrow=c(1,2), oma=c(0,0,2,0))
+# ylow=300*r_pctdown[1,3,"0.5"]
+# bpctdown <- barplot(height = 100*aperm(r_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
+#                     ylab="% reduction, total TB mortality (median [IQR])", 
+#                     main="", xlab="", las=2, cex.lab=1, 
+#                     ylim=c(1,0)*ylow, yaxt='n',
+#                     legend=c("minimal","intermediate","optimal"), args.legend=list(title="Level of varied element(s)", x="center", y=-3,cex=0.8),
+#                     space=c(0,0,0,1.5,0,0,rep(c(0.5,0,0),6)),
+#                     col=cols, names.arg=rep("", length(drelementnames)))
+# axis(2, at=c(-5,0), labels=paste0(c(5,0),"%"),las=2,cex.axis=0.8)
+# text(colMeans(bpctdown) ,ylow, shortelementlabels[c(1:7,9)], cex=0.8, pos=4, srt=90, font=2, xpd=NA)
+# # mtext("Varied TRP element(s)", side=1, line=1, xpd=NA, cex=0.8)
+# arrows(bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*r_pctdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05, xpd=NA)
 
 ylow <- 130*rr_pctdown[1,3,"0.5"]
 bpctdown <- barplot(height = 100*aperm(rr_pctdown, c(2,1,3))[,,"0.5"], beside = TRUE, 
@@ -295,37 +208,55 @@ text(colMeans(bpctdown) ,ylow, shortelementlabels[c(1:7,9)], cex=0.8, pos=4, srt
 mtext("Varied TRP element(s)", side=1, line=1, cex=0.8)
 arrows(bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,,"0.25"], bpctdown, aperm(100*rr_pctdown, c(2,1,3))[,,"0.75"], angle=90, code=3, length=0.05)
 
-mtext("Reduction in year 10 TB mortality with novel DR-TB regimen,\n compared to projection under current standard of care",side=3,outer=TRUE, cex=1.4, line=-1, xpd=NA) 
+mtext("Impact of novel RR TB regimens",side=3,outer=TRUE, cex=1.4, line=-1, xpd=NA) 
+# mtext("Reduction in year 10 TB mortality with novel RR-TB regimen,\n compared to projection under current standard of care",side=3,outer=TRUE, cex=1.4, line=-1, xpd=NA) 
 
 ## DR combos
-novelwide <- allnovelwide$DRDSTall_
-drcombos <- numeric(0)
-i <- 1; while(file.exists(paste0(location,"TRPcombos_DRDSTall_",currenttag,".",i,".csv")))
-{drcombos <- rbind(drcombos, read.csv(paste0(location,"TRPcombos_DRDSTall_",currenttag,".",i,".csv"), header = TRUE)); i <- i+1} #saved results from dr sampling runs at time 0read.csv(paste0())
 outcome <- "rrdeaths"
-drout <- alldrout
-a <- numeric(0); for (i in 1:length(grep("^rrdeaths",colnames(drcombos)))) a[i] <- median((drcombos[,grep("^rrdeaths",colnames(drcombos))[i]]- drout$rrdeaths10 )/drout$rrdeaths10)
-a[length(a)+1] <- median(((allnovelwide$DRDSTall_$rrdeaths10alloptimal - alldrout$rrdeaths10 )/alldrout$rrdeaths10))
-names(a) <- c(colnames(drcombos)[grep("^rrdeaths",colnames(drcombos))], "all optimal")
-par(mar=c(3,5,3,3)); 
-bcols <- c("gray",topo.colors(3))
-# b<-barplot(a[c(c(1,6,4,2,7,5,3)+7*rep(c(0,1,2), each=7), length(a))], las=2, ylab="mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6),1),
-#            col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3), bcols[5]), angle=20, density=c( rep( c(rep(40,4), rep(100,3)), times=3), 100) ,
-#            ylim=c(-0.2,0.02), xaxt='n')
-b<-barplot(a[c(c(1,10,7,4,12,9,6)+12*rep(c(0,1,2), each=7))], las=2, ylab="RR TB mortality reduction", space = c(rep(0.1,7),1,rep(0.1,6),1,rep(0.1,6)),
-           col=c( rep(c( bcols[1], rep(bcols[2:4], 2)), times=3)), angle=20, density=c( rep( c(rep(30,4), rep(100,3)), times=3), 100) ,
-           ylim=c(-0.7,0.02), xaxt='n',  cex.lab=1.2,
-           main="Impact of select characteristic combinations,\nwith and without associated increased RR detection and treatment")
-text(x=b[c(4,11,18)], y=0.02, c("Current efficacy", "Intermediate efficacy", "Optimal efficacy"), xpd=NA)
-legend("bottomleft", c("Baseline ~ standard of care", "Increased eligibility", "Improved adherence", "Shortened duration"),
-       fill=bcols[1:4], xpd=NA, bty="n")
-legend("bottomright", c("With current RR diagnosis and treatment coverage", "With universal RR diagnosis and treatment"), 
-       angle=20, density = c(30,100), fill = c("black","black"), bty='n')
+drout <- drout_combos
+novel_combos <- novelwide3[1:nrow(combos_dr),]
+a <- alow <- ahigh <- numeric(0); 
+for (i in 1:length(grep("^rrdeaths",colnames(combos_dr)))) 
+  {a[i] <- median((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout_combos$rrdeaths10 )/drout_combos$rrdeaths10)
+   alow[i] <- quantile((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout_combos$rrdeaths10 )/drout_combos$rrdeaths10, 0.025)
+   ahigh[i] <- quantile((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout_combos$rrdeaths10 )/drout_combos$rrdeaths10, 0.975)
+}
+a[length(a)+1] <- median((sens_dr$rrdeaths10allopt - drout_combos$rrdeaths10)/drout_combos$rrdeaths10)
+alow[length(alow)+1] <- quantile((sens_dr$rrdeaths10allopt - drout_combos$rrdeaths10)/drout_combos$rrdeaths10,0.025)
+ahigh[length(ahigh)+1] <- quantile((sens_dr$rrdeaths10allopt - drout_combos$rrdeaths10)/drout_combos$rrdeaths10, 0.975)
 
+a[length(a)+1] <- median((allminopt_dr$rrdeaths10allopt - alldrout$rrdeaths10)/alldrout$rrdeaths10)
+alow[length(alow)+1] <- quantile((allminopt_dr$rrdeaths10allopt - alldrout$rrdeaths10)/alldrout$rrdeaths10,0.025)
+ahigh[length(ahigh)+1] <- quantile((allminopt_dr$rrdeaths10allopt - alldrout$rrdeaths10)/alldrout$rrdeaths10, 0.975)
+
+names(a) <- names(alow) <- names(ahigh) <- c(colnames(combos_dr)[grep("^rrdeaths",colnames(combos_dr))], "all optimal", "opt to scaleup")
+## fix for new ordering and names:
+scenarios <- c("em_dm_tm_xm_sm_","em_dm_tm_xm_si_","em_dm_tm_xm_so_", 
+               "eo_dm_tm_xm_sm_","eo_dm_tm_xm_si_", "eo_dm_tm_xm_so_",
+               "em_do_tm_xm_sm_", "em_do_tm_xm_si_", "em_do_tm_xm_so_", 
+               "em_dm_to_xm_sm_", "em_dm_to_xm_si_", "em_dm_to_xm_so_", 
+               "em_dm_tm_xo_sm_", "em_dm_tm_xo_si_", "em_dm_tm_xo_so_",
+               "eo_do_to_xo_sm_","eo_do_to_xo_si_", "eo_do_to_xo_so_")
+# ). [For supplement: combos DR figure with baseline vs universal rifampin DST, 
+#for all-minimal, efficacy, duration, tolerability, and all-optimized.]
+# need to run sims for fully optimized including scaleup
+
+par(mar=c(3,5,5,3), mfrow=c(1,1), oma=c(0,0,0,0)); 
+bcols <- c("gray",blues, "purple","green" )
+which <- c(1,4,7,10,16,length(a),3,6,9,12,18,length(a)-1)
+b<-barplot(a[which], las=2, ylab="RR TB mortality reduction", space = c(rep(0.1,6),1,rep(0.1,5)),
+           col=bcols, #angle=20, density=rep( c(30,100),each=5),
+           ylim=c(-0.6,0.02), xaxt='n',  cex.lab=1.2, yaxt='n',
+           main="Ten-year RR TB mortality impact of RR regimen improvements, \nwith and without associated increased RR detection and treatment")
+text(x=b[c(3,10)], y=0.02, c("With current RR DST scale-up", "With accelerated RR DST scale-up"), xpd=NA, cex=1.2)
+legend("bottomleft", c("All-Minimal novel regimen (~ standard of care)", "Optimized efficacy (~ RS TB treatment)", "Optimized duration (6 months)", "Optimized tolerability (50% reduced nonadherence)", "Optimized efficacy, duration, and tolerability", "Optimized for all six characteristics"),
+       fill=bcols, xpd=NA)
+axis(side = 2, at = seq(-0.6,0,by=0.1), labels = paste(seq(60,0,by=-10),"%"))
+arrows(b,alow[which],b, ahigh[which], angle=90, code=3, length=0.1)
 
 # Union abstract version
 
-novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr <- alldrout#[1:nrow(novelwide),]
+novelwide <- novelwide3; drout <- droutdr <- alldrout#[1:nrow(novelwide),]
 
 outcome <- c("rrdeaths"); y <- 10
 rr_pctdown <- array(0,dim=c( length(drelementnames) , 3 , 5 )); 
@@ -373,7 +304,7 @@ rr_pctdown[,,2:4]
 
 
 # RR regimen minimal and maximla baselines
-novelwide <- allnovelwide[["DRDSTall_"]]; drout <- alldrout
+drout <- alldrout
 outcome <- "rrdeaths"
 
 drmin <- array(0,dim=c(6,5)); dimnames(drmin) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
@@ -382,25 +313,10 @@ for (vary in drelementnames[2:7])
   drmin[vary,] <- quantile( 
     (allminopt_dr[ , paste0(outcome, "10allmin")] - only_dr[ , paste0(outcome, "10only",vary)] ) /
       (allminopt_dr[ , paste0(outcome, "10allmin")] - allminopt_dr[ , paste0(outcome, "10allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
+#             (drout[ , paste0(outcome, "10")] - only_dr[ , paste0(outcome, "10only",vary)] ) /
+#               (drout[ , paste0(outcome, "10")] - allminopt_dr[ , paste0(outcome, "10allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
 
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(drmin[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n',
-             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(6), args.legend=list(x="topright", cex=0.8), xlim=c(-0.1,1))
-mtext("Fraction of total RR TB mortality benefit of all-optimal novel RR TB regimen that is attainable by improving 
-      only a single characteristic from minimal to optimal level (median [95% uncertainty range])", side=3, line=1, font=2, cex=1, xpd=NA)
-text(drmin[,5]+0.05, b, paste0(round(drmin[,3]*100, 1),"%"))
-arrows(drmin[,"0.025"], b, drmin[,"0.975"], b, angle=90, code=3, length=0.05)
-text(0.35, b[3], "'All minimal' baseline here is a regimen with 
-        ~ standard-of-care efficacy, duration, and tolerability,
-     that excludes 15% due to resistance, that excludes
-     10% of patients for medical reasons,
-     that has low barrier to resistance,
-     and that is associated with continued
-     current RR TB treatment coverage levels", pos=4)
-
-novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr
-outcome <- "rrdeaths"
 
 intdrmin <- array(0,dim=c(6,5)); dimnames(intdrmin) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in drelementnames[2:7])
@@ -410,53 +326,31 @@ for (vary in drelementnames[2:7])
       (allminopt_dr[ , paste0(outcome, "10allmin")] - allminopt_dr[ , paste0(outcome, "10allopt")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
 
-novelwide <- allnovelwide[["DRDSTall_"]]; drout <- droutdr
-outcome <- "rrdeaths"
-
 drmax <- array(0,dim=c(6,5)); dimnames(drmax) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in drelementnames[2:7])
 {
   drmax[vary,] <- quantile( 
-    1- ( allbut_dr[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
-      (allminopt_dr[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+#       1- ( allbut_dr[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+#         (allminopt_dr[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+          1- ( allbut_dr[ , paste0(outcome, "10allbut",vary)] -  allminopt_dr[ , paste0(outcome,"10allmin")]) /
+            (allminopt_dr[ , paste0(outcome, "10allopt")] - allminopt_dr[ , paste0(outcome,"10allmin")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
-
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(drmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(6), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
-mtext("Fraction of an all-optimal novel DR regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its minimal value", side=3, line=1, font=2, cex=1.1, xpd=NA)
-arrows(drmax[,"0.025"], b, drmax[,"0.975"], b, angle=90, code=3, length=0.05)
-text(drmax[,5]+0.05, b, paste0(round(drmax[,3]*100, 1),"%"))
 
 intdrmax <- array(0,dim=c(6,5)); dimnames(intdrmax) <- list("element"=drelementnames[-c(1,8)], "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (vary in drelementnames[2:7])
 {
   intdrmax[vary,] <- quantile( 
-    1- ( intallbut_dr[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
-      (allminopt_dr[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+#       1- ( intallbut_dr[ , paste0(outcome, "10allbut",vary)] -  drout[ , paste0(outcome,"10")]) /
+#         (allminopt_dr[ , paste0(outcome, "10allopt")] - drout[ , paste0(outcome,"10")]) , c(0.025,0.25,0.5,0.75,0.975) )
+    1- ( intallbut_dr[ , paste0(outcome, "10allbut",vary)] -  allminopt_dr[ , paste0(outcome,"10allmin")]) /
+      (allminopt_dr[ , paste0(outcome, "10allopt")] - allminopt_dr[ , paste0(outcome,"10allmin")]) , c(0.025,0.25,0.5,0.75,0.975) )
 }
-
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(intdrmax[,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             legend.text=shortelementlabels[-c(1,8,9)], col=rainbow(6), args.legend=list(x="topright", cex=1))#1.5, y=8, cex=0.8))
-mtext("Fraction of an all-optimal novel DR regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its intermediate value", side=3, line=1, font=2, cex=1.1, xpd=NA)
-arrows(intdrmax[,"0.025"], b, intdrmax[,"0.975"], b, angle=90, code=3, length=0.05)
-text(intdrmax[,5], b, paste0(round(intdrmax[,3]*100, 1),"%"))
-
 
 alldrmin <- array(0,dim=c(12,6)); for (i in 1:6) alldrmin[((1:2)+(2*(i-1))),i] <- rbind(intdrmin[,3], drmin[,3]-intdrmin[,3])[,i]
 alldrmax <- array(0,dim=c(12,6)); for (i in 1:6) alldrmax[((1:2)+(2*(i-1))),i] <- rbind(intdrmax[,3], drmax[,3]-intdrmax[,3])[,i]
 
-par(mar=c(1,1,3,1), mfrow=c(1,1)) 
-b <- barplot(alldrmax, horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n', xlim=c(0,1),
-             col=rep(rainbow(6),each=2), density=c(200,25))
-legend(x="topright", cex=1, legend=c(shortelementlabels[-c(1,8,9)],"Reduced to intermediate","Reduced to minimal"), fill=c(rainbow(6),"black","black"), density=c(rep(200,7),25))
-mtext("Fraction of an all-optimal novel RR regimen's mortality impact (median [95% UR])\nthat is lost when only one characteristic is reduced to its intermediate or minimal value", side=3, line=1, font=2, cex=1.1, xpd=NA)
-arrows(drmax[,"0.025"], b, drmax[,"0.975"], b, angle=90, code=3, length=0.05)
-text(drmax[,5]+0.05, b, paste0(round(drmax[,3]*100, 1),"%"))
 
-
-## FIGURE 2 ##
+## FIGURE 3 ##
 
 ## 2x2 Manuscript Figure: DS/DR, min/max baselines
 #  with fixed (intermediate) scale-up variables - have fixed TRPattribfrac to do this with commented if (DR/DS) lines near top
@@ -466,24 +360,23 @@ text(drmax[,5]+0.05, b, paste0(round(drmax[,3]*100, 1),"%"))
 # and get intermediates for min amd opt - need to write extra script if I want to plot this
 # 
 # And think about how I'm going to do sensitivity analyses: PRCCs, then one-way in subset of sims? And just one-way for scaleup variables with novel regimen.)
-
-
+  
 par(mar=c(1,2,3,0), oma=c(0,4,1,1), mfrow=c(2,2)) 
-
-# b <- barplot(dsmin[1:6,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', yaxt='n', col=rainbow(6), xlim=c(-0.1,1),
-#              main="Fraction of maximal novel regimen impact that is\nachievable by a single optimized characteristic", font.main=2, xpd=NA)
+  
 b <- barplot(alldsmin[,6:1], horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n', yaxt='n', xlim=c(-0.1,0.7),
-             main="Fraction of maximal novel regimen impact that is\nachievable by a single optimized characteristic", font.main=2, xpd=NA,
+             main="Fraction of total mortality reduction achieved", font.main=2, xpd=NA,
+#              main="Fraction of total incidence impact of\nnovel regimen optimization that is achieved\nby optimizing a single characteristic", font.main=2, xpd=NA,
              col=rep(rainbow(6),each=2), density=c(25, 200))
 text(dsmin[6:1,5], b, paste0(round(dsmin[6:1,3]*100, 1),"%"), pos=4)
 arrows(dsmin[6:1,"0.025"], b, dsmin[6:1,"0.975"], b, angle=90, code=3, length=0.05)
-text(-0.05,mean(b),"Rifampin-\nSusceptible\nregimen",pos=2, xpd=NA, cex=1.3, font=2)
+text(-0.05,mean(b),"Rifampin-\nSusceptible\nregimens",pos=2, xpd=NA, cex=1.3, font=2)
 text(0.3, mean(b),"A", font=2, cex=1.5)
 
 # b <- barplot(-dsmax[1:6,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', yaxt='n', xlim=c(-1,0), col=rainbow(6),
 #              main="Fraction of maximal impact lost if a\nsingle aspect of regimen is not optimized", font.main=2, xpd=NA)
 b <- barplot(-alldsmax[,6:1], horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n', yaxt='n', xlim=c(-0.9,0), 
-             main="Fraction of maximal impact lost if a\nsingle aspect of regimen is not optimized", font.main=2, xpd=NA,
+             main="Fraction of total mortality impact lost", font.main=2, xpd=NA,
+#              main="Fraction of total incidence impact of\nnovel regimen optimization that is lost\nwhen a single chracteristic is not optimized", font.main=2, xpd=NA,
               col=rep(rainbow(6),each=2), density=c(200,25))
 arrows(-dsmax[6:1,"0.025"], b, -dsmax[6:1,"0.975"], b, angle=90, code=3, length=0.05)
 text(-dsmax[6:1,5], b, paste0(round(dsmax[6:1,3]*100, 1),"%"),xpd=NA, pos=2)
@@ -496,7 +389,7 @@ b <- barplot(alldrmin[,6:1], horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n'
              col=rep(rainbow(6),each=2), density=c(25, 200))
 text(drmin[6:1,5], b, paste0(round(drmin[6:1,3]*100, 1),"%"), pos=4)
 arrows(drmin[6:1,"0.025"], b, drmin[6:1,"0.975"], b, angle=90, code=3, length=0.05)
-text(-0.05,mean(b),"Rifampin-\nResistant\nregimen",pos=2, xpd=NA, cex=1.3, font=2)
+text(-0.05,mean(b),"Rifampin-\nResistant\nregimens",pos=2, xpd=NA, cex=1.3, font=2)
 text(0.3, mean(b),"C", font=2, cex=1.5)
 
 # b <- barplot(-drmax[1:6,3], horiz = TRUE, beside=TRUE, las=2, font=2, xaxt='n', yaxt='n', xlim=c(-1,0), col=rainbow(6))
@@ -508,7 +401,7 @@ text(-drmax[6:1,5], b, paste0(round(drmax[6:1,3]*100, 1),"%"), pos=2)
 #      c("Efficacy (76-94% durable cure*)","Barrier to resistance (0.8-10% acquire new resistance)","Preexisting resistance (prevalence 0-15%)","Medical Contraindications (0-11% excluded)", "Duration (6-20 months)", "Tolerability (adherence improves 0-50%)"),pos=1, xpd=NA)
 text(-0.4, mean(b),"D", font=2, cex=1.5)
 
-legend(x=-1.1,y=mean(b)*3.5,,xpd=NA, cex=1, legend=c(shortelementlabels[-c(1,8,9)],"Minimal vs. intermediate value","Intermediate vs. optimal value"), fill=c(rainbow(6),"black","black"), density=c(rep(200,6),25, 200))
+legend(x=-1.1,y=mean(b)*3.5,,xpd=NA, cex=1.1, legend=c(shortelementlabels[-c(1,8,9)],"Minimal vs. intermediate value","Intermediate vs. optimal value"), fill=c(rainbow(6),"black","black"), density=c(rep(200,6),25, 200))
 
 
 
@@ -520,40 +413,77 @@ legend(x=-1.1,y=mean(b)*3.5,,xpd=NA, cex=1, legend=c(shortelementlabels[-c(1,8,9
 # need to use a min and opt with int scaleup, so will redo to save these at all time points and reload on 4/2
 # and if using RR, need to update axis labels and manuscript text
 
-novelwide <- novelwide3
-outcome <- "rrdeaths"
+
+outcome <- "tbdeaths"
 times <- seq(0,10,by=1); ls <- c("allmin", "onlyeff", "allbuteff", "allopt", "baseline")
-traj <- array(0, dim=c(length(times),5,5)); dimnames(traj) <- list("t"=times, "level"=ls, "q"=c(0.025,0.25,0.5,0.75,0.975))
+straj <- array(0, dim=c(length(times),5,5)); dimnames(straj) <- list("t"=times, "level"=ls, "q"=c(0.025,0.25,0.5,0.75,0.975))
 for (t in times) 
 {
-  traj[t+1,"allmin",] <- quantile(allminopt_dr[,colnames(allminopt_dr)==paste0(outcome, t, "allmin")], c(0.025,0.25,0.5,0.75,0.975))
-  traj[t+1,"allopt",] <- quantile(allminopt_dr[,colnames(allminopt_dr)==paste0(outcome, t, "allopt")], c(0.025,0.25,0.5,0.75,0.975))
-  traj[t+1,"onlyeff",] <- quantile(only_dr[,colnames(only_dr)==paste0(outcome, t, "onlyefficacy")], c(0.025,0.25,0.5,0.75,0.975))
-  traj[t+1,"allbuteff",] <- quantile(allbut_dr[,colnames(allbut_dr)==paste0(outcome, t, "allbutefficacy")], c(0.025,0.25,0.5,0.75,0.975))
-  traj[t+1, "baseline",] <- quantile(drtraj[, colnames(drtraj)==paste0("X",t,outcome)], c(0.025,0.25,0.5,0.75,0.975))
-#   traj[t+1,"onlyeff",] <- quantile(only_dr[,colnames(only_dr)==paste0(outcome, t, "onlyefficacy")], c(0.025,0.25,0.5,0.75,0.975))
-#   traj[t+1,"allbuteff",] <- quantile(allbut_dr[,colnames(allbut_dr)==paste0(outcome, t, "allbutefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+  straj[t+1,"allmin",] <- quantile(allminopt_ds[,colnames(allminopt_ds)==paste0(outcome, t, "allmin")], c(0.025,0.25,0.5,0.75,0.975))
+  straj[t+1,"allopt",] <- quantile(allminopt_ds[,colnames(allminopt_ds)==paste0(outcome, t, "allopt")], c(0.025,0.25,0.5,0.75,0.975))
+  straj[t+1,"onlyeff",] <- quantile(only_ds[,colnames(only_ds)==paste0(outcome, t, "onlyefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+  straj[t+1,"allbuteff",] <- quantile(allbut_ds[,colnames(allbut_ds)==paste0(outcome, t, "allbutefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+  straj[t+1, "baseline",] <- quantile(drtraj_ds[, colnames(drtraj_ds)==paste0("X",t,outcome)], c(0.025,0.25,0.5,0.75,0.975))
 }
-par(mar=c(4,4,1,1), oma=c(0,0,0,0), mfrow=c(1,1))
-plot(0:10, traj[,"allmin","0.5"], ylim=c(0,1.4), type='l', xlab="Years after novel RR TB regimen's introduction", ylab="Annual RR TB mortality, median projection",
-# plot(0:10, traj[,"allmin","0.5"], ylim=c(0,40), type='l', xlab="Years after novel RS TB regimen's introduction", ylab="Annual TB mortality, median projection",
+
+outcome <- "rrdeaths"
+times <- seq(0,10,by=1); ls <- c("allmin", "onlyeff", "allbuteff", "allopt", "baseline")
+rtraj <- array(0, dim=c(length(times),5,5)); dimnames(rtraj) <- list("t"=times, "level"=ls, "q"=c(0.025,0.25,0.5,0.75,0.975))
+for (t in times) 
+{
+  rtraj[t+1,"allmin",] <- quantile(allminopt_dr[,colnames(allminopt_dr)==paste0(outcome, t, "allmin")], c(0.025,0.25,0.5,0.75,0.975))
+  rtraj[t+1,"allopt",] <- quantile(allminopt_dr[,colnames(allminopt_dr)==paste0(outcome, t, "allopt")], c(0.025,0.25,0.5,0.75,0.975))
+  rtraj[t+1,"onlyeff",] <- quantile(only_dr[,colnames(only_dr)==paste0(outcome, t, "onlyefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+  rtraj[t+1,"allbuteff",] <- quantile(allbut_dr[,colnames(allbut_dr)==paste0(outcome, t, "allbutefficacy")], c(0.025,0.25,0.5,0.75,0.975))
+  rtraj[t+1, "baseline",] <- quantile(drtraj_dr[, colnames(drtraj_dr)==paste0("X",t,outcome)], c(0.025,0.25,0.5,0.75,0.975))
+}
+
+par(mar=c(4,4,1,6), oma=c(0,0,0,0), mfrow=c(1,2))
+
+plot(0:10, straj[,"allmin","0.5"], ylim=c(0,18), type='l', xlab="Years after novel RS TB regimen's introduction", ylab="Annual TB mortality, median projection",
+     lwd=2, col="red",lty=1, bty='l')
+points(0:10, straj[,"onlyeff","0.5"], type='l', col='red',lwd=2, lty=2)
+points(0:10, straj[,"allbuteff","0.5"], type='l', col='green',lwd=2, lty=2)
+points(0:10, straj[,"allopt","0.5"], type='l', col='green',lwd=2, lty=1)
+points(0:10, straj[,"baseline","0.5"], type='l', col='black',lwd=2, lty=1)
+
+segments(x0=10, y0=0.75, y1=1.4, lty=3, col="black", lwd=1)
+# arrows(9, 0.65, 10, 0.75, lty=1, col="black", lwd=1, code=2, angle=45)
+# text(10,0.5,"Primary analyses\nperformed 10 years\nafter novel regimen's\nintroduction", pos=2)
+
+legend("bottomleft",legend= c("Current-care projections", "regimen minimal for all characteristics", "Optimized efficacy only", "All characteristics optimized except efficacy", "All characteristics optimized"),
+       col=c("black","red","red","green","green"), lty=c(1,1,2,2,1),lwd=2, cex=1, xpd=NA)
+
+arrows(9, straj["9","allbuteff","0.5"], 9, straj["9","allopt","0.5"], angle=45, code=3, length=0.1)
+text (9,mean(straj["9",c("allopt","onlyeff"),"0.5"]),"Figure 3B", pos=2)
+
+arrows(9.5, mean(straj[c("10","9"),"allmin","0.5"]), 9.5, mean(straj[c("10","9"),"onlyeff","0.5"]), angle=45, code=3, length=0.1) 
+text (9.5,mean(straj[c("10","9"),c("onlyeff","allmin"),"0.5"]),"Figure 3A", pos=4, xpd=NA)
+
+arrows(9.25, mean(straj[c("10","9"),"allopt","0.5"]), 9.25, mean(straj[c("10","9"),"allmin","0.5"]), angle=45, code=3, length=0.1, lty=2)
+
+
+plot(0:10, rtraj[,"allmin","0.5"], ylim=c(0,0.7), type='l', xlab="Years after novel RR TB regimen's introduction", ylab="Annual RR TB mortality, median projection",
           lwd=2, col="red",lty=1, bty='l')
-points(0:10, traj[,"onlyeff","0.5"], type='l', col='red',lwd=2, lty=2)
-points(0:10, traj[,"allbuteff","0.5"], type='l', col='green',lwd=2, lty=2)
-points(0:10, traj[,"allopt","0.5"], type='l', col='green',lwd=2, lty=1)
-points(0:10, traj[,"baseline","0.5"], type='l', col='black',lwd=2, lty=1)
-# segments(x0=10, y0=20, y1=35, lty=3, col="black", lwd=1); text(10,18,"Primary analyses\nperformed 10 years\nafter novel regimen's\nintroduction", pos=2)
-segments(x0=10, y0=0.5, y1=1.5, lty=3, col="black", lwd=1); text(10,0.5,"Primary analyses\nperformed 10 years\nafter novel regimen's\nintroduction", pos=2)
+points(0:10, rtraj[,"onlyeff","0.5"], type='l', col='red',lwd=2, lty=2)
+points(0:10, rtraj[,"allbuteff","0.5"], type='l', col='green',lwd=2, lty=2)
+points(0:10, rtraj[,"allopt","0.5"], type='l', col='green',lwd=2, lty=1)
+points(0:10, rtraj[,"baseline","0.5"], type='l', col='black',lwd=2, lty=1)
 
-legend(x=0.2,y=0.01,xjust=0,yjust=0, legend= c("Current-care projections", "RR TB regimen minimal for all characteristics", "Improved efficacy only", "All characteristics improved except efficacy", "All characteristics improved"),
-       col=c("black","red","red","green","green"), lty=c(1,1,2,2,1),lwd=2, cex=1)
+segments(x0=10, y0=0.32, y1=0.7, lty=3, col="black", lwd=1)
+arrows(9, 0.31, 10, 0.37, lty=1, col="black", lwd=1, code=2, angle=45)
+text(9.5,0.23,"Primary analyses\nperformed 10 years\nafter novel regimen's\nintroduction", pos=2)
 
-arrows(9, traj["9","allbuteff","0.5"], 9, traj["9","allopt","0.5"], angle=45, code=3, length=0.1); 
-          text (9,mean(traj["9",c("allopt","onlyeff"),"0.5"]),"Figure 2C", pos=2)
-arrows(9.5, mean(traj[c("10","9"),"onlyeff","0.5"]), 9.5, mean(traj[c("10","9"),"allmin","0.5"]), angle=45, code=3, length=0.1); 
-          text (9.5,mean(traj[c("10","9"),c("onlyeff","allmin"),"0.5"]),"Figure 2D", pos=2)
-# add curved arrows after generating figure?
+# legend(x=0.2,y=0.01,xjust=0,yjust=0, legend= c("Current-care projections", "RR TB regimen minimal for all characteristics", "Optimized efficacy only", "All characteristics optimized except efficacy", "All characteristics optimized"),
+#        col=c("black","red","red","green","green"), lty=c(1,1,2,2,1),lwd=2, cex=1)
 
+arrows(9, rtraj["9","allbuteff","0.5"], 9, rtraj["9","allopt","0.5"], angle=45, code=3, length=0.1)
+text (9,mean(rtraj["9",c("allopt","onlyeff"),"0.5"]),"Figure 3D", pos=2)
+
+arrows(9.5, mean(rtraj[c("10","9"),"allmin","0.5"]), 9.5, mean(rtraj[c("10","9"),"onlyeff","0.5"]), angle=45, code=3, length=0.1) 
+text (9.5,mean(rtraj[c("10","9"),c("onlyeff","allmin"),"0.5"]),"Figure 3C", pos=4, xpd=NA)
+
+arrows(9.25, mean(rtraj[c("10","9"),"allopt","0.5"]), 9.25, mean(rtraj[c("10","9"),"allmin","0.5"]), angle=45, code=3, length=0.1, lty=2)
 
 
 
@@ -585,13 +515,13 @@ for (vary in dselementnames[2:7]) for (nreg in 1:3)
 
 ## FIGURE 4 ##
 
-par(mar=c(3,6,4,1), mfcol=c(1,1), oma=c(0,0,0,0)) 
+par(mar=c(3,6,5,1), mfcol=c(1,1), oma=c(0,0,0,0)) 
 bres <- barplot(12*cbind(aperm(resource,c(1,3,2,4))["efficacy",c(2,1,3),c(1,3),3], aperm(resource,c(1,3,2,4))["exclusions",c(2,1,3),3,3],aperm(resource,c(1,3,2,4))["duration",c(2,1,3),3,3]), beside = FALSE, 
-                cex.lab=1.2, ylim=c(0,600), #main="Treatment provided", 
+                cex.lab=1.2, ylim=c(0,650), #main="Treatment provided", 
                 col=rev(blues), ylab="Patient-months of treatment\nper 100,000 population in year 10, by regimen", xaxt='n')
 text(bres, -50, c("All-minimal\nRS regimen","Optimized\nEfficacy", 
                              "Optimized\nEligibility","Optimized\nDuration"), font=2, xpd=NA)
-legend(x = bres[3]+0.5, y=max(12*rowSums(resource["duration",,1:3,3]))+30, xjust=0.5, yjust=0, fill=blues,
+legend(x = bres[3]+0.5, y=max(12*rowSums(resource["duration",,1:3,3]))+20, xjust=0.5, yjust=0, fill=blues,
        c("Novel DS regimen","MDR regimen","Standard DS regimen")[c(1,3,2)], xpd=NA)
 # text((bres[c(1,3,5)]+bres[c(2,4,6)])/2, -6*14, c("Efficacy", "Contraindications","Duration"), cex=1.1, pos=1, xpd=NA)
 
@@ -664,8 +594,8 @@ arrows(bup, aperm(tests, c(2,1,3,4))[,2:4,1,"0.25"], bup, aperm(tests, c(2,1,3,4
 ##############
 # Sensitivity analysis, total regimen impact
 library("sensitivity")
-prccall <- pcc(X = novelwide1[,41:74], y= ((alldrDST[,"tbdeaths10"] - novelwide1[,"tbdeaths10allintermediate"])/ alldrDST[,"tbdeaths10"] ), rank=TRUE ) 
-prccallres <- pcc(X = novelwide3[,41:74], y= ((alldrout[,"rrdeaths10"] - novelwide3[,"rrdeaths10allintermediate"]) /alldrout[,"rrdeaths10"] ), rank=TRUE ) 
+prccall <- pcc(X = novelwide1[,41:75], y= ((alldrDST[,"tbdeaths10"] - novelwide1[,"tbdeaths10allintermediate"])/ alldrDST[,"tbdeaths10"] ), rank=TRUE ) 
+prccallres <- pcc(X = novelwide3[,41:75], y= ((alldrout[,"rrdeaths10"] - novelwide3[,"rrdeaths10allintermediate"]) /alldrout[,"rrdeaths10"] ), rank=TRUE ) 
 cbind(rownames(prccall$PRCC), prccall$PRCC)[rev(order(abs(prccall$PRCC))),]
 
 ## SUPPLEMENTAL FIGURE S[all]##
@@ -673,21 +603,21 @@ o <- rev(rev(order(abs(prccall$PRCC$original)))[1:10])
 ores <- rev(rev(order(abs(prccallres$PRCC$original)))[1:10])
 display <- c(ores[!(ores %in% o)],o)
 
-par(mfrow=c(1,2),mar=c(4,2,2,1), oma=c(0,25,3,0))
+par(mfrow=c(1,2),mar=c(4,2,2,1), oma=c(0,27,0,0))
 b <- barplot(prccall$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
              names.arg=longparamnames[display], 
              axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
-             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Novel DS regimen", cex.main=1 )
+             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Novel RS regimen", cex.main=1 )
 axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
-axis(2, labels=longparamnames[display],at=b, las=1, cex.axis=0.8, cex.lab=2, outer = TRUE, tick = FALSE, xpd=NA)
-mtext("Parameter", side=2,line=24, outer=TRUE)
+axis(2, labels=longparamnames[display],at=b, las=1, cex.axis=0.9, cex.lab=2, outer = TRUE, tick = FALSE, xpd=NA)
+mtext("Parameter", side=2,line=26, outer=TRUE)
 b <- barplot(prccallres$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
              names.arg=longparamnames[display], 
              axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
-             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Novel DR regimen", cex.main=1 )
+             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Novel RR regimen", cex.main=1 )
 axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
-mtext("Partial rank correlation of model parameters with the\nmortality impact of an all-intermediate novel regimen", side=3,cex=1.2,outer=TRUE)
-
+# mtext("Partial rank correlation of model parameters with the percent reduction in TB (RRTB mortality reduction from an all-intermediate novel regimen", side=3,cex=1.2,outer=TRUE)
+mtext("Partial rank correlation coefficient with % (RR) TB mortality reduction from all-intermediate regimen                                                ", side=1, outer=TRUE, xpd=NA, line=-1)
 
 
 # # sensitivity analysis: ltfu at 2 months (haven't run for 20160313p)
@@ -725,18 +655,18 @@ mtext("Partial rank correlation of model parameters with the\nmortality impact o
 
 # sensitivity analysis: PRCCs for each parameter
 # for the size of the range of % mortality reduction for an otherwise-intermeidate novel regimen as one parameter varied
-prcc$duration <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
-prcc$durationres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10durationminimal"] - novelwide3[,"rrdeaths10durationoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
-prcc$efficacy <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10efficacyminimal"] - novelwide1[,"tbdeaths10efficacyoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
-prcc$efficacyres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10efficacyminimal"] - novelwide3[,"rrdeaths10efficacyoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
-prcc$barrier <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10barrierminimal"] - novelwide1[,"tbdeaths10barrieroptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
-prcc$barrierres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10barrierminimal"] - novelwide3[,"rrdeaths10barrieroptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
-prcc$companion <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10companionminimal"] - novelwide1[,"tbdeaths10companionoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
-prcc$companionres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10companionminimal"] - novelwide3[,"rrdeaths10companionoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
-prcc$tolerability <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10tolerabilityminimal"] - novelwide1[,"tbdeaths10tolerabilityoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
-prcc$tolerabilityres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10tolerabilityminimal"] - novelwide3[,"rrdeaths10tolerabilityoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
-prcc$exclusions <- pcc(X = novelwide1[,41:74], y= (novelwide1[,"tbdeaths10exclusionsminimal"] - novelwide1[,"tbdeaths10exclusionsoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
-prcc$exclusionsres <- pcc(X = novelwide3[,41:74], y= (novelwide3[,"rrdeaths10exclusionsminimal"] - novelwide3[,"rrdeaths10exclusionsoptimal"] )/alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$duration <- pcc(X = novelwide1[,41:75], y= (novelwide1[,"tbdeaths10durationminimal"] - novelwide1[,"tbdeaths10durationoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$durationres <- pcc(X = novelwide3[,41:75], y= (novelwide3[,"rrdeaths10durationminimal"] - novelwide3[,"rrdeaths10durationoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$efficacy <- pcc(X = novelwide1[,41:75], y= (novelwide1[,"tbdeaths10efficacyminimal"] - novelwide1[,"tbdeaths10efficacyoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$efficacyres <- pcc(X = novelwide3[,41:75], y= (novelwide3[,"rrdeaths10efficacyminimal"] - novelwide3[,"rrdeaths10efficacyoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$barrier <- pcc(X = novelwide1[,41:75], y= (novelwide1[,"tbdeaths10barrierminimal"] - novelwide1[,"tbdeaths10barrieroptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$barrierres <- pcc(X = novelwide3[,41:75], y= (novelwide3[,"rrdeaths10barrierminimal"] - novelwide3[,"rrdeaths10barrieroptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$companion <- pcc(X = novelwide1[,41:75], y= (novelwide1[,"tbdeaths10companionminimal"] - novelwide1[,"tbdeaths10companionoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$companionres <- pcc(X = novelwide3[,41:75], y= (novelwide3[,"rrdeaths10companionminimal"] - novelwide3[,"rrdeaths10companionoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$tolerability <- pcc(X = novelwide1[,41:75], y= (novelwide1[,"tbdeaths10tolerabilityminimal"] - novelwide1[,"tbdeaths10tolerabilityoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$tolerabilityres <- pcc(X = novelwide3[,41:75], y= (novelwide3[,"rrdeaths10tolerabilityminimal"] - novelwide3[,"rrdeaths10tolerabilityoptimal"] )/ alldrout[,"rrdeaths10"], rank=TRUE)
+prcc$exclusions <- pcc(X = novelwide1[,41:75], y= (novelwide1[,"tbdeaths10exclusionsminimal"] - novelwide1[,"tbdeaths10exclusionsoptimal"] )/ alldrDST[,"tbdeaths10"], rank=TRUE)
+prcc$exclusionsres <- pcc(X = novelwide3[,41:75], y= (novelwide3[,"rrdeaths10exclusionsminimal"] - novelwide3[,"rrdeaths10exclusionsoptimal"] )/alldrout[,"rrdeaths10"], rank=TRUE)
 
 # plot top PRCCs for each, as a heat map? !!
 # select top 3 for each (for max 18 total for each of DS and DR), and list each, with tornadoes for the same 3 DS shown in previous figure (efficacy, duration, and ? companion (would need to change fig 4 to match))
@@ -752,18 +682,18 @@ displayall <- rev(unique(c(display,displayres)))
 require('fields'); require('RColorBrewer')
 par(mfrow=c(1,2), oma=c(7,13,0,0), mar=c(4,0,2,2))
 icol <- c(rev(brewer.pal(9,"Oranges")),"white",brewer.pal(9,"Blues"))
-image(z=t(cbind(paramsigns*prcc$efficacy$PRCC$original, paramsigns*prcc$duration$PRCC$original, paramsigns*prcc$tolerability$PRCC$original, 
-                paramsigns*prcc$barrier$PRCC$original, paramsigns*prcc$companion$PRCC$original, paramsigns*prcc$exclusions$PRCC$original)[displayall,]), zlim=c(-1,1), col=icol,
+image(z=t(cbind(paramsigns*prcc$efficacy$PRCC$original, paramsigns*prcc$barrier$PRCC$original, paramsigns*prcc$companion$PRCC$original, 
+                paramsigns*prcc$exclusions$PRCC$original, paramsigns*prcc$duration$PRCC$original, paramsigns*prcc$tolerability$PRCC$original)[displayall,]), zlim=c(-1,1), col=icol,
         xaxt='n', yaxt='n',main="Novel RS TB regimen")
-axis(at = (0:5)/5,labels=c("Efficacy","Duration","Tolerability","Barrier to\nresistance","Preexisting\nresistance","Contra-\nindications"), 
+axis(at = (0:5)/5,labels=c("Efficacy","Barrier to\nresistance","Preexisting\nresistance","Contra-\nindications", "Duration","Tolerability"), 
      side=1, las=2, font=2)
 axis(at=seq(0,1, length=length(displayall)), labels=brokenlongparamnames[displayall], cex.axis=0.9, side=2, xpd=NA, las=1)
 box("plot")
 
-image(z=t(cbind(paramsigns*prcc$efficacyres$PRCC$original, paramsigns*prcc$durationres$PRCC$original, paramsigns*prcc$tolerabilityres$PRCC$original, 
-                paramsigns*prcc$barrierres$PRCC$original, paramsigns*prcc$companionres$PRCC$original, paramsigns*prcc$exclusionsres$PRCC$original)[displayall,]), zlim=c(-1,1), col=icol,
+image(z=t(cbind(paramsigns*prcc$efficacyres$PRCC$original, paramsigns*prcc$barrierres$PRCC$original, paramsigns*prcc$companionres$PRCC$original, 
+                paramsigns*prcc$exclusionsres$PRCC$original, paramsigns*prcc$durationres$PRCC$original, paramsigns*prcc$tolerabilityres$PRCC$original)[displayall,]), zlim=c(-1,1), col=icol,
       xaxt='n', yaxt='n', main="Novel RR TB regimen")
-axis(at = (0:5)/5,labels=c("Efficacy","Duration","Tolerability","Barrier to\nresistance","Preexisting\nresistance","Contra-\nindications"), 
+axis(at = (0:5)/5,labels=c("Efficacy","Barrier to\nresistance","Preexisting\nresistance","Contra-\nindications","Duration","Tolerability"), 
      side=1, las=2, font=2)
 box("plot")
 
@@ -771,34 +701,6 @@ par(oma=c( 0,0,0,1))# reset margin to be much smaller.
 image.plot( legend.only=TRUE, zlim=c(-1,1), col=icol, horizontal=TRUE, legend.lab ="PRCC") # image.plot tricked into  plotting in margin of old setting 
 set.panel() # reset plotting device
 
-
-
-par(mfrow=c(1,6),mar=c(4,2,2,1), oma=c(0,5,2,0))
-b <- barplot(prcc$efficacy$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
-             names.arg=longparamnames[display], 
-             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
-             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of efficacy", cex.main=1 )
-axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
-b <- barplot(prcc$duration$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
-             names.arg=longparamnames[display], 
-             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
-             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of efficacy", cex.main=1 )
-
-
-axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
-axis(2, labels=longparamnames[display],at=b, las=1, cex.axis=0.8, cex.lab=2, outer = TRUE, tick = FALSE, xpd=NA)
-mtext("Parameter (varied +-50% around median estimate", side=2,line=24, outer=TRUE)
-b <- barplot(prcc$companion$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
-             names.arg=longparamnames[display], 
-             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
-             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of preexisting resistance", cex.main=1 )
-axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
-b <- barplot(prcc$duration$PRCC$original[display], horiz=TRUE, beside=TRUE, space=c(0.5,0),
-             names.arg=longparamnames[display], 
-             axes=FALSE,axisnames=FALSE, xlim=c(-1,1),
-             las=1, cex.names=0.8, cex.axis=0.8,cex.lab=0.8, main="Impact of duration", cex.main=1 )
-axis(1, at=0.2*c(-4:4),cex.axis=0.8,cex.lab=0.9)
-mtext("Partial rank correlation of model parameter with the mortality impact of regimen duration", side=3,cex=1.2,outer=TRUE)
 
 
 # full duration PRCC plot:

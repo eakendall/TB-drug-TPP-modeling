@@ -7,9 +7,9 @@ tname <- commandArgs(trailingOnly=TRUE)[3]
 pessimistic <- commandArgs(trailingOnly=TRUE)[4]
 location <- "../scratch/"
 
-tag <- "20160313"
+tag <- "20160419"
 if (pessimistic) tag <- paste0(tag,"p")
-Nsims_ds <- 500
+Nsims_ds <- 1000
 
 source("TPPmat.R")
 values <- set.values(pessimistic=pessimistic)
@@ -18,11 +18,11 @@ Nsamplepars_ds <- length(unlist(values$varied_ds)); ilimits <- ceiling(seq(0,Nsi
 
 if(file.exists(paste0(location,"LHS_",tag,".RDS"))) LHS <- readRDS(paste0(location,"LHS_",tag,".RDS")) else {LHS <- maximinLHS(Nsims_ds, Nsamplepars_ds); saveRDS(LHS, file=paste0(location,"LHS_",tag,".RDS"))}
 
-if (Nsims_ds > nrow(LHS)) 
-{ 
-  oldLHS <- LHS; LHS <- augmentLHS(LHS, Nsims_ds - nrow(oldLHS)); saveRDS(LHS, file=paste0(location,"LHS_",tag,".RDS")); saveRDS(oldLHS, file=paste0(location,"oldLHS_",nrow(oldLHS),"_",tag,".RDS")) 
-  ilimits <- ceiling(seq(nrow(oldLHS),Nsims_ds, length=ntasks+1)); print(ilimits)
-}
+ if (Nsims_ds > nrow(LHS)) 
+ { 
+   oldLHS <- LHS; LHS <- augmentLHS(LHS, Nsims_ds - nrow(oldLHS)); saveRDS(LHS, file=paste0(location,"LHS_",tag,".RDS")); saveRDS(oldLHS, file=paste0(location,"oldLHS_",nrow(oldLHS),"_",tag,".RDS")) 
+#    ilimits <- ceiling(seq(nrow(oldLHS),Nsims_ds, length=ntasks+1)); print(ilimits)
+ }
 
 currenttag <- paste0(tag,".",taskid)
 
@@ -87,6 +87,5 @@ if (dsvalues$cal$hivrate<0.00001) dsvalues$cal$hivrate <- 0
   write(file=paste0(location,"DScalibration_", currenttag, ".csv"), c(isim, unlist(targetepis[tname]), unlist(dsvalues), opte$log[nrow(opte$log),-1]), 
         sep=",", ncol=length(dsheader), append=TRUE)
   
-#   }
-  
+
 }

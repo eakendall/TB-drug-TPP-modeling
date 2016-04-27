@@ -30,7 +30,7 @@ set.novelvalues <- function()
   
   selections$availability <- array(c(0.5,0.75,1,
                                0.5,0.75,1), dim=c(3,2))
-  selections$rifdx_increase <- c(0, 0.5, 1) # for DR only
+  selections$rifdx_increase <- c(0, 0, 1) # for DR only, !! note that this now actually only considers baseline (min and intermediate) vs universal (optimal) rDST
       
   elementnames <- c("efficacy", "duration", "companion", "barrier", "exclusions", "tolerability", "uptake", "riftest")
   return(list("selections"=selections, "elementnames"=elementnames))
@@ -47,15 +47,16 @@ set.values <- function(pessimistic=FALSE)
       selfcurerate <- 0.2; relapserate <- 1; latreduct <- 0.6 #self cure in hiv neg only
       mort <- c(0.012,0.033);  #by HIV status; 
       reactrate <- c(0.0015,0.03); rapidprog <- c(0.13,0.5); 
-      tbmort <- c(0.2,1) #by HIV status. 
+      tbmort <- c(0.1,0.4) #by HIV status. 
       poor_s_rifs <- 0.06
       relapsepoor <- 0.67
-      dxrate <- c(0.6,0.9, # new and rerx  hiv-, and new and rerx hiv+
+      dxrate <- c(0.7, 1, # new and rerx  hiv-, and new and rerx hiv+
                   2, 3)
       ltfurate_sr <- ifelse(pessimistic,0.03,0.01) #monthly rate
       initialloss_s <- 0.15
       relapse24 <- c(7.5, 3)
       transcost_n <- 0.3
+      restarttime <- 4/12
     })
     varied_dr <- list(); varied_dr <- within(varied_dr, { #includes those that vary for novel regimen outside of trp
       nonpoor_s_rifr <- 0.2
@@ -250,7 +251,7 @@ setup.model <- function(DRera=TRUE, treatSL=TRUE, treatnovel=TRUE)
       if (DRera) { Rnames <- c("R0", "Rr"); usereg <- 1 } else 
       { Rnames <- "R0"; usereg <- 1 }
   N <- 8; lengths <- c(1,1,1,1,2,3,3,8)/12
-  Tnames <- c("S", "Ln", "An", "Ti", paste0("T", rep(regimens[usereg], times=N), rep(1:N, each=length(usereg))), "R", "C", "Lp", "Ap")
+  Tnames <- c("S", "Ln", "An", paste0("T",regimens[usereg],"i"), paste0("T", rep(regimens[usereg], times=N), rep(1:N, each=length(usereg))), "R", "C", "Lp", "Ap")
   
   Hnames <- c("Hn", "Hp")
   statenames <- paste0(rep(Tnames, times=length(Rnames)*length(Hnames)), ".", rep(Rnames, each=length(Tnames), times=length(Hnames)), ".", rep(Hnames, each=length(Tnames)*length(Rnames)))
@@ -331,12 +332,13 @@ makemat <- function(pars)
     for (jr in Rnames) 
     {
       mat["An","S",jr,"R0","Hn","Hn"] <- mat["An","S",jr,"R0","Hn","Hn"] + selfcurerate;  # note all cures go back to R0 to simplify later computations
-      for (jt in c("Ap","Ti")) { mat[jt,"C",jr,"R0","Hn","Hn"] <- mat[jt,"C",jr,"R0","Hn","Hn"] + selfcurerate } 
+      for (jt in c("Ap",Tnames[grep("^T[srn]i",Tnames)])) { mat[jt,"C",jr,"R0","Hn","Hn"] <- mat[jt,"C",jr,"R0","Hn","Hn"] + selfcurerate } 
       for (jh in Hnames) {  
         mat["Ln","An",jr, jr, jh, jh] <- mat["Ln","An",jr, jr, jh, jh] + reactrate[jh]; 
         mat["Lp","Ap",jr, jr, jh, jh] <- mat["Lp","Ap",jr, jr, jh, jh] + reactrate[jh]  #reactivation, at hiv-dependent rate:
         diag(mat[,,jr,jr,jh,jh]) <- diag(mat[,,jr,jr,jh,jh]) + mort[jh] #death
-        diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) <- diag(mat[c("An","Ap","Ti"),c("An","Ap","Ti"),jr,jr,jh,jh]) + tbmort[jh] #death
+        diag(mat[c("An","Ap",Tnames[grep("^T[srn]i",Tnames)]),c("An","Ap",Tnames[grep("^T[srn]i",Tnames)]),jr,jr,jh,jh]) <- 
+          diag(mat[c("An","Ap",Tnames[grep("^T[srn]i",Tnames)]),c("An","Ap",Tnames[grep("^T[srn]i",Tnames)]),jr,jr,jh,jh]) + tbmort[jh] #death
         mat["R","Ap",jr,jr,jh,jh] <- mat["R","Ap",jr,jr,jh,jh] + relapserate #relapse
       }
     }
@@ -435,8 +437,8 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
     if (length(mat) != length(state)^2) {stop("Error: Initial-state and transition-matrix size mismatch.")}
     
     statemat <- array(unlist(state), dim=c(length(Tnames), length(Rnames), length(Hnames))); dimnames(statemat) <- list(Tnames, Rnames, Hnames)
-    if (length(Rnames)==1) { FOI <- sum(statemat[c("An","Ap","Ti"),,]) * transmissibility * beta / sum(statemat) 
-    } else  { FOI <- apply(statemat[c("An","Ap","Ti"),,], 2, sum) * transmissibility * beta / sum(statemat) }# FOI by strain
+    if (length(Rnames)==1) { FOI <- sum(statemat[c("An","Ap",Tnames[grep("^T[srn]i",Tnames)]),,]) * transmissibility * beta / sum(statemat) 
+    } else  { FOI <- apply(statemat[c("An","Ap",Tnames[grep("^T[srn]i",Tnames)]),,], 2, sum) * transmissibility * beta / sum(statemat) }# FOI by strain
     names(FOI) <- names(transmissibility) <- Rnames
     
     # infection
@@ -485,40 +487,39 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
           #of those who don't acquire resistance (1-rowSums(acqresmat)), will split between Ti (failmat) and T1 for the selected (startmat) regimen
           if (length(Rnames)>1)
           {
-            diag(mat[it, "Ti", , , jh, jh]) <- 
-              diag(mat[it, "Ti", , , jh, jh]) + startrate * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+            diag(mat[it, grep("^T[srn]i",Tnames)[nreg], , , jh, jh]) <- 
+              diag(mat[it, grep("^T[srn]i",Tnames)[nreg], , , jh, jh]) + startrate * startmat[it, Rnames ,nreg] * (1-rowSums(acqresmat[,,nreg]))*failmat[nreg, ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
               diag(mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + startrate * startmat[it, Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)
           } else #if only the standard regimen is an option, diag and rowSums functions cause errors
           {
-            mat[it, "Ti", 1,1, jh, jh] <- 
-              mat[it, "Ti", 1,1, jh, jh] + startrate * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
+            mat[it, grep("^T[srn]i",Tnames)[nreg], 1,1, jh, jh] <- 
+              mat[it, grep("^T[srn]i",Tnames)[nreg], 1,1, jh, jh] + startrate * startmat[it, Rnames ,nreg] * (1-(acqresmat[,,nreg]))*failmat[nreg,Rnames ] #failures go to ineffective treatment (with ongoing infectiousness and increased mortality risk)
             mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
               mat[it, grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  startrate * startmat[it, Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)            
           }
         }
       }
       
-      ### need to restart treatment for those on ineffective treatment (Ti). Can assume a fixed rate, median 4mo to restart/switch.
-      for (nreg in usereg)
+      ### need to restart treatment for those on ineffective treatment (Ti). 
+      for (nreg in usereg) for (ireg in usereg)
       {
-        restartrate <- 3
         
-        #acquired resistance moves to pending relapse for *new* strain
-        mat["Ti", "R", , , jh, jh]  <- 
-          mat["Ti", "R", , , jh, jh] + restartrate * startmat["Ap",Rnames,nreg] * acqresmat[,,nreg]
+        #acquired resistance in retreatment moves to pending relapse for *new* strain
+        mat[grep("^T[srn]i",Tnames)[ireg], "R", , , jh, jh]  <- 
+          mat[grep("^T[srn]i",Tnames)[ireg], "R", , , jh, jh] + 1/restarttime * startmat["Ap",Rnames,nreg] * acqresmat[,,nreg]
         
         #of those who don't acquire resistance (1-rowSums(acqresmat)), will split between Ti (failmat) and T1 for the selected (startmat) regimen
         if (length(Rnames)>1)
         {
           # deleted here the lines for going to inefective treatment, since they'll just stay there (but a diagonal mat entry would be misinterpreted as a death)
   
-          diag(mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
-            diag(mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + restartrate * startmat["Ap", Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)
+          diag(mat[grep("^T[srn]i",Tnames)[ireg], grep("T[srn]1",Tnames)[nreg], , , jh, jh]) <- 
+            diag(mat[grep("^T[srn]i",Tnames)[ireg], grep("T[srn]1",Tnames)[nreg], , , jh, jh]) + 1/restarttime * startmat["Ap", Rnames, nreg] * (1-rowSums(acqresmat[,,nreg]))*(1 - failmat[nreg, ]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)
         } else #if only the standard regimen is an option, diag and rowSums functions cause errors
         {
-          mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
-            mat["Ti", grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  restartrate * startmat["Ap", Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)            
+          mat[grep("^T[srn]i",Tnames)[ireg], grep("T[srn]1",Tnames)[nreg], , , jh, jh] <- 
+            mat[grep("^T[srn]i",Tnames)[ireg], grep("T[srn]1",Tnames)[nreg], , , jh, jh] +  1/restarttime * startmat["Ap", Rnames, nreg] * (1-(acqresmat[,,nreg]))*(1 - failmat[nreg, Rnames]) #for the remainder, treatment is initially effective (i.e. outcome will be cure vs relapse)            
         }
       }
       
@@ -540,17 +541,17 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
     {
       tally[c(grep("^A", statenames), grep("^T", statenames)), "prev"] <- 1
       
-      tally[c(grep("^A.[.]Rr", statenames), grep("^Ti[.]Rr", statenames)), "rprev"] <- 1
+      tally[c(grep("^A.[.]Rr", statenames), grep("^T.i[.]Rr", statenames)), "rprev"] <- 1
       
-      tally[c(grep("^A.[.]R(rc|c)", statenames), grep("^Ti[.]R(rc|c)", statenames)), "cprev"] <- 1
+      tally[c(grep("^A.[.]R(rc|c)", statenames), grep("^T.i[.]R(rc|c)", statenames)), "cprev"] <- 1
       
-      tally[c(grep("^A.[.]R(rcn|cn|n)", statenames), grep("^Ti[.]R(rcn|cn|n)", statenames)), "nprev"] <- 1
+      tally[c(grep("^A.[.]R(rcn|cn|n)", statenames), grep("^T.i[.]R(rcn|cn|n)", statenames)), "nprev"] <- 1
       
-      tally[c(grep("^A.[.]R(rcn|cn)", statenames), grep("^Ti[.]R(rcn|cn)", statenames)), "cnprev"] <- 1
+      tally[c(grep("^A.[.]R(rcn|cn)", statenames), grep("^T.i[.]R(rcn|cn)", statenames)), "cnprev"] <- 1
       
-      tally[c(grep("^A.[.]R(c|n)", statenames), grep("^Ti[.]R(c|n)", statenames)), "novelprev"] <- 1
+      tally[c(grep("^A.[.]R(c|n)", statenames), grep("^T.i[.]R(c|n)", statenames)), "novelprev"] <- 1
             
-      tally[c(grep("^A.[.]R(rc|rn)", statenames), grep("^Ti[.]R(rc|cn)", statenames)), "rnovelprev"] <- 1
+      tally[c(grep("^A.[.]R(rc|rn)", statenames), grep("^T.i[.]R(rc|cn)", statenames)), "rnovelprev"] <- 1
             
       tally[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),"inc"] <- #doens't include relapses (mostly early), but does include reinfections (mostly late) - i.3. this is a count of new infecitons, whether or not they are recognized as such
         apply(squaremat[c(grep("^S",statenames), grep("^C",statenames),grep("^L",statenames)),  grep("^A",statenames)], 1, sum)
@@ -567,11 +568,11 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
       tally[grep("^R",statenames),"relapses"] <- 
         apply(squaremat[grep("^R",statenames),  grep("^A",statenames)], 1, sum)
       
-      tally[c(grep("^A.*Hn", statenames), grep("^Ti.*Hn", statenames)), "tbdeaths"] <- tbmort[1]
-      tally[c(grep("^A.*Hp", statenames), grep("^Ti.*Hp", statenames)), "tbdeaths"] <- tbmort[2]
+      tally[c(grep("^A.*Hn", statenames), grep("^T.i.*Hn", statenames)), "tbdeaths"] <- tbmort[1]
+      tally[c(grep("^A.*Hp", statenames), grep("^T.i.*Hp", statenames)), "tbdeaths"] <- tbmort[2]
 
-      tally[c(grep("^A.[.]Rr.*Hn", statenames), grep("^Ti[.]Rr.*Hn", statenames)), "rrdeaths"] <- tbmort[1]
-      tally[c(grep("^A.[.]Rr.*Hp", statenames), grep("^Ti[.]Rr.*Hp", statenames)), "rrdeaths"] <- tbmort[2]
+      tally[c(grep("^A.[.]Rr.*Hn", statenames), grep("^T.i[.]Rr.*Hn", statenames)), "rrdeaths"] <- tbmort[1]
+      tally[c(grep("^A.[.]Rr.*Hp", statenames), grep("^T.i[.]Rr.*Hp", statenames)), "rrdeaths"] <- tbmort[2]
       
       tally[c(grep("^A.{1,10}Hp$", statenames), grep("^T.{1,10}Hp$", statenames)), "hivtoo"] <- 1 # will later divide by prev        
       
@@ -597,9 +598,9 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
                    ( (1-DSTrif)*targetpop[1] + DSTrif*targetpop[2] ) * availability * max(DSTnew) * eligibility[2] , 1, sum )
       }
       
-      tally[grep("^Ts", statenames), "rxtime_s"] <- rep(1, length(grep("^Ts", statenames))) #doesn't include ineffective (Ti) months
-      tally[grep("^Tr", statenames), "rxtime_r"] <- rep(1, length(grep("^Tr", statenames))) #doesn't include ineffective (Ti) months
-      tally[grep("^Tn", statenames), "rxtime_n"] <- rep(1, length(grep("^Tn", statenames))) #doesn't include ineffective (Ti) months
+      tally[grep("^Ts", statenames), "rxtime_s"] <- rep(1, length(grep("^Ts", statenames))) 
+      tally[grep("^Tr", statenames), "rxtime_r"] <- rep(1, length(grep("^Tr", statenames))) 
+      tally[grep("^Tn", statenames), "rxtime_n"] <- rep(1, length(grep("^Tn", statenames))) 
     }
     
     tallied <- t(tally) %*% state ; names(tallied) <- outcomes; 

@@ -10,9 +10,10 @@ targetpt <- commandArgs(trailingOnly=TRUE)[4]
 DST <- commandArgs(trailingOnly=TRUE)[5]
 baseline <- commandArgs(trailingOnly=TRUE)[6] # minimal or optimal (which all are we comparing to as we vary one at a time?)
 saveintermediate <- TRUE
+resume <- commandArgs(trailingOnly=TRUE)[7]
 
 location<-"../scratch/"
-tag <- "20160313p" # note: for this tag I'm not going to add rDSTall to file names except for DRcal/traj
+tag <- "20160419p" # note: for this tag I'm not going to add rDSTall to file names except for DRcal/traj
 currenttag <- paste0(tname,"_",tag)
 if (targetpt=="DS") rDSTall <- TRUE else rDSTall <- FALSE #commandArgs(trailingOnly=TRUE)[5]
 drtag <- ifelse(rDSTall == TRUE, paste0("rDSTall.",currenttag), currenttag)
@@ -54,7 +55,13 @@ if (baseline=="minimal")
    if (saveintermediate) if(!file.exists(paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
   }
 
-for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
+istart <- (ilimits[taskid]+1)
+if (resume)
+{
+  if(baseline=="min") istart <- max(read.csv(paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"))$inew)+1 else istart <- 
+  max(read.csv(paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"))$inew)+1
+}
+for (inew in istart:ilimits[taskid+1])
 {
   iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST, rDSTall)) #will include these labels as part of returned output
   

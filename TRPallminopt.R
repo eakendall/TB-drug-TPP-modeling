@@ -3,9 +3,10 @@ ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 tname <- commandArgs(trailingOnly=TRUE)[3]
 targetpt <- commandArgs(trailingOnly=TRUE)[4]
 DST <- commandArgs(trailingOnly=TRUE)[5]
+resume <- commandArgs(trailingOnly=TRUE)[6]
 
 location<-"../scratch/"
-tag <- "20160313p"
+tag <- "20160419p"
 currenttag <- paste0(tname,"_",tag)
 if (targetpt=="DS") rDSTall <- TRUE else rDSTall <- FALSE #commandArgs(trailingOnly=TRUE)[5]
 drtag <- ifelse(rDSTall == TRUE, paste0("rDSTall.",currenttag), currenttag)
@@ -27,14 +28,19 @@ i <- 1; while(file.exists(paste0(location,"DRcalibration_",drtag,".",i,".csv")))
 tolerance <- 1.5
 drout <- alldrout[alldrout[,"rrinc"]/alldrout[,"inc"] > 1/tolerance*alldrout[,"targetdr"] & alldrout[,"rrinc"]/alldrout[,"inc"] < tolerance*alldrout[,"targetdr"], ] 
 
-ilimits <- ceiling(seq(0,nrow(drout), length=ntasks+1))
-
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
 header <- append(header, paste0( rep(tallynames, times=2*11), rep(0:10,each=length(tallynames)), rep(c("allmin", "allopt"), each=11*length(tallynames)) ) )
 
-if(!file.exists(paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
+if(!file.exists(paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) } else
 
-for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
+ilimits <- ceiling(seq(0,nrow(drout), length=ntasks+1))
+  
+istart <- ilimits[taskid]+1
+if (resume) istart <- max(read.csv(paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"))$inew)+1
+
+if (istart > ilimits[taskid+1]) stop("Already finished this taskid")
+
+for (inew in istart:ilimits[taskid+1])
 {
   iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST, rDSTall)) #will include these labels as part of returned output
   

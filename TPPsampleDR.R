@@ -1,3 +1,5 @@
+## !!!! Should select array to do only those (beyond 500) that aren't already done
+
 taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
 ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
 tname <- commandArgs(trailingOnly=TRUE)[3]
@@ -5,7 +7,7 @@ rDSTall <- commandArgs(trailingOnly=TRUE)[4]
 Nsims_dr <- as.numeric(commandArgs(trailingOnly=TRUE))[5]
 location <- "../scratch/"
 
-tag <- "20160313p"
+tag <- "20160419p"
 pessimistic <- TRUE
 
 currenttag <- paste0(tname,"_",tag,".",taskid)
@@ -20,8 +22,11 @@ i <- 1; while(file.exists(paste0(location,"DScalibration_",dstag,".",i,".csv")))
   dsout <- rbind(dsout, read.csv(paste0(location,"DScalibration_",dstag,".",i,".csv"), header=TRUE))
   i <- i+1
 }
+dsout <- dsout[!duplicated(dsout$ids),] #want the earlier appearance of each ids
 dsout <- dsout[order(dsout$ids),]
-Nsims_ds <- max(dsout$ids); ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
+
+Nsims_ds <- max(dsout$ids); 
+ilimits <- ceiling(seq(0,Nsims_ds, length=ntasks+1))
 
 
 dssetup <- setup.model(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)

@@ -1,19 +1,15 @@
+taskid <- as.numeric(commandArgs(trailingOnly=TRUE))[1]
+ntasks <- as.numeric(commandArgs(trailingOnly=TRUE))[2]
+tname <- commandArgs(trailingOnly=TRUE)[3]
+location <- "../scratch/"
 
-# In thi version, I sample an equally spaced grid for beta and log(hivrate), linearly interpolate between the sampled points to create a grid 5kx5k, then choose the best (sum of squared differences) fit on that 
-# larger grid to the target prev and coprev.
-
-taskid <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[1]
-ntasks <- 1#as.numeric(commandArgs(trailingOnly=TRUE))[2]
-tname <- "SouthAfrica"#commandArgs(trailingOnly=TRUE)[3]
-location <- ""#"../scratch/"
-
-tag <- "20160313p"
+tag <- "20160419p"
 pessimistic <- TRUE
 currenttag <- paste0(tname,"_",tag,".",taskid)
 
 # LHS <- readRDS(paste0("LHS_",tag,".RDS"))
-# LHS <- readRDS(paste0("oldLHS_50_",tag,".RDS"))
-Nsims_ds <- 50
+# LHS <- readRDS(paste0("oldLHS_100_",tag,".RDS"))
+Nsims_ds <- 100
 
 source("TPPmat.R")
 
@@ -32,7 +28,7 @@ dsheader <- c("ids",  "targetprev","targetcoprev","targetdr",
               dssetup$statenames, tallynames) 
 if(!file.exists(paste0(location,"DScalibration_", currenttag, ".csv"))) { write(dsheader, sep =",", file=paste0(location,"DScalibration_", currenttag, ".csv"), ncolumns=length(dsheader)) }
 
-dsout <- list(); i <- 1; while(file.exists(paste0("DScalibration_20160313p.",i,".csv"))) {dsout <- rbind(dsout, read.csv(paste0("DScalibration_20160313p.",i,".csv"))); i <- i+1}
+dsout <- list(); i <- 1; while(file.exists(paste0("DScalibration_20160419p.",i,".csv"))) {dsout <- rbind(dsout, read.csv(paste0("DScalibration_20160419p.",i,".csv"))); i <- i+1}
 
 for (isim in (ilimits[taskid]+1):ilimits[taskid+1])
 {
