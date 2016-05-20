@@ -213,17 +213,17 @@ mtext("Impact of novel RR TB regimens",side=3,outer=TRUE, cex=1.4, line=-1, xpd=
 
 ## DR combos
 outcome <- "rrdeaths"
-drout <- drout_combos
+drout <- alldrout
 novel_combos <- novelwide3[1:nrow(combos_dr),]
 a <- alow <- ahigh <- numeric(0); 
 for (i in 1:length(grep("^rrdeaths",colnames(combos_dr)))) 
-  {a[i] <- median((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout_combos$rrdeaths10 )/drout_combos$rrdeaths10)
-   alow[i] <- quantile((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout_combos$rrdeaths10 )/drout_combos$rrdeaths10, 0.025)
-   ahigh[i] <- quantile((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout_combos$rrdeaths10 )/drout_combos$rrdeaths10, 0.975)
+  {a[i] <- median((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout$rrdeaths10 )/drout$rrdeaths10)
+   alow[i] <- quantile((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout$rrdeaths10 )/drout$rrdeaths10, 0.025)
+   ahigh[i] <- quantile((combos_dr[,grep("^rrdeaths",colnames(combos_dr))[i]]- drout$rrdeaths10 )/drout$rrdeaths10, 0.975)
 }
-a[length(a)+1] <- median((sens_dr$rrdeaths10allopt - drout_combos$rrdeaths10)/drout_combos$rrdeaths10)
-alow[length(alow)+1] <- quantile((sens_dr$rrdeaths10allopt - drout_combos$rrdeaths10)/drout_combos$rrdeaths10,0.025)
-ahigh[length(ahigh)+1] <- quantile((sens_dr$rrdeaths10allopt - drout_combos$rrdeaths10)/drout_combos$rrdeaths10, 0.975)
+a[length(a)+1] <- median((sens_dr$rrdeaths10allopt - drout$rrdeaths10)/drout$rrdeaths10)
+alow[length(alow)+1] <- quantile((sens_dr$rrdeaths10allopt - drout$rrdeaths10)/drout$rrdeaths10,0.025)
+ahigh[length(ahigh)+1] <- quantile((sens_dr$rrdeaths10allopt - drout$rrdeaths10)/drout$rrdeaths10, 0.975)
 
 a[length(a)+1] <- median((allminopt_dr$rrdeaths10allopt - alldrout$rrdeaths10)/alldrout$rrdeaths10)
 alow[length(alow)+1] <- quantile((allminopt_dr$rrdeaths10allopt - alldrout$rrdeaths10)/alldrout$rrdeaths10,0.025)
@@ -248,11 +248,12 @@ b<-barplot(a[which], las=2, ylab="RR TB mortality reduction", space = c(rep(0.1,
            col=bcols, #angle=20, density=rep( c(30,100),each=5),
            ylim=c(-0.6,0.02), xaxt='n',  cex.lab=1.2, yaxt='n',
            main="Ten-year RR TB mortality impact of RR regimen improvements, \nwith and without associated increased RR detection and treatment")
-text(x=b[c(3,10)], y=0.02, c("With current RR DST scale-up", "With accelerated RR DST scale-up"), xpd=NA, cex=1.2)
+text(x=b[c(3,10)], y=0.02, c("With current pace of RR DST scale-up", "With accelerated RR DST scale-up"), xpd=NA, cex=1.2)
 legend("bottomleft", c("All-Minimal novel regimen (~ standard of care)", "Optimized efficacy (~ RS TB treatment)", "Optimized duration (6 months)", "Optimized tolerability (50% reduced nonadherence)", "Optimized efficacy, duration, and tolerability", "Optimized for all six characteristics"),
        fill=bcols, xpd=NA)
 axis(side = 2, at = seq(-0.6,0,by=0.1), labels = paste(seq(60,0,by=-10),"%"))
 arrows(b,alow[which],b, ahigh[which], angle=90, code=3, length=0.1)
+
 
 # Union abstract version
 
@@ -365,7 +366,7 @@ par(mar=c(1,2,3,0), oma=c(0,4,1,1), mfrow=c(2,2))
   
 b <- barplot(alldsmin[,6:1], horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n', yaxt='n', xlim=c(-0.1,0.7),
              main="Fraction of total mortality reduction achieved", font.main=2, xpd=NA,
-#              main="Fraction of total incidence impact of\nnovel regimen optimization that is achieved\nby optimizing a single characteristic", font.main=2, xpd=NA,
+#            main="Fraction of total incidence reduction achieved", font.main=2, xpd=NA,
              col=rep(rainbow(6),each=2), density=c(25, 200))
 text(dsmin[6:1,5], b, paste0(round(dsmin[6:1,3]*100, 1),"%"), pos=4)
 arrows(dsmin[6:1,"0.025"], b, dsmin[6:1,"0.975"], b, angle=90, code=3, length=0.05)
@@ -376,7 +377,7 @@ text(0.3, mean(b),"A", font=2, cex=1.5)
 #              main="Fraction of maximal impact lost if a\nsingle aspect of regimen is not optimized", font.main=2, xpd=NA)
 b <- barplot(-alldsmax[,6:1], horiz = TRUE, beside=FALSE, las=2, font=2, xaxt='n', yaxt='n', xlim=c(-0.9,0), 
              main="Fraction of total mortality impact lost", font.main=2, xpd=NA,
-#              main="Fraction of total incidence impact of\nnovel regimen optimization that is lost\nwhen a single chracteristic is not optimized", font.main=2, xpd=NA,
+#              main="Fraction of total incidence impact lost", font.main=2, xpd=NA,
               col=rep(rainbow(6),each=2), density=c(200,25))
 arrows(-dsmax[6:1,"0.025"], b, -dsmax[6:1,"0.975"], b, angle=90, code=3, length=0.05)
 text(-dsmax[6:1,5], b, paste0(round(dsmax[6:1,3]*100, 1),"%"),xpd=NA, pos=2)
@@ -401,12 +402,12 @@ text(-drmax[6:1,5], b, paste0(round(drmax[6:1,3]*100, 1),"%"), pos=2)
 #      c("Efficacy (76-94% durable cure*)","Barrier to resistance (0.8-10% acquire new resistance)","Preexisting resistance (prevalence 0-15%)","Medical Contraindications (0-11% excluded)", "Duration (6-20 months)", "Tolerability (adherence improves 0-50%)"),pos=1, xpd=NA)
 text(-0.4, mean(b),"D", font=2, cex=1.5)
 
-legend(x=-1.1,y=mean(b)*3.5,,xpd=NA, cex=1.1, legend=c(shortelementlabels[-c(1,8,9)],"Minimal vs. intermediate value","Intermediate vs. optimal value"), fill=c(rainbow(6),"black","black"), density=c(rep(200,6),25, 200))
+legend(x=-1.2,y=mean(b)*3.5,,xpd=NA, cex=1.1, legend=c(shortelementlabels[-c(1,8,9)],"Minimal vs. intermediate value","Intermediate vs. optimal value"), fill=c(rainbow(6),"black","black"), density=c(rep(200,6),25, 200))
 
-
+# mtext("South Africa", font=2, side=3, outer=TRUE, cex=1,line = -0.5, xpd=NA)
 
 ###########
-## FIGURE 3 ##
+## FIGURE 2 ##
 
 # Trajectories figure
 # there's no "median trajectory" so I'll have to take the median for each intervention and each time point separately

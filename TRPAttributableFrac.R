@@ -11,6 +11,8 @@ DST <- commandArgs(trailingOnly=TRUE)[5]
 baseline <- commandArgs(trailingOnly=TRUE)[6] # minimal or optimal (which all are we comparing to as we vary one at a time?)
 saveintermediate <- TRUE
 resume <- commandArgs(trailingOnly=TRUE)[7]
+noneq <- commandArgs(trailingOnly=TRUE)[8]
+if (noneq) paramvary <- list(commandArgs(trailingOnly=TRUE)[9], as.numeric(commandArgs(trailingOnly=TRUE)[10]))
 
 location<-"../scratch/"
 tag <- "20160419p" # note: for this tag I'm not going to add rDSTall to file names except for DRcal/traj
@@ -46,20 +48,17 @@ if (baseline=="optimal") header <- append(header, paste0( rep(tallynames, times=
 if (baseline=="minimal") header <- append(header, paste0( rep(tallynames, times=11*(length(elementnames)-1)), rep(0:10, each=length(tallynames)), "only",
                                                           rep(elementnames[2:length(elementnames)], each=11*length(tallynames)) ) )
 
-if (baseline=="optimal")
-  {if(!file.exists(paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
-   if (saveintermediate) if(!file.exists(paste0(location,"IntAllbut","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"IntAllbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
-  }
-if (baseline=="minimal")
-  {if(!file.exists(paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
-   if (saveintermediate) if(!file.exists(paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
+if (baseline=="optimal") filetag <- "Allbut"; 
+if (baseline=="minimal") filetag <- "Only";
+if (noneq) filetag <- paste0(filetag, ".", paramvary[[1]],paramvary[[2]])
+  {if(!file.exists(paste0(location,filetag,"_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,filetag,"_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
+   if (saveintermediate) if(!file.exists(paste0(location,"Int",filetag,"_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Int",filetag,"_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
   }
 
 istart <- (ilimits[taskid]+1)
 if (resume)
 {
-  if(baseline=="min") istart <- max(read.csv(paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"))$inew)+1 else istart <- 
-  max(read.csv(paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"))$inew)+1
+  istart <-   max(read.csv(paste0(location,filetag,"_", targetpt,DST,"_",tasktag,".csv"))$inew)+1
 }
 for (inew in istart:ilimits[taskid+1])
 {
@@ -115,7 +114,7 @@ for (inew in istart:ilimits[taskid+1])
       
     parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
       
-    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
+    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, paramvary=paramvary, method="adams")
       
     iresult <- append(iresult, as.vector(t(outset[,tallynames]))) 
     
@@ -141,20 +140,13 @@ for (inew in istart:ilimits[taskid+1])
         }
       }
       iparset <- create.pars(setup = novelsetup, values = ivalueset, T, T, T)
-      ioutset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=iparset$fullpars, do.tally=TRUE, method="adams")
+      ioutset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=iparset$fullpars, do.tally=TRUE,paramvary=paramvary, method="adams")
       iiresult <- append(iiresult, as.vector(t(ioutset[,tallynames]))) 
     }
       
   }
     
-  if (baseline=="optimal")  
-  {
-    write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Allbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
-    if (saveintermediate) write(unlist(c(iter, valuevect, iiresult)), file=paste0(location,"IntAllbut","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
-  }
-  if (baseline=="minimal")  
-  {
-    write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Only","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
-    if (saveintermediate) write(unlist(c(iter, valuevect, iiresult)), file=paste0(location,"IntOnly","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
-  }
+  write(unlist(c(iter, valuevect, iresult)), file=paste0(location,filetag,"_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+  if (saveintermediate) write(unlist(c(iter, valuevect, iiresult)), file=paste0(location,"Int",filetag,"_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
+}
 }

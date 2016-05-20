@@ -185,6 +185,7 @@ intonly_dr <- intonly_dr2
 
 allbut_dr <- numeric(0); i<- 1 
 while(file.exists(paste0("Allbut_DRDSTall_",currenttag,".",i,".csv"))) { allbut_dr <- rbind(allbut_dr, read.csv(paste0("Allbut_DRDSTall_",currenttag,".",i,".csv"))); i <- i+1 }
+allbut_dr <- allbut_dr[!duplicated(allbut_dr[,c("ids","idr")]),]
 
 intallbut_dr <- numeric(0); i<- 1 
 while(file.exists(paste0("IntAllbut_DRDSTall_",currenttag,".",i,".csv"))) { intallbut_dr <- rbind(intallbut_dr, read.csv(paste0("IntAllbut_DRDSTall_",currenttag,".",i,".csv"))); i <- i+1 }
@@ -204,9 +205,9 @@ while(file.exists(paste0("Scaleupminopt_DSDSTall_",currenttag,".",i,".csv"))) { 
 allbut_hiv <- numeric(0); i <- 1
 while(file.exists(paste0("HIVAllbut_DSDSTall_",currenttag,".",i,".csv"))) { allbut_hiv <- rbind(allbut_hiv, read.csv(paste0("HIVAllbut_DSDSTall_",currenttag,".",i,".csv"))); i <- i+1 }
 
-combos_dr <- read.csv(paste0("TRPcombos_DRDSTall_",currenttag,".",1,".csv"))
-drout_combos <- alldrout[1:nrow(combos_dr),]
+combos_dr <- numeric(0); i <- 1
+while(file.exists(paste0("TRPcombos_DRDSTall_",currenttag,".",i,".csv"))) { combos_dr <- rbind(combos_dr, read.csv(paste0("TRPcombos_DRDSTall_",currenttag,".",i,".csv"))); i <- i+1 }
+combos_dr <- combos_dr[!duplicated(combos_dr[,c("ids","idr")]),]
 
 sens_dr <- numeric(0); i <- 1
 while(file.exists(paste0("Scaleupminopt_DRDSTall_",currenttag,".",i,".csv"))) { sens_dr <- rbind(sens_dr, read.csv(paste0("Scaleupminopt_DRDSTall_",currenttag,".",i,".csv"))); i <- i+1 }
-sens_dr <- sens_dr[1:nrow(combos_dr),]

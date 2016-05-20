@@ -51,7 +51,7 @@ header <- append(header, paste0( rep(tallynames, times=length(scenarios)), "10",
 if(!file.exists(paste0(location,"TRPcombos","_", targetpt,DST,"_",currenttag,".csv"))) { write(header,  file=paste0(location,"TRPcombos","_", targetpt,DST,"_",currenttag,".csv"), sep=",", ncol=length(header)) }
 
 
-for (inew in 1:nrow(drout))
+for (inew in (ilimits[taskid]+1):ilimits[taskid+1])
 {
   iter <- unlist(c(inew,unlist(drout[inew,c("ids", "idr", "targetprev","targetcoprev","targetdr")]), targetpt, DST, rDSTall)) #will include these labels as part of returned output
   

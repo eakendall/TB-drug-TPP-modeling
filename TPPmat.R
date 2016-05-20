@@ -413,7 +413,7 @@ makemat <- function(pars)
 # fullpars argument is the fullpars component of create.pars (i.e. list of params incl mat, but doesn't include list(s) of values)
 # for rvary and nvary, t needs to be defined with respect to 0 as the end of rifDST scaleup and the time of novel regimen implementation
 # output is ode output, along with outcomes (as defined within function) at each time point
-dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
+dxdt <- function(t, state, fullpars, rvary, nvary, paramvary=list(NA,0), do.tally=FALSE)
 {
   DSTrif_t <- numeric(2); availability_t <- numeric(1)
   
@@ -432,6 +432,12 @@ dxdt <- function(t, state, fullpars, rvary, nvary, do.tally=FALSE)
   if (missing(nvary)) { if (3 %in% fullpars$usereg) {nvary<-TRUE} else {nvary<-FALSE} }
   if (nvary==TRUE) { if (t <= 0) availability_t <- 0 else if (t <= 3 && t > 0) availability_t <- (t/3)*fullpars$availability else if (t > 3) availability_t <- fullpars$availability 
   } else availability_t <- fullpars$availability # 3 here is the scale-up time
+  
+  if (!is.na(paramvary[[1]])) #varying some other param to get declining incidence. paramvary should be a list: paramname, annual % change rel to t=0
+  {
+    if (t>0) fullpars[paramvary[[1]]][[1]][1] <- fullpars[paramvary[[1]]][[1]][1]* (1 + t*paramvary[[2]])    
+    if (paramvary[[1]]=="reactrate") fullpars$mat <- makemat(pars = fullpars[-length(fullpars)])
+  }
   
   with(fullpars, {
     if (length(mat) != length(state)^2) {stop("Error: Initial-state and transition-matrix size mismatch.")}
@@ -656,7 +662,7 @@ advance <- function(state, t0, addedt=1, rvary, nvary, reportsteps=1, fullpars)
 }
 
 
-# run to equilibrium without drugs; will need to adjust Rnames and resistance-related parameters, and remake mat
+# run to equilibrium without drugs
 equilib <- function(state, pars, tol=0.2)
 {
   if(missing(pars)) pars <- create.pars(DRera=FALSE, treatSL=FALSE, treatnovel=FALSE)

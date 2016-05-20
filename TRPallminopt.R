@@ -4,6 +4,8 @@ tname <- commandArgs(trailingOnly=TRUE)[3]
 targetpt <- commandArgs(trailingOnly=TRUE)[4]
 DST <- commandArgs(trailingOnly=TRUE)[5]
 resume <- commandArgs(trailingOnly=TRUE)[6]
+noneq <- commandArgs(trailingOnly=TRUE)[7]
+if (noneq) paramvary <- list(commandArgs(trailingOnly=TRUE)[8], as.numeric(commandArgs(trailingOnly=TRUE)[9]))
 
 location<-"../scratch/"
 tag <- "20160419p"
@@ -31,7 +33,10 @@ drout <- alldrout[alldrout[,"rrinc"]/alldrout[,"inc"] > 1/tolerance*alldrout[,"t
 header <- c("inew", "ids","idr","targetprev","targetcoprev", "targetdr", "targetpt","DST", "rDSTall", names(unlist(genericvalues)))
 header <- append(header, paste0( rep(tallynames, times=2*11), rep(0:10,each=length(tallynames)), rep(c("allmin", "allopt"), each=11*length(tallynames)) ) )
 
-if(!file.exists(paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) } else
+if (noneq)
+{  if(!file.exists(paste0(location,"Allminopt.",paramvary[[1]],paramvary[[2]],"_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allminopt.",paramvary[[1]],paramvary[[2]],"_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
+}else 
+  if(!file.exists(paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"))) { write(header,  file=paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"), sep=",", ncol=length(header)) }
 
 ilimits <- ceiling(seq(0,nrow(drout), length=ntasks+1))
   
@@ -84,9 +89,10 @@ for (inew in istart:ilimits[taskid+1])
     
     parset <- create.pars(setup = novelsetup, values = valueset, T, T, T)
     
-    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, method="adams")
+    outset <- ode(y=unlist(novelstate), times=0:10, func=dxdt, parms=parset$fullpars, do.tally=TRUE, paramvary=paramvary, method="adams")
     
     iresult <- append(iresult, as.vector(t(outset[,tallynames])))
   }
+  if(noneq) write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Allminopt.",paramvary[[1]],paramvary[[2]],"_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header)) else
   write(unlist(c(iter, valuevect, iresult)), file=paste0(location,"Allminopt","_", targetpt,DST,"_",tasktag,".csv"), sep=",", append=TRUE, ncol=length(header))
 }
